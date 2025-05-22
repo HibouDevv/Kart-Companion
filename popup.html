@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash Karts Match Tracker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/popup.css">
+    <style>
+        body { font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo-title"><span class="logo-smash">SMASH</span> <span class="logo-karts">KARTS</span> <span class="logo-insights">Insights</span></h1>
+            <div class="skid-display">SKID: <span id="skidValue">-</span></div>
+            <div id="modeSelector" class="mode-selector">
+                <button id="normalModeBtn" class="mode-btn selected">3 Minute Mode</button>
+                <button id="specialModeBtn" class="mode-btn">Special Mode</button>
+                <button id="customModeBtn" class="mode-btn">Custom Match</button>
+            </div>
+        </header>
+        <h2 class="stats-section-label">Primary Stats</h2>
+        <div class="primary-stats-list">
+            <div class="stat-card"><span class="stat-label">Kills</span><span class="stat-value" id="kills">0</span></div>
+            <div class="stat-card"><span class="stat-label">Deaths</span><span class="stat-value" id="deaths">0</span></div>
+            <div class="stat-card"><span class="stat-label">KDR</span><span class="stat-value" id="kdr">0.00</span></div>
+            <div class="stat-card"><span class="stat-label">Matches Completed</span><span class="stat-value" id="matchesCompleted">0</span></div>
+            </div>
+        <h2 class="stats-section-label">Secondary Stats</h2>
+        <div class="secondary-stats-list">
+            <div class="stat-card"><span class="stat-label">Games Joined Mid Round</span><span class="stat-value" id="gamesJoined">0</span></div>
+            <div class="stat-card"><span class="stat-label">Games Started</span><span class="stat-value" id="gamesStarted">0</span></div>
+            <div class="stat-card"><span class="stat-label">Games Quit</span><span class="stat-value" id="gamesQuit">0</span></div>
+        </div>
+        <button id="resetStatsBtn" class="reset-btn">Reset All Stats</button>
+        <div class="match-history">
+            <h2>Match History</h2>
+            <div id="matches-list" class="matches-list">
+                <!-- Match cards will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html> 
