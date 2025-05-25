@@ -18,7 +18,9 @@ window.kartStats = {
     _pendingGameEnd: false,
     _successLogCount: 0,
     _gameEndTimeout: null,
-    skid: null
+    skid: null,
+    killTimestamps: [],
+    deathTimestamps: []
 };
 
 function setSkid(skid) {
@@ -31,8 +33,6 @@ function setSkid(skid) {
 
 function interceptConsole(method, original) {
     return function(...args) {
-        // Print every intercepted message
-        try { originalLog('[SKMT] Intercepted:', method, ...args); } catch(e){}
         if (args[0] && typeof args[0] === 'string') {
             const msg = args[0].toLowerCase();
             // Detect SKID from AuthStateChanged log
@@ -50,11 +50,18 @@ function interceptConsole(method, original) {
             }
 
             // Handle special mode
-            if (msg.includes('bytebrew: sending custom event: play_special_mode')) {
+            if (msg.includes('bytebrew: sending custom event: play_special_mode') ||
+                msg.includes('bytebrew: sending custom event: play_special_mode_rules') ||
+                msg.includes('bytebrew: sending custom event: play_special_mode_arena')) {
                 window.kartStats.isSpecialMode = true;
             }
 
-            // Detect custom match creation/join
+            // Handle special mode exit
+            if (msg.includes('bytebrew: sending custom event: confirmexitgame')) {
+                // Removed the incorrect early reset here. The reset will happen after match data is captured.
+            }
+
+            // Custom mode: ON for any custom event
             if (
                 msg.includes('bytebrew: sending custom event: create_game_rules') ||
                 msg.includes('bytebrew: sending custom event: create_game_weapons') ||
@@ -64,50 +71,81 @@ function interceptConsole(method, original) {
                 msg.includes('bytebrew: sending custom event: join_or_create_private_arena')
             ) {
                 window.kartStats.isCustomMode = true;
+                window.kartStats.isSpecialMode = false; // Set special mode to false when entering custom mode
+                console.log('[SKMT][CUSTOM] Custom event detected. isCustomMode set to true, isSpecialMode set to false.');
             }
 
             // Handle game end (new logic)
             if (msg.includes('bytebrew: sending custom event: game_end') || msg.includes('bytebrew: sending custom event: confirmexitgame')) {
                 if (window.kartStats.matchActive) {
+                    // Capture current mode flags *before* any reset within this handler
+                    const endedInSpecialMode = window.kartStats.isSpecialMode;
+                    const endedInCustomMode = window.kartStats.isCustomMode;
+
                     window.kartStats.matchEndTime = Date.now();
-                    if (msg.includes('confirmexitgame')) window.kartStats.quit = true;
+                    if (msg.includes('confirmexitgame')) {
+                         window.kartStats.quit = true;
+                         // *** NEW PLACEMENT: Set special mode to false here, AFTER capturing flags for match data ***
+                         window.kartStats.isSpecialMode = false; // Reset special mode on explicit exit confirmation
+                    }
+
+                    // Capture the match data *before* resetting stats
+                    const matchObj = {
+                        kills: window.kartStats.kills,
+                        deaths: window.kartStats.deaths,
+                        matchStartTime: window.kartStats.matchStartTime,
+                        matchEndTime: window.kartStats.matchEndTime,
+                        isSpecialMode: endedInSpecialMode, // Use captured value
+                        isCustomMode: endedInCustomMode, // Use captured value
+                        joined: window.kartStats.joined,
+                        started: window.kartStats.started,
+                        quit: window.kartStats.quit,
+                        killTimestamps: window.kartStats.killTimestamps, // These are reset in resetStats
+                        deathTimestamps: window.kartStats.deathTimestamps // These are reset in resetStats
+                    };
+                    console.log('[SKMT][DEBUG] Posting match complete:', matchObj);
                     window.postMessage({
                         type: 'SKMT_MATCH_COMPLETE',
-                        data: {
-                            kills: window.kartStats.kills,
-                            deaths: window.kartStats.deaths,
-                            matchStartTime: window.kartStats.matchStartTime,
-                            matchEndTime: window.kartStats.matchEndTime,
-                            isSpecialMode: window.kartStats.isSpecialMode,
-                            isCustomMode: window.kartStats.isCustomMode,
-                            joined: window.kartStats.joined,
-                            started: window.kartStats.started,
-                            quit: window.kartStats.quit
-                        }
+                        data: matchObj
                     }, '*');
+
+                    // Now reset other stats
                     resetStats();
+                    // isCustomMode is reset when entering other modes.
                     window.kartStats.awaitingStartType = true;
+
+                    console.log('[SKMT][DEBUG] Game end/exit handler completed posting message and resetting state.');
                 }
             }
 
             // Handle joined_room/start_game only if awaiting start type
             if (window.kartStats.awaitingStartType) {
-                if (msg.includes('bytebrew: sending custom event: joined_room')) {
-                    window.kartStats.kills = 0;
-                    window.kartStats.deaths = 0;
-                    window.kartStats.matchActive = true;
-                    window.kartStats.matchStartTime = Date.now();
-                    window.kartStats.joined = true;
-                    window.kartStats.started = false;
-                    window.kartStats.quit = false;
-                    window.kartStats.awaitingStartType = false;
-                } else if (msg.includes('bytebrew: sending custom event: start_game')) {
+                // Removed 'bytebrew: sending custom event: joined_room' as a start trigger
+                // if (msg.includes('bytebrew: sending custom event: joined_room')) {
+                //     // If we are joining a room and it's not already marked as special or custom, assume normal mode
+                //     if (!window.kartStats.isSpecialMode && !window.kartStats.isCustomMode) {
+                //          window.kartStats.isSpecialMode = false; // Explicitly set to false for normal mode
+                //     }
+                //     window.kartStats.kills = 0;
+                //     window.kartStats.deaths = 0;
+                //     window.kartStats.matchActive = true;
+                //     window.kartStats.matchStartTime = Date.now();
+                //     window.kartStats.joined = true;
+                //     window.kartStats.started = false;
+                //     window.kartStats.quit = false;
+                //     window.kartStats.awaitingStartType = false;
+                // } else
+                 if (msg.includes('bytebrew: sending custom event: start_game')) {
+                     // If we are starting a game and it's not already marked as special or custom, assume normal mode
+                    if (!window.kartStats.isSpecialMode && !window.kartStats.isCustomMode) {
+                         window.kartStats.isSpecialMode = false; // Explicitly set to false for normal mode
+                    }
                     window.kartStats.kills = 0;
                     window.kartStats.deaths = 0;
                     window.kartStats.matchActive = true;
                     window.kartStats.matchStartTime = Date.now();
                     window.kartStats.started = true;
-                    window.kartStats.joined = false;
+                    window.kartStats.joined = false; // Assuming 'start_game' means you started, not joined mid-round
                     window.kartStats.quit = false;
                     window.kartStats.awaitingStartType = false;
                 }
@@ -117,9 +155,11 @@ function interceptConsole(method, original) {
             if (window.kartStats.matchActive) {
                 if (msg.includes('destroyed_human')) {
                     window.kartStats.kills++;
+                    window.kartStats.killTimestamps.push(Date.now());
                 }
                 if (msg.includes('destroyed_by_human') || msg.includes('destroyed_by_bot')) {
                     window.kartStats.deaths++;
+                    window.kartStats.deathTimestamps.push(Date.now());
                 }
             }
         }
@@ -139,13 +179,14 @@ function resetStats() {
     window.kartStats.matchActive = false;
     window.kartStats.matchStartTime = null;
     window.kartStats.matchEndTime = null;
-    window.kartStats.isSpecialMode = false;
-    window.kartStats.isCustomMode = false;
+    // Do NOT reset isSpecialMode or isCustomMode here!
     window.kartStats.joined = false;
     window.kartStats.started = false;
     window.kartStats.quit = false;
     window.kartStats._pendingGameEnd = false;
     window.kartStats._successLogCount = 0;
+    window.kartStats.killTimestamps = [];
+    window.kartStats.deathTimestamps = [];
     if (window.kartStats._gameEndTimeout) clearTimeout(window.kartStats._gameEndTimeout);
     window.kartStats._gameEndTimeout = null;
     // Do not reset awaitingStartType here; it is managed in the main logic

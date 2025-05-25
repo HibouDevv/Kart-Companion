@@ -198,63 +198,118 @@ function injectScriptFile(filePath) {
 }
 injectScriptFile('injected.js');
 
-// Listen for SKMT_MATCH_COMPLETE messages and save match data to chrome.storage.sync
+// Add a single consolidated message listener
 window.addEventListener('message', function(event) {
-    if (event.data && event.data.type === 'SKMT_MATCH_COMPLETE') {
+    // Only accept messages from the same frame and from our injected script
+    if (event.source !== window) return;
+    if (!event.data || !event.data.type || !event.data.type.startsWith('SKMT_')) {
+        return; // Only process messages specifically from our script
+    }
+
+    console.log('[SKMT][CONTENT] Received message from injected script:', event.data.type, event.data);
+
+    // Handle different message types
+    if (event.data.type === 'SKMT_SKID_UPDATED') {
+        const skid = event.data.skid;
+        if (skid && typeof skid === 'string' && skid.length > 5) {
+            if (window.chrome && chrome.storage && chrome.storage.sync) {
+                chrome.storage.sync.set({ currentSkid: skid }, () => {
+                    console.log('[SKMT][CONTENT] SKID saved to chrome.storage.sync:', skid);
+                    // Always forward SKID updates to the runtime
+                    chrome.runtime.sendMessage(event.data);
+                });
+            }
+        }
+    } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
         const match = event.data.data;
-        // Get current SKID from chrome.storage.sync
+
+        // Determine the mode key based on the match data
+        // Fetch current SKID from storage first, as it's needed for the mode key
         chrome.storage.sync.get(['currentSkid'], (skidData) => {
-            const skid = skidData.currentSkid || 'default';
+            const skid = skidData.currentSkid || 'default'; // Use currentSKID from storage
             let mode = 'normal';
             if (match.isCustomMode) mode = 'custom';
             else if (match.isSpecialMode) mode = 'special';
             const getModeKey = (base) => `${base}_${skid}_${mode}`;
-            const keys = [
-                getModeKey('matchHistory'),
-                getModeKey('gamesJoined'),
-                getModeKey('gamesStarted'),
-                getModeKey('gamesQuit'),
-                getModeKey('matchesCompleted')
-            ];
-            console.log('[SKMT][SAVE] Saving match for SKID:', skid, 'Mode:', mode, 'isSpecialMode:', match.isSpecialMode, 'isCustomMode:', match.isCustomMode, 'Keys:', keys, 'Match:', match);
-            chrome.storage.sync.get(keys, (result) => {
-                const history = result[getModeKey('matchHistory')] || [];
-                history.push(match);
 
-                // Increment counters
-                let gamesJoined = result[getModeKey('gamesJoined')] || 0;
-                let gamesStarted = result[getModeKey('gamesStarted')] || 0;
-                let gamesQuit = result[getModeKey('gamesQuit')] || 0;
-                let matchesCompleted = result[getModeKey('matchesCompleted')] || 0;
+            // *** Handle quit matches differently ***
+            if (match.quit) {
+                console.log('[SKMT][CONTENT][SAVE] Match was quit. Only updating gamesQuit stat for mode:', mode, 'Match:', match);
+                const gamesQuitKey = getModeKey('gamesQuit');
+                
+                // Fetch only the gamesQuit stat for this mode
+                chrome.storage.sync.get([gamesQuitKey], (result) => {
+                    let gamesQuit = result[gamesQuitKey] || 0;
+                    gamesQuit++; // Increment quit count
 
-                if (match.joined) gamesJoined++;
-                if (match.started) gamesStarted++;
-                if (match.quit) gamesQuit++;
-                // Only count as completed if not quit and in the correct mode
-                if (mode === 'special' && match.isSpecialMode && !match.quit) matchesCompleted++;
-                if (mode === 'normal' && !match.isSpecialMode && !match.isCustomMode && !match.quit) matchesCompleted++;
-                if (mode === 'custom' && match.isCustomMode && !match.quit) matchesCompleted++;
+                    // Save ONLY the incremented gamesQuit stat
+                    const setObj = {};
+                    setObj[gamesQuitKey] = gamesQuit;
 
-                const setObj = {};
-                setObj[getModeKey('matchHistory')] = history;
-                setObj[getModeKey('gamesJoined')] = gamesJoined;
-                setObj[getModeKey('gamesStarted')] = gamesStarted;
-                setObj[getModeKey('gamesQuit')] = gamesQuit;
-                setObj[getModeKey('matchesCompleted')] = matchesCompleted;
-                console.log('[SKMT][SAVE] Setting in chrome.storage.sync:', setObj);
-                chrome.storage.sync.set(setObj);
-            });
+                    console.log('[SKMT][CONTENT][SAVE] Setting updated gamesQuit in chrome.storage.sync:', setObj);
+                    chrome.storage.sync.set(setObj, () => {
+                        // Forward the match complete message to the runtime after saving
+                        chrome.runtime.sendMessage(event.data);
+                    });
+                });
+                
+            } else { // *** Logic for Completed Matches (match.quit === false) ***
+                console.log('[SKMT][CONTENT][SAVE] Saving completed match for SKID:', skid, 'Mode:', mode, 'isSpecialMode:', match.isSpecialMode, 'isCustomMode:', match.isCustomMode, 'Match:', match);
+
+                // Calculate timeSpent from matchStartTime and matchEndTime if available
+                if (match.matchStartTime && match.matchEndTime) {
+                    match.playerStats = match.playerStats || {}; // Ensure playerStats exists
+                    match.playerStats.timeSpent = match.matchEndTime - match.matchStartTime;
+                } else {
+                     match.playerStats = match.playerStats || {}; // Ensure playerStats exists
+                     match.playerStats.timeSpent = 0;
+                }
+
+                // Keys to fetch for completed matches
+                const keys = [
+                    getModeKey('matchHistory'),
+                    getModeKey('gamesJoined'),
+                    getModeKey('gamesStarted'),
+                    getModeKey('gamesQuit'), // Need to fetch this even for completed to avoid overwriting
+                    getModeKey('matchesCompleted')
+                ];
+                
+                chrome.storage.sync.get(keys, (result) => {
+                    const history = result[getModeKey('matchHistory')] || [];
+                    history.push(match); // Add match to history only for completed games
+
+                    // Get current cumulative counts
+                    let gamesJoined = result[getModeKey('gamesJoined')] || 0;
+                    let gamesStarted = result[getModeKey('gamesStarted')] || 0;
+                    let gamesQuit = result[getModeKey('gamesQuit')] || 0;
+                    let matchesCompleted = result[getModeKey('matchesCompleted')] || 0;
+
+                    // Increment counters for completed matches
+                    if (match.joined) gamesJoined++;
+                    if (match.started) gamesStarted++;
+                    // gamesQuit is NOT incremented here
+                    if (!match.quit) matchesCompleted++; // Count as completed if not quit
+
+                    // Save updated data back to storage
+                    const setObj = {};
+                    setObj[getModeKey('matchHistory')] = history;
+                    setObj[getModeKey('gamesJoined')] = gamesJoined;
+                    setObj[getModeKey('gamesStarted')] = gamesStarted;
+                    setObj[getModeKey('gamesQuit')] = gamesQuit; // Save the fetched value
+                    setObj[getModeKey('matchesCompleted')] = matchesCompleted;
+
+                    console.log('[SKMT][CONTENT][SAVE] Setting completed match data and updated stats in chrome.storage.sync:', setObj);
+                    chrome.storage.sync.set(setObj, () => {
+                         // Forward the match complete message to the runtime after saving
+                         chrome.runtime.sendMessage(event.data);
+                    });
+                });
+            }
         });
     }
+    // Note: Other message types from injected.js that don't start with SKMT_ will be ignored by this listener.
+    // If other message types need forwarding or processing, they should be added here.
 });
 
-// Listen for SKID updates from injected.js and save to chrome.storage.sync
-window.addEventListener('message', function(event) {
-    if (event.source !== window) return; // Only accept messages from same window
-    if (event.data && event.data.type === 'SKMT_SKID_UPDATED' && event.data.skid) {
-        if (window.chrome && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.set({ currentSkid: event.data.skid });
-            console.log('[SKMT] SKID saved to chrome.storage.sync:', event.data.skid);
-        }
-    }
-}); 
+// Any other existing initialization logic in content.js (like WebSocket monitoring, MutationObserver, injected script injection) should remain.
+// Ensure there are no other conflicting listeners or direct storage writes for match data/SKID in content.js.

@@ -60,7 +60,7 @@ h1 {
     font-size: 14px;
     color: var(--secondary-color);
     margin-top: 4px;
-    margin-bottom: 0;
+    margin-bottom: 12px;
     font-family: var(--font-family);
     opacity: 0.85;
     word-break: break-all;
@@ -77,17 +77,66 @@ h1 {
 
 .primary-stats-list {
     margin-top: 0;
-}
-
-.primary-stats-list .stat-card {
-    margin-bottom: 12px;
-}
-
-.secondary-stats-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
     margin-bottom: var(--spacing);
+}
+
+.primary-stats-list .stat-card {
+    /* Removed margin-bottom: 12px; - using gap on parent instead */
+}
+
+.secondary-stats-list {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: var(--spacing);
+}
+
+.average-stats-list {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: var(--spacing);
+}
+
+#averageStatsSection {
+    margin-bottom: var(--spacing);
+}
+
+.streaks-list {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: var(--spacing);
+}
+
+.streaks-list .stat-card {
+    margin-bottom: 12px;
+}
+
+#streaksSection {
+    margin-bottom: var(--spacing);
+}
+
+#quickKillsSection {
+    margin-bottom: var(--spacing);
+}
+
+.quick-kills-list {
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: var(--spacing);
+}
+
+.quick-kills-list .stat-card {
+    margin-bottom: 12px;
 }
 
 .stat-card {
@@ -113,6 +162,10 @@ h1 {
     font-size: 22px;
     font-weight: 700;
     letter-spacing: 1px;
+}
+
+#avgTimeSpent {
+    white-space: nowrap; /* Prevent wrapping of the time value */
 }
 
 .match-history {
@@ -177,8 +230,9 @@ select {
 }
 
 .match-card .match-stats {
-    display: flex;
-    gap: 18px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 18px; /* row-gap column-gap */
     font-size: 16px;
     font-weight: 700;
 }
@@ -217,21 +271,42 @@ select {
 }
 
 .reset-btn {
-    margin: 16px 0 0 0;
-    padding: 10px 20px;
-    background: #e74c3c;
-    color: #fff;
+    background-color: #ff4444;
+    color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-family: var(--font-family);
-    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.10);
-    transition: background 0.2s;
+    margin: 10px 0;
+    font-weight: bold;
+    width: 100%;
+    font-family: var(--font-family);
 }
-.reset-btn:hover {
-    background: #c0392b;
+
+.stats-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.action-btn {
+    background-color: #2196F3; /* Blue background */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.3s;
+    flex: 1;
+    width: 100%;
+    font-family: var(--font-family);
+}
+
+.action-btn:hover {
+    background-color: #1976D2; /* Darker blue on hover */
 }
 
 /* Mode selector styles */
@@ -264,7 +339,7 @@ select {
 
 .logo-title {
     font-family: 'Bangers', 'Luckiest Guy', 'Anton', Impact, Arial, sans-serif;
-    font-size: 48px;
+    font-size: 39px;
     font-style: italic;
     font-weight: bold;
     letter-spacing: 1px;
@@ -305,7 +380,7 @@ select {
     -webkit-text-stroke: 1.2px #111;
     text-stroke: 1.2px #111;
     font-weight: bold;
-    font-size: 48px;
+    font-size: 39px;
     font-family: 'Bangers', 'Luckiest Guy', 'Anton', Impact, Arial, sans-serif;
     font-style: italic;
     margin-left: 2px;
@@ -327,4 +402,84 @@ select {
 }
 .trash-btn:hover {
     color: #c0392b;
+}
+
+/* Styles for collapsible sections */
+.stats-details {
+    margin-bottom: var(--spacing);
+}
+
+.stats-summary {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    /* Remove default triangle */
+    list-style: none;
+}
+
+.stats-summary::-webkit-details-marker {
+    display: none;
+}
+
+.stats-summary::before {
+    content: '\25BC'; /* Unicode for down arrow */
+    display: inline-block;
+    margin-right: 8px;
+    transition: transform 0.2s ease-in-out;
+}
+
+.stats-details[open] > .stats-summary::before {
+    transform: rotate(180deg); /* Rotate arrow when open */
+}
+
+.stats-summary h2.stats-section-label {
+    /* Adjust margin to align with arrow */
+    margin: 0;
+}
+
+/* Ensure consistent spacing for the content within details */
+.primary-stats-list,
+.secondary-stats-list,
+.average-stats-list,
+.streaks-list,
+.quick-kills-list {
+    margin-top: 8px; /* Add some space below the summary */
+}
+
+.section-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.section-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: var(--border-radius);
+    background: var(--card-background);
+    color: var(--card-text);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.section-btn.selected {
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+}
+
+.section-btn:not(.selected):hover {
+    opacity: 0.9;
+}
+
+.section-content {
+    display: none;
+}
+
+.section-content.active {
+    display: block;
 } 
