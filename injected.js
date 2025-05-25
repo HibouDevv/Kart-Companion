@@ -20,7 +20,9 @@ window.kartStats = {
     _gameEndTimeout: null,
     skid: null,
     killTimestamps: [],
-    deathTimestamps: []
+    deathTimestamps: [],
+    sawJoinedRoom: false,
+    sawStartGame: false
 };
 
 function setSkid(skid) {
@@ -89,6 +91,16 @@ function interceptConsole(method, original) {
                          window.kartStats.isSpecialMode = false; // Reset special mode on explicit exit confirmation
                     }
 
+                    // Set joined/started flags for this match according to the rules
+                    let joined = false, started = false;
+                    if (window.kartStats.sawJoinedRoom && !window.kartStats.sawStartGame) {
+                        joined = true;
+                    } else if (window.kartStats.sawStartGame && !window.kartStats.sawJoinedRoom) {
+                        started = true;
+                    } else if (window.kartStats.sawStartGame && window.kartStats.sawJoinedRoom) {
+                        started = true;
+                    }
+
                     // Capture the match data *before* resetting stats
                     const matchObj = {
                         kills: window.kartStats.kills,
@@ -97,8 +109,8 @@ function interceptConsole(method, original) {
                         matchEndTime: window.kartStats.matchEndTime,
                         isSpecialMode: endedInSpecialMode, // Use captured value
                         isCustomMode: endedInCustomMode, // Use captured value
-                        joined: window.kartStats.joined,
-                        started: window.kartStats.started,
+                        joined: joined,
+                        started: started,
                         quit: window.kartStats.quit,
                         killTimestamps: window.kartStats.killTimestamps, // These are reset in resetStats
                         deathTimestamps: window.kartStats.deathTimestamps // These are reset in resetStats
@@ -108,6 +120,10 @@ function interceptConsole(method, original) {
                         type: 'SKMT_MATCH_COMPLETE',
                         data: matchObj
                     }, '*');
+
+                    // Reset flags after match complete
+                    window.kartStats.sawJoinedRoom = false;
+                    window.kartStats.sawStartGame = false;
 
                     // Now reset other stats
                     resetStats();
@@ -120,23 +136,21 @@ function interceptConsole(method, original) {
 
             // Handle joined_room/start_game only if awaiting start type
             if (window.kartStats.awaitingStartType) {
-                // Removed 'bytebrew: sending custom event: joined_room' as a start trigger
-                // if (msg.includes('bytebrew: sending custom event: joined_room')) {
-                //     // If we are joining a room and it's not already marked as special or custom, assume normal mode
-                //     if (!window.kartStats.isSpecialMode && !window.kartStats.isCustomMode) {
-                //          window.kartStats.isSpecialMode = false; // Explicitly set to false for normal mode
-                //     }
-                //     window.kartStats.kills = 0;
-                //     window.kartStats.deaths = 0;
-                //     window.kartStats.matchActive = true;
-                //     window.kartStats.matchStartTime = Date.now();
-                //     window.kartStats.joined = true;
-                //     window.kartStats.started = false;
-                //     window.kartStats.quit = false;
-                //     window.kartStats.awaitingStartType = false;
-                // } else
-                 if (msg.includes('bytebrew: sending custom event: start_game')) {
-                     // If we are starting a game and it's not already marked as special or custom, assume normal mode
+                if (msg.includes('bytebrew: sending custom event: joined_room')) {
+                    if (!window.kartStats.matchActive) {
+                        window.kartStats.joined = true;
+                        window.kartStats.kills = 0;
+                        window.kartStats.deaths = 0;
+                        window.kartStats.matchActive = true;
+                        window.kartStats.matchStartTime = Date.now();
+                        window.kartStats.started = false;
+                        window.kartStats.quit = false;
+                        window.postMessage({ type: 'SKMT_JOINED_ROOM' }, '*');
+                    }
+                    window.kartStats.sawJoinedRoom = true;
+                    window.kartStats.sawStartGame = false;
+                } else if (msg.includes('bytebrew: sending custom event: start_game')) {
+                    // If we are starting a game and it's not already marked as special or custom, assume normal mode
                     if (!window.kartStats.isSpecialMode && !window.kartStats.isCustomMode) {
                          window.kartStats.isSpecialMode = false; // Explicitly set to false for normal mode
                     }
@@ -148,6 +162,7 @@ function interceptConsole(method, original) {
                     window.kartStats.joined = false; // Assuming 'start_game' means you started, not joined mid-round
                     window.kartStats.quit = false;
                     window.kartStats.awaitingStartType = false;
+                    window.kartStats.sawStartGame = true;
                 }
             }
 
@@ -160,6 +175,7 @@ function interceptConsole(method, original) {
                 if (msg.includes('destroyed_by_human') || msg.includes('destroyed_by_bot')) {
                     window.kartStats.deaths++;
                     window.kartStats.deathTimestamps.push(Date.now());
+                    window.postMessage({ type: 'SKMT_DEATHS_UPDATE', deaths: window.kartStats.deaths }, '*');
                 }
             }
         }

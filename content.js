@@ -306,6 +306,11 @@ window.addEventListener('message', function(event) {
                 });
             }
         });
+    } else if (event.data.type === 'SKMT_DEATHS_UPDATE') {
+        hud.textContent = `Deaths: ${event.data.deaths}`;
+    } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
+        // Reset HUD deaths counter on match complete
+        hud.textContent = 'Deaths: 0';
     }
     // Note: Other message types from injected.js that don't start with SKMT_ will be ignored by this listener.
     // If other message types need forwarding or processing, they should be added here.
@@ -313,3 +318,26 @@ window.addEventListener('message', function(event) {
 
 // Any other existing initialization logic in content.js (like WebSocket monitoring, MutationObserver, injected script injection) should remain.
 // Ensure there are no other conflicting listeners or direct storage writes for match data/SKID in content.js.
+
+// HUD overlay for Deaths
+const hud = document.createElement('div');
+hud.id = 'death-hud-overlay';
+hud.style.position = 'fixed';
+hud.style.top = '100px';
+hud.style.right = '40px';
+hud.style.zIndex = '999999';
+hud.style.fontFamily = 'Arial, sans-serif';
+hud.style.fontSize = '24px';
+hud.style.color = '#fff';
+hud.style.textShadow = '2px 2px 4px #000';
+hud.style.pointerEvents = 'none';
+hud.style.display = 'none';
+hud.textContent = 'Deaths: 0';
+document.body.appendChild(hud);
+
+// Listen for toggle from popup
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'toggle-hud') {
+    hud.style.display = msg.enabled ? 'block' : 'none';
+  }
+});

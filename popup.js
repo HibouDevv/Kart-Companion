@@ -9,6 +9,7 @@ const matchesList = document.getElementById('matches-list');
 const statsBtn = document.getElementById('statsBtn');
 const hudBtn = document.getElementById('hudBtn');
 const statsSection = document.getElementById('statsSection');
+const hudSection = document.getElementById('hudSection');
 
 // Initialize sections
 statsSection.classList.add('active');
@@ -17,13 +18,23 @@ statsSection.classList.add('active');
 statsBtn.addEventListener('click', () => {
     statsBtn.classList.add('selected');
     hudBtn.classList.remove('selected');
-    statsSection.classList.add('active');
+    statsSection.style.display = 'block';
+    hudSection.style.display = 'none';
 });
 
 hudBtn.addEventListener('click', () => {
     hudBtn.classList.add('selected');
     statsBtn.classList.remove('selected');
-    statsSection.classList.remove('active');
+    statsSection.style.display = 'none';
+    hudSection.style.display = 'block';
+});
+
+const toggleDeathsHud = document.getElementById('toggleDeathsHud');
+toggleDeathsHud.addEventListener('change', function() {
+    const enabled = this.checked;
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-hud', enabled});
+    });
 });
 
 // Helper to format date/time
