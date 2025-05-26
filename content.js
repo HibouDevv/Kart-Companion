@@ -21,31 +21,30 @@ function initializeWebSocketMonitoring() {
     window.WebSocket = function(url, protocols) {
         const ws = new originalWebSocket(url, protocols);
         
-        console.log('[SKMT] WebSocket connection established:', url);
+        console.log('[SKMT] WebSocket connected');
         
         ws.addEventListener('open', function() {
-            console.log('[SKMT] WebSocket connection opened');
+            console.log('[SKMT] WebSocket ready');
         });
         
         ws.addEventListener('message', function(event) {
             try {
                 const data = JSON.parse(event.data);
-                console.log('[SKMT] Received WebSocket message:', data);
                 processGameData(data);
             } catch (error) {
                 // Only log if it's not a binary message
                 if (typeof event.data === 'string') {
-                    console.error('[SKMT] Error processing WebSocket message:', error);
+                    console.error('[SKMT] WebSocket error:', error.message);
                 }
             }
         });
 
         ws.addEventListener('error', function(error) {
-            console.error('[SKMT] WebSocket error:', error);
+            console.error('[SKMT] WebSocket error:', error.message);
         });
 
         ws.addEventListener('close', function() {
-            console.log('[SKMT] WebSocket connection closed');
+            console.log('[SKMT] WebSocket closed');
         });
 
         return ws;
@@ -55,7 +54,6 @@ function initializeWebSocketMonitoring() {
 // Process game data from WebSocket messages
 function processGameData(data) {
     if (!data) return;
-    console.log('[SKMT] Processing game data:', data);
 
     // Handle different types of game events
     if (data.type) {
@@ -92,6 +90,7 @@ function processGameData(data) {
 
 // Event handlers
 function handleGameStart(data) {
+    console.log('[SKMT] Game starting');
     currentMatchLogs = [];
     currentMatch = {
         startTime: Date.now(),
@@ -118,6 +117,7 @@ function handleGameStart(data) {
 }
 
 function handleGameEnd(data) {
+    console.log('[SKMT] Game ending');
     currentMatch.endTime = Date.now();
     currentMatch.playerStats.timeSpent = currentMatch.endTime - currentMatch.playerStats.timeJoined;
     
@@ -231,10 +231,8 @@ window.addEventListener('message', function(event) {
     // Only accept messages from the same frame and from our injected script
     if (event.source !== window) return;
     if (!event.data || !event.data.type || !event.data.type.startsWith('SKMT_')) {
-        return; // Only process messages specifically from our script
+        return;
     }
-
-    console.log('[SKMT][CONTENT] Received message from injected script:', event.data.type, event.data);
 
     // Handle different message types
     if (event.data.type === 'SKMT_SKID_UPDATED') {
@@ -242,103 +240,83 @@ window.addEventListener('message', function(event) {
         if (skid && typeof skid === 'string' && skid.length > 5) {
             if (window.chrome && chrome.storage && chrome.storage.sync) {
                 chrome.storage.sync.set({ currentSkid: skid }, () => {
-                    console.log('[SKMT][CONTENT] SKID saved to chrome.storage.sync:', skid);
-                    // Always forward SKID updates to the runtime
+                    console.log('[SKMT] SKID saved:', skid);
                     chrome.runtime.sendMessage(event.data);
                 });
             }
         }
     } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
         const match = event.data.data;
-
+        console.log('[SKMT] Saving match data:', { kills: match.kills, deaths: match.deaths });
+        
         // Determine the mode key based on the match data
-        // Fetch current SKID from storage first, as it's needed for the mode key
         chrome.storage.sync.get(['currentSkid'], (skidData) => {
-            const skid = skidData.currentSkid || 'default'; // Use currentSKID from storage
+            const skid = skidData.currentSkid || 'default';
             let mode = 'normal';
             if (match.isCustomMode) mode = 'custom';
             else if (match.isSpecialMode) mode = 'special';
             const getModeKey = (base) => `${base}_${skid}_${mode}`;
 
-            // *** Handle quit matches differently ***
+            // Handle quit matches
             if (match.quit) {
-                console.log('[SKMT][CONTENT][SAVE] Match was quit. Only updating gamesQuit stat for mode:', mode, 'Match:', match);
                 const gamesQuitKey = getModeKey('gamesQuit');
-                
-                // Fetch only the gamesQuit stat for this mode
                 chrome.storage.sync.get([gamesQuitKey], (result) => {
                     let gamesQuit = result[gamesQuitKey] || 0;
-                    gamesQuit++; // Increment quit count
-
-                    // Save ONLY the incremented gamesQuit stat
+                    gamesQuit++;
                     const setObj = {};
                     setObj[gamesQuitKey] = gamesQuit;
-
-                    console.log('[SKMT][CONTENT][SAVE] Setting updated gamesQuit in chrome.storage.sync:', setObj);
                     chrome.storage.sync.set(setObj, () => {
-                        // Forward the match complete message to the runtime after saving
+                        console.log('[SKMT] Match quit saved');
                         chrome.runtime.sendMessage(event.data);
                     });
                 });
-                
-            } else { // *** Logic for Completed Matches (match.quit === false) ***
-                console.log('[SKMT][CONTENT][SAVE] Saving completed match for SKID:', skid, 'Mode:', mode, 'isSpecialMode:', match.isSpecialMode, 'isCustomMode:', match.isCustomMode, 'Match:', match);
-
-                // Calculate timeSpent from matchStartTime and matchEndTime if available
-                if (match.matchStartTime && match.matchEndTime) {
-                    match.playerStats = match.playerStats || {}; // Ensure playerStats exists
-                    match.playerStats.timeSpent = match.matchEndTime - match.matchStartTime;
-                } else {
-                     match.playerStats = match.playerStats || {}; // Ensure playerStats exists
-                     match.playerStats.timeSpent = 0;
-                }
-
-                // Keys to fetch for completed matches
+            } else {
+                // Handle completed matches
                 const keys = [
                     getModeKey('matchHistory'),
                     getModeKey('gamesJoined'),
                     getModeKey('gamesStarted'),
-                    getModeKey('gamesQuit'), // Need to fetch this even for completed to avoid overwriting
+                    getModeKey('gamesQuit'),
                     getModeKey('matchesCompleted')
                 ];
                 
                 chrome.storage.sync.get(keys, (result) => {
                     const history = result[getModeKey('matchHistory')] || [];
-                    history.push(match); // Add match to history only for completed games
+                    history.push(match);
 
-                    // Get current cumulative counts
                     let gamesJoined = result[getModeKey('gamesJoined')] || 0;
                     let gamesStarted = result[getModeKey('gamesStarted')] || 0;
                     let gamesQuit = result[getModeKey('gamesQuit')] || 0;
                     let matchesCompleted = result[getModeKey('matchesCompleted')] || 0;
 
-                    // Increment counters for completed matches
                     if (match.joined) gamesJoined++;
                     if (match.started) gamesStarted++;
-                    // gamesQuit is NOT incremented here
-                    if (!match.quit) matchesCompleted++; // Count as completed if not quit
+                    if (!match.quit) matchesCompleted++;
 
-                    // Save updated data back to storage
                     const setObj = {};
                     setObj[getModeKey('matchHistory')] = history;
                     setObj[getModeKey('gamesJoined')] = gamesJoined;
                     setObj[getModeKey('gamesStarted')] = gamesStarted;
-                    setObj[getModeKey('gamesQuit')] = gamesQuit; // Save the fetched value
+                    setObj[getModeKey('gamesQuit')] = gamesQuit;
                     setObj[getModeKey('matchesCompleted')] = matchesCompleted;
 
-                    console.log('[SKMT][CONTENT][SAVE] Setting completed match data and updated stats in chrome.storage.sync:', setObj);
                     chrome.storage.sync.set(setObj, () => {
-                         // Forward the match complete message to the runtime after saving
-                         chrome.runtime.sendMessage(event.data);
+                        console.log('[SKMT] Match data saved');
+                        chrome.runtime.sendMessage(event.data);
                     });
                 });
             }
         });
     } else if (event.data.type === 'SKMT_DEATHS_UPDATE') {
         hud.textContent = `Deaths: ${event.data.deaths}`;
+        console.log('[SKMT] HUD: Deaths display updated to', event.data.deaths);
+    } else if (event.data.type === 'SKMT_KILLSTREAK_UPDATE') {
+        killStreakHud.textContent = `Kill Streak: ${event.data.killStreak}`;
+        console.log('[SKMT] HUD: Kill streak display updated to', event.data.killStreak);
     } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
-        // Reset HUD deaths counter on match complete
         hud.textContent = 'Deaths: 0';
+        killStreakHud.textContent = 'Kill Streak: 0';
+        console.log('[SKMT] HUD: Reset to initial state');
     }
     // Note: Other message types from injected.js that don't start with SKMT_ will be ignored by this listener.
     // If other message types need forwarding or processing, they should be added here.

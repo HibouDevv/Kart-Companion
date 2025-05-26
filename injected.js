@@ -36,7 +36,8 @@ window.kartStats = {
     sawJoinedRoom: false,
     sawStartGame: false,
     killStreak: 0,
-    joinedFirst: null
+    joinedFirst: null,
+    players: []
 };
 
 let collectingPlayerLogs = false;
@@ -45,7 +46,7 @@ let currentPlayerLogLines = [];
 function setSkid(skid) {
     if (skid && typeof skid === 'string' && skid.length > 5) {
         window.kartStats.skid = skid;
-        originalLog('[SKMT] SKID detected and set:', skid);
+        originalLog('[SKMT] SKID set:', skid);
         window.postMessage({ type: 'SKMT_SKID_UPDATED', skid }, '*');
     }
 }
@@ -67,18 +68,14 @@ function interceptConsole(method, original) {
                     setSkid(match[1].trim());
                 }
             }
-            // Detect SKID from GameDataService log (fallback)
-            if (msg.includes('gamedataservice::getgamedatafromserverfirstload')) {
-                const parts = args[0].trim().split(' ');
-                const skid = parts[parts.length - 1];
-                setSkid(skid.trim());
-            }
 
             // Handle special mode
             if (msg.includes('bytebrew: sending custom event: play_special_mode') ||
                 msg.includes('bytebrew: sending custom event: play_special_mode_rules') ||
                 msg.includes('bytebrew: sending custom event: play_special_mode_arena')) {
                 window.kartStats.isSpecialMode = true;
+                window.kartStats.isCustomMode = false;
+                originalLog('[SKMT] Mode: Special mode detected');
             }
 
             // Custom mode: ON for any custom event
@@ -92,95 +89,75 @@ function interceptConsole(method, original) {
             ) {
                 window.kartStats.isCustomMode = true;
                 window.kartStats.isSpecialMode = false;
+                originalLog('[SKMT] Mode: Custom mode detected');
             }
 
-            // Handle game end
-            if (msg.includes('bytebrew: sending custom event: game_end') || msg.includes('bytebrew: sending custom event: confirmexitgame')) {
-                // Always capture match data if we have any stats
-                if (window.kartStats.matchActive || window.kartStats.kills > 0 || window.kartStats.deaths > 0 || window.kartStats.matchStartTime) {
-                    // Reset HUD overlays
-                    window.postMessage({ type: 'SKMT_DEATHS_UPDATE', deaths: 0 }, '*');
-                    window.kartStats.killStreak = 0;
-                    window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: 0 }, '*');
-                    
-                    // Capture current mode flags
-                    const endedInSpecialMode = window.kartStats.isSpecialMode;
-                    const endedInCustomMode = window.kartStats.isCustomMode;
-
+            // Handle game state changes
+            if (msg.includes('bytebrew: sending custom event: joined_room')) {
+                window.kartStats.joined = true;
+                window.kartStats.matchActive = false;
+                window.kartStats.matchStartTime = null;
+                window.kartStats.matchEndTime = null;
+                originalLog('[SKMT] Game joined');
+                window.postMessage({ type: 'SKMT_STATUS_UPDATE', status: 'joined' }, '*');
+            }
+            if (msg.includes('bytebrew: sending custom event: start_game')) {
+                window.kartStats.started = true;
+                window.kartStats.matchActive = true;
+                window.kartStats.matchStartTime = Date.now();
+                originalLog('[SKMT] Game started');
+                window.postMessage({ type: 'SKMT_STATUS_UPDATE', status: 'started' }, '*');
+            }
+            if (msg.includes('bytebrew: sending custom event: game_end') || 
+                msg.includes('bytebrew: sending custom event: confirmexitgame')) {
+                if (window.kartStats.matchActive) {
                     window.kartStats.matchEndTime = Date.now();
+                    window.kartStats.matchActive = false;
+                    
+                    // Only reset modes when explicitly quitting
                     if (msg.includes('confirmexitgame')) {
                         window.kartStats.quit = true;
                         window.kartStats.isSpecialMode = false;
+                        window.kartStats.isCustomMode = false;
+                        originalLog('[SKMT] Mode: Reset to normal');
                     }
-
-                    // Set joined/started flags
-                    let joined = false, started = false;
-                    if (window.kartStats.joinedFirst) {
-                        joined = true;
-                    } else {
-                        started = true;
-                    }
-
+                    
                     // Capture match data
                     const matchObj = {
                         kills: window.kartStats.kills,
                         deaths: window.kartStats.deaths,
                         matchStartTime: window.kartStats.matchStartTime,
                         matchEndTime: window.kartStats.matchEndTime,
-                        isSpecialMode: endedInSpecialMode,
-                        isCustomMode: endedInCustomMode,
-                        joined: joined,
-                        started: started,
+                        isSpecialMode: window.kartStats.isSpecialMode,
+                        isCustomMode: window.kartStats.isCustomMode,
+                        joined: window.kartStats.joined,
+                        started: window.kartStats.started,
                         quit: window.kartStats.quit,
                         killTimestamps: [...window.kartStats.killTimestamps],
                         deathTimestamps: [...window.kartStats.deathTimestamps],
-                        logs: [...currentPlayerLogLines]
+                        players: window.kartStats.players || []
                     };
+                    
+                    // Log comprehensive stats
+                    originalLog('[SKMT] Match stats:', {
+                        kills: matchObj.kills,
+                        deaths: matchObj.deaths,
+                        killStreak: window.kartStats.killStreak,
+                        mode: matchObj.isCustomMode ? 'custom' : (matchObj.isSpecialMode ? 'special' : 'normal'),
+                        joined: matchObj.joined,
+                        started: matchObj.started,
+                        quit: matchObj.quit,
+                        duration: matchObj.matchEndTime - matchObj.matchStartTime,
+                        players: matchObj.players
+                    });
                     
                     window.postMessage({
                         type: 'SKMT_MATCH_COMPLETE',
                         data: matchObj
                     }, '*');
-                }
-
-                // Reset all stats and flags
-                resetStats();
-            }
-
-            // Handle joined_room/start_game
-            if (window.kartStats.awaitingStartType) {
-                if (msg.includes('bytebrew: sending custom event: joined_room')) {
-                    if (!window.kartStats.matchActive) {
-                        window.kartStats.joined = true;
-                        window.kartStats.kills = 0;
-                        window.kartStats.deaths = 0;
-                        window.kartStats.matchActive = true;
-                        window.kartStats.matchStartTime = Date.now();
-                        window.kartStats.started = false;
-                        window.kartStats.quit = false;
-                        window.postMessage({ type: 'SKMT_JOINED_ROOM' }, '*');
-                    }
-                    window.kartStats.sawJoinedRoom = true;
-                    window.kartStats.sawStartGame = false;
-                    if (window.kartStats.joinedFirst === null) {
-                        window.kartStats.joinedFirst = true;
-                    }
-                } else if (msg.includes('bytebrew: sending custom event: start_game')) {
-                    if (!window.kartStats.isSpecialMode && !window.kartStats.isCustomMode) {
-                        window.kartStats.isSpecialMode = false;
-                    }
-                    window.kartStats.kills = 0;
-                    window.kartStats.deaths = 0;
-                    window.kartStats.matchActive = true;
-                    window.kartStats.matchStartTime = Date.now();
-                    window.kartStats.started = true;
-                    window.kartStats.joined = false;
-                    window.kartStats.quit = false;
-                    window.kartStats.awaitingStartType = false;
-                    window.kartStats.sawStartGame = true;
-                    if (window.kartStats.joinedFirst === null) {
-                        window.kartStats.joinedFirst = false;
-                    }
+                    
+                    // Reset stats after sending match data
+                    resetStats();
                 }
             }
 
@@ -190,31 +167,33 @@ function interceptConsole(method, original) {
                     window.kartStats.kills++;
                     window.kartStats.killTimestamps.push(Date.now());
                     window.kartStats.killStreak++;
+                    originalLog('[SKMT] HUD: Kill streak updated to', window.kartStats.killStreak);
                     window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: window.kartStats.killStreak }, '*');
                 }
                 if (msg.includes('destroyed_by_human') || msg.includes('destroyed_by_bot')) {
                     window.kartStats.deaths++;
                     window.kartStats.deathTimestamps.push(Date.now());
                     window.kartStats.killStreak = 0;
+                    originalLog('[SKMT] HUD: Deaths updated to', window.kartStats.deaths);
                     window.postMessage({ type: 'SKMT_DEATHS_UPDATE', deaths: window.kartStats.deaths }, '*');
                     window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: 0 }, '*');
                 }
             }
 
-            // Handle player log collection
-            if (msg.includes('bytebrew: sending custom event: joined_room') || msg.includes('bytebrew: sending custom event: start_game')) {
-                collectingPlayerLogs = true;
-                currentPlayerLogLines = [];
-            }
-            if (msg.includes('bytebrew: sending custom event: game_end') || msg.includes('bytebrew: sending custom event: confirmexitgame')) {
-                collectingPlayerLogs = false;
-            }
-            if (
-                collectingPlayerLogs &&
-                (args[0].includes('Vehicle Setup: VehicleCharacter - setting new head position -') ||
-                 args[0].includes('Vehicle Setup: VehicleCharacter - setting original head position -'))
-            ) {
-                currentPlayerLogLines.push(args[0]);
+            // Track players
+            if (msg.includes('Vehicle Setup: VehicleCharacter - setting new head position -') ||
+                msg.includes('Vehicle Setup: VehicleCharacter - setting original head position -')) {
+                const playerMatch = args[0].match(/Vehicle Setup: VehicleCharacter - setting (?:new|original) head position - ([^\n]+)/);
+                if (playerMatch && playerMatch[1]) {
+                    const playerName = playerMatch[1].trim();
+                    if (!window.kartStats.players) {
+                        window.kartStats.players = [];
+                    }
+                    if (!window.kartStats.players.includes(playerName)) {
+                        window.kartStats.players.push(playerName);
+                        originalLog('[SKMT] Player detected:', playerName);
+                    }
+                }
             }
 
             isIntercepting = false;
@@ -246,6 +225,7 @@ function resetStats() {
     window.kartStats.sawJoinedRoom = false;
     window.kartStats.sawStartGame = false;
     window.kartStats.awaitingStartType = true;
+    window.kartStats.players = [];
     if (window.kartStats._gameEndTimeout) clearTimeout(window.kartStats._gameEndTimeout);
     window.kartStats._gameEndTimeout = null;
     // Do not reset isSpecialMode or isCustomMode here
