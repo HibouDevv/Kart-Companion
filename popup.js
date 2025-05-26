@@ -180,7 +180,7 @@ function displayStats(data, mode) {
             modeHistory.forEach(m => {
                 modeKills += m.kills || 0;
                 modeDeaths += m.deaths || 0;
-                modeTimeSpent += m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+                modeTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
             });
 
             // Calculate streaks for this mode
@@ -315,7 +315,7 @@ function displayStats(data, mode) {
         history.forEach(m => {
             totalKills += m.kills || 0;
             totalDeaths += m.deaths || 0;
-            totalTimeSpent += m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+            totalTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
         });
 
         // Access secondary stats using getModeKey for individual modes
@@ -524,7 +524,7 @@ function displayStats(data, mode) {
             stats.innerHTML += `<span>Deaths:</span><b>${m.deaths}</b>`;
             stats.innerHTML += `<span>KDR:</span><b>${formatKDR(m.kills, m.deaths)}</b>`;
             // Add match duration
-            const duration = m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+            const duration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
             const hours = Math.floor(duration / 3600000);
             const minutes = Math.floor((duration % 3600000) / 60000);
             const seconds = Math.floor((duration % 60000) / 1000);
@@ -598,7 +598,7 @@ function displayStats(data, mode) {
             stats.innerHTML += `<span>Deaths:</span><b>${m.deaths}</b>`;
             stats.innerHTML += `<span>KDR:</span><b>${formatKDR(m.kills, m.deaths)}</b>`;
             // Add match duration
-            const duration = m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+            const duration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
             const hours = Math.floor(duration / 3600000);
             const minutes = Math.floor((duration % 3600000) / 60000);
             const seconds = Math.floor((duration % 60000) / 1000);
@@ -1267,21 +1267,14 @@ function openMatchInfo(match) {
     if (match.isSpecialMode) indicators.push('Special Mode');
     if (match.isCustomMode) indicators.push('Custom Match');
     if (match.mode) indicators.push(`${match.mode.charAt(0).toUpperCase() + match.mode.slice(1)} Mode`);
-    const duration = match.playerStats?.timeSpent || (match.endTime && match.startTime ? match.endTime - match.startTime : 0);
 
-    // Detect players in room
+    // Calculate duration from match start and end times
+    const duration = match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
+
+    // Get players from match data
     let detectedPlayers = [];
-    if (Array.isArray(match.playerNames)) {
-        detectedPlayers = [...new Set(match.playerNames)];
-    } else if (Array.isArray(match.logs)) {
-        // Parse logs for player names
-        const playerSet = new Set();
-        const regex = /setting (?:new|original) head position - ([^\n]+)/;
-        match.logs.forEach(line => {
-            const m = regex.exec(line);
-            if (m && m[1]) playerSet.add(m[1].trim());
-        });
-        detectedPlayers = Array.from(playerSet);
+    if (Array.isArray(match.players)) {
+        detectedPlayers = [...new Set(match.players)];
     }
 
     // Streaks (without dying) calculation for this match
@@ -1349,8 +1342,8 @@ function openMatchInfo(match) {
     }
     body.innerHTML = `
         <div class="match-info-title">Match Information</div>
-        <div class="match-info-section"><span class="match-info-label">Start:</span><span class="match-info-value">${formatDateTime(match.matchStartTime || match.startTime)}</span></div>
-        <div class="match-info-section"><span class="match-info-label">End:</span><span class="match-info-value">${formatDateTime(match.matchEndTime || match.endTime)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">Start:</span><span class="match-info-value">${formatDateTime(match.matchStartTime)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">End:</span><span class="match-info-value">${formatDateTime(match.matchEndTime)}</span></div>
         <div class="match-info-section"><span class="match-info-label">Kills:</span><span class="match-info-value">${match.kills}</span></div>
         <div class="match-info-section"><span class="match-info-label">Deaths:</span><span class="match-info-value">${match.deaths}</span></div>
         <div class="match-info-section"><span class="match-info-label">KDR:</span><span class="match-info-value">${formatKDR(match.kills, match.deaths)}</span></div>

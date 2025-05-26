@@ -43,6 +43,13 @@ window.kartStats = {
 let collectingPlayerLogs = false;
 let currentPlayerLogLines = [];
 
+// Track players in current match
+let currentMatchPlayers = new Set();
+
+// Real-time player detection state
+let collectingPlayers = false;
+let detectedPlayersSet = new Set();
+
 function setSkid(skid) {
     if (skid && typeof skid === 'string' && skid.length > 5) {
         window.kartStats.skid = skid;
@@ -92,22 +99,68 @@ function interceptConsole(method, original) {
                 originalLog('[SKMT] Mode: Custom mode detected');
             }
 
-            // Handle game state changes
-            if (msg.includes('bytebrew: sending custom event: joined_room')) {
-                window.kartStats.joined = true;
-                window.kartStats.matchActive = false;
-                window.kartStats.matchStartTime = null;
-                window.kartStats.matchEndTime = null;
-                originalLog('[SKMT] Game joined');
-                window.postMessage({ type: 'SKMT_STATUS_UPDATE', status: 'joined' }, '*');
+            // Track players
+            if (msg.includes('Vehicle Setup: VehicleCharacter - setting new head position -') ||
+                msg.includes('Vehicle Setup: VehicleCharacter - setting original head position -')) {
+                const playerMatch = args[0].match(/Vehicle Setup: VehicleCharacter - setting (?:new|original) head position - ([^\n]+)/);
+                if (playerMatch && playerMatch[1]) {
+                    const playerName = playerMatch[1].trim();
+                    if (window.kartStats.matchActive) {
+                        currentMatchPlayers.add(playerName);
+                        originalLog('[SKMT] Player detected:', playerName);
+                    }
+                }
             }
+
+            // Handle game start
             if (msg.includes('bytebrew: sending custom event: start_game')) {
-                window.kartStats.started = true;
+                if (!window.kartStats.joined) {
+                    window.kartStats.started = true;
+                }
                 window.kartStats.matchActive = true;
                 window.kartStats.matchStartTime = Date.now();
-                originalLog('[SKMT] Game started');
+                currentMatchPlayers.clear(); // Reset players for new match
+                originalLog('[SKMT] Match started');
                 window.postMessage({ type: 'SKMT_STATUS_UPDATE', status: 'started' }, '*');
             }
+
+            // Handle game join
+            if (msg.includes('bytebrew: sending custom event: joined_room')) {
+                window.kartStats.joined = true;
+                window.kartStats.started = false;
+                window.kartStats.matchActive = true;
+                window.kartStats.matchStartTime = Date.now();
+                currentMatchPlayers.clear(); // Reset players for new match
+                originalLog('[SKMT] Joined match');
+                window.postMessage({ type: 'SKMT_STATUS_UPDATE', status: 'joined' }, '*');
+            }
+
+            // --- PLAYER DETECTION ---
+            // Start collecting on match start/join
+            if (msg.includes('bytebrew: sending custom event: start_game') ||
+                msg.includes('bytebrew: sending custom event: joined_room')) {
+                collectingPlayers = true;
+                detectedPlayersSet.clear();
+                originalLog('[SKMT] Player collection started');
+            }
+            // Stop collecting and store on match end/quit
+            if (msg.includes('bytebrew: sending custom event: game_end') ||
+                msg.includes('bytebrew: sending custom event: confirmexitgame')) {
+                collectingPlayers = false;
+                originalLog('[SKMT] Player collection ended. Final players:', Array.from(detectedPlayersSet));
+            }
+            // Collect player names in real time
+            if (collectingPlayers && (msg.includes('vehicle setup: vehiclecharacter - setting new head position -') ||
+                msg.includes('vehicle setup: vehiclecharacter - setting original head position -'))) {
+                const playerMatch = args[0].match(/Vehicle Setup: VehicleCharacter - setting (?:new|original) head position - ([^\n]+)/);
+                if (playerMatch && playerMatch[1]) {
+                    const playerName = playerMatch[1].trim();
+                    detectedPlayersSet.add(playerName);
+                    originalLog('[SKMT] Player detected (real-time):', playerName);
+                }
+            }
+
+            // Handle game end
             if (msg.includes('bytebrew: sending custom event: game_end') || 
                 msg.includes('bytebrew: sending custom event: confirmexitgame')) {
                 if (window.kartStats.matchActive) {
@@ -122,12 +175,16 @@ function interceptConsole(method, original) {
                         originalLog('[SKMT] Mode: Reset to normal');
                     }
                     
-                    // Capture match data
+                    // Calculate match duration
+                    const matchDuration = window.kartStats.matchEndTime - window.kartStats.matchStartTime;
+                    
+                    // Capture match data with players
                     const matchObj = {
                         kills: window.kartStats.kills,
                         deaths: window.kartStats.deaths,
                         matchStartTime: window.kartStats.matchStartTime,
                         matchEndTime: window.kartStats.matchEndTime,
+                        duration: matchDuration,
                         isSpecialMode: window.kartStats.isSpecialMode,
                         isCustomMode: window.kartStats.isCustomMode,
                         joined: window.kartStats.joined,
@@ -135,7 +192,7 @@ function interceptConsole(method, original) {
                         quit: window.kartStats.quit,
                         killTimestamps: [...window.kartStats.killTimestamps],
                         deathTimestamps: [...window.kartStats.deathTimestamps],
-                        players: window.kartStats.players || []
+                        players: Array.from(detectedPlayersSet) // Use real-time detected players
                     };
                     
                     // Log comprehensive stats
@@ -147,17 +204,20 @@ function interceptConsole(method, original) {
                         joined: matchObj.joined,
                         started: matchObj.started,
                         quit: matchObj.quit,
-                        duration: matchObj.matchEndTime - matchObj.matchStartTime,
-                        players: matchObj.players
+                        duration: matchDuration,
+                        players: Array.from(detectedPlayersSet)
                     });
                     
+                    // Send match data to popup
                     window.postMessage({
                         type: 'SKMT_MATCH_COMPLETE',
                         data: matchObj
                     }, '*');
+                    console.log('[SKMT] Match ended with players:', Array.from(detectedPlayersSet));
                     
                     // Reset stats after sending match data
                     resetStats();
+                    detectedPlayersSet.clear();
                 }
             }
 
@@ -177,22 +237,6 @@ function interceptConsole(method, original) {
                     originalLog('[SKMT] HUD: Deaths updated to', window.kartStats.deaths);
                     window.postMessage({ type: 'SKMT_DEATHS_UPDATE', deaths: window.kartStats.deaths }, '*');
                     window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: 0 }, '*');
-                }
-            }
-
-            // Track players
-            if (msg.includes('Vehicle Setup: VehicleCharacter - setting new head position -') ||
-                msg.includes('Vehicle Setup: VehicleCharacter - setting original head position -')) {
-                const playerMatch = args[0].match(/Vehicle Setup: VehicleCharacter - setting (?:new|original) head position - ([^\n]+)/);
-                if (playerMatch && playerMatch[1]) {
-                    const playerName = playerMatch[1].trim();
-                    if (!window.kartStats.players) {
-                        window.kartStats.players = [];
-                    }
-                    if (!window.kartStats.players.includes(playerName)) {
-                        window.kartStats.players.push(playerName);
-                        originalLog('[SKMT] Player detected:', playerName);
-                    }
                 }
             }
 
