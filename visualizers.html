@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion - Stats Visualizers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <!-- Load Chart.js from multiple CDNs for reliability -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Fallback if primary CDN fails
+        if (typeof Chart === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+            script.onerror = () => {
+                document.body.innerHTML = '<div style="text-align: center; padding: 20px;">Failed to load Chart.js. Please check your internet connection and try again.</div>';
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo-title {
+            color: #333;
+            font-size: 2em;
+        }
+        .logo-title span {
+            color: #FFA500;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .chart-title {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-title">Kart <span>Companion</span> Visualizers</h1>
+        </div>
+        <a href="popup.html" class="back-button">← Back to Stats</a>
+        
+        <div class="charts-grid">
+            <!-- Performance Trends -->
+            <div class="chart-container">
+                <h2 class="chart-title">Performance Trends</h2>
+                <canvas id="performanceChart"></canvas>
+            </div>
+
+            <!-- Kills Distribution -->
+            <div class="chart-container">
+                <h2 class="chart-title">Kills Distribution</h2>
+                <canvas id="killsDistributionChart"></canvas>
+            </div>
+
+            <!-- Match Completion Rate -->
+            <div class="chart-container">
+                <h2 class="chart-title">Match Completion Rate</h2>
+                <canvas id="completionRateChart"></canvas>
+            </div>
+
+            <!-- Streak Analysis -->
+            <div class="chart-container">
+                <h2 class="chart-title">Streak Analysis</h2>
+                <canvas id="streakChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script src="visualizers.js"></script>
+</body>
+</html> 

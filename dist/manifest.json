@@ -1,11 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Smash Karts Match Tracker",
+  "name": "Kart Companion",
   "version": "1.0.0",
-  "description": "Track and analyze your Smash Karts gameplay statistics",
+  "description": "Your ultimate companion for tracking and analyzing Smash Karts gameplay",
   "permissions": [
     "storage",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "*://*.smashkarts.io/*"
@@ -30,8 +31,18 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injected.js"],
-      "matches": ["*://*.smashkarts.io/*"]
+      "resources": [
+        "popup.html",
+        "popup.js",
+        "popup.css",
+        "visualizers.html",
+        "visualizers.js",
+        "match_info.html",
+        "match_info.js",
+        "injected.js",
+        "icons/*"
+      ],
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {

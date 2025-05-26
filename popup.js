@@ -30,10 +30,33 @@ hudBtn.addEventListener('click', () => {
 });
 
 const toggleDeathsHud = document.getElementById('toggleDeathsHud');
+const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
+
 toggleDeathsHud.addEventListener('change', function() {
     const enabled = this.checked;
+    chrome.storage.sync.set({ deathsHudEnabled: enabled });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-hud', enabled});
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-deaths-hud', enabled});
+    });
+});
+
+toggleKillStreakHud.addEventListener('change', function() {
+    const enabled = this.checked;
+    chrome.storage.sync.set({ killStreakHudEnabled: enabled });
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-killstreak-hud', enabled});
+    });
+});
+
+// Restore toggle state on popup load
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled'], (result) => {
+    toggleDeathsHud.checked = result.deathsHudEnabled !== false; // default ON
+    toggleKillStreakHud.checked = result.killStreakHudEnabled !== false; // default ON
+
+    // Send the correct state to the content script
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-deaths-hud', enabled: toggleDeathsHud.checked});
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-killstreak-hud', enabled: toggleKillStreakHud.checked});
     });
 });
 
@@ -532,6 +555,13 @@ function displayStats(data, mode) {
             if (flagText.length > 0) flags.textContent = flagText.join(' | ');
             content.appendChild(flags);
 
+            // Info icon button
+            const infoBtn = document.createElement('button');
+            infoBtn.className = 'info-btn';
+            infoBtn.title = 'View match information';
+            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
+            infoBtn.onclick = () => openMatchInfo(m);
+
             // Trash icon button
             const trashBtn = document.createElement('button');
             trashBtn.className = 'trash-btn';
@@ -540,6 +570,7 @@ function displayStats(data, mode) {
             trashBtn.onclick = () => deleteMatch(allHistory.length - 1 - idx, m.mode);
 
             card.appendChild(content);
+            card.appendChild(infoBtn);
             card.appendChild(trashBtn);
             matchesList.appendChild(card);
         });
@@ -596,6 +627,13 @@ function displayStats(data, mode) {
             if (flagText.length > 0) flags.textContent = flagText.join(' | ');
             content.appendChild(flags);
 
+            // Info icon button
+            const infoBtn = document.createElement('button');
+            infoBtn.className = 'info-btn';
+            infoBtn.title = 'View match information';
+            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
+            infoBtn.onclick = () => openMatchInfo(m);
+
             // Trash icon button
             const trashBtn = document.createElement('button');
             trashBtn.className = 'trash-btn';
@@ -604,6 +642,7 @@ function displayStats(data, mode) {
             trashBtn.onclick = () => deleteMatch(history.length - 1 - idx);
 
             card.appendChild(content);
+            card.appendChild(infoBtn);
             card.appendChild(trashBtn);
             matchesList.appendChild(card);
         });
@@ -711,9 +750,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loadStats();
     });
 
-    updateModeSelector();
-    loadStats(); // Load stats for the default mode on startup
-
     // Add event listeners for section toggles
     document.querySelectorAll('.stats-details').forEach(section => {
         section.addEventListener('toggle', () => {
@@ -721,9 +757,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Add event listeners for export/import buttons
+    document.getElementById('exportStatsBtn').addEventListener('click', exportStats);
+    document.getElementById('importStatsBtn').addEventListener('click', () => {
+        document.getElementById('importStatsInput').click();
+    });
+    document.getElementById('importStatsInput').addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            importStats(e.target.files[0]);
+            e.target.value = ''; // Reset input
+        }
+    });
+
+    // Add event listener for visualize stats button
+    document.getElementById('visualizeStatsBtn').addEventListener('click', () => {
+        console.log('[SKMT] Visualize Stats button clicked');
+        const button = document.getElementById('visualizeStatsBtn');
+        button.disabled = true; // Disable button while processing
+        
+        try {
+            chrome.runtime.sendMessage({ type: 'OPEN_VISUALIZERS' }, (response) => {
+                button.disabled = false; // Re-enable button
+                
+                if (chrome.runtime.lastError) {
+                    console.error('[SKMT] Error opening visualizers:', chrome.runtime.lastError);
+                    alert('Failed to open visualizers: ' + chrome.runtime.lastError.message);
+                    return;
+                }
+                
+                if (!response) {
+                    console.error('[SKMT] No response received from background script');
+                    alert('Failed to open visualizers: No response received');
+                    return;
+                }
+                
+                if (!response.success) {
+                    console.error('[SKMT] Failed to open visualizers:', response.error);
+                    alert('Failed to open visualizers: ' + (response.error || 'Unknown error'));
+                    return;
+                }
+                
+                console.log('[SKMT] Successfully opened visualizers in tab:', response.tabId);
+            });
+        } catch (error) {
+            button.disabled = false; // Re-enable button on error
+            console.error('[SKMT] Error sending message:', error);
+            alert('Failed to open visualizers: ' + error.message);
+        }
+    });
+
+    // Add event listener for reset stats button
+    document.getElementById('resetStatsBtn').addEventListener('click', function() {
+        if (!currentSkid) return;
+
+        // Determine which keys to reset based on currentMode
+        const keysToReset = [];
+        const modes = currentMode === 'all' ? ['normal', 'special', 'custom'] : [currentMode];
+
+        if (confirm(`Are you sure you want to reset all stats and match history for ${currentMode === 'all' ? 'all modes' : 'this mode'} and SKID?`)) {
+            modes.forEach(mode => {
+                keysToReset.push(getModeKey('matchHistory', currentSkid, mode));
+                keysToReset.push(getModeKey('gamesJoined', currentSkid, mode));
+                keysToReset.push(getModeKey('gamesStarted', currentSkid, mode));
+                keysToReset.push(getModeKey('gamesQuit', currentSkid, mode));
+                keysToReset.push(getModeKey('matchesCompleted', currentSkid, mode));
+            });
+
+            const setObj = {};
+            keysToReset.forEach(key => setObj[key] = key.includes('matchHistory') ? [] : 0);
+
+            chrome.storage.sync.set(setObj, () => {
+                console.log('[SKMT][RESET] Stats reset for', modes, 'mode(s).');
+                loadStats(); // Reload stats after reset
+            });
+        }
+    });
+
+    updateModeSelector();
+    loadStats(); // Load stats for the default mode on startup
+
     // Restore section states after loading stats
     restoreSectionStates();
-    loadStats(); // Load stats for the default mode on startup
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -733,32 +847,6 @@ chrome.storage.onChanged.addListener((changes, area) => {
         if (skidRelevant) {
             loadStats(); // Reload stats for the current mode (or all modes)
         }
-    }
-});
-
-document.getElementById('resetStatsBtn').addEventListener('click', function() {
-    if (!currentSkid) return;
-
-    // Determine which keys to reset based on currentMode
-    const keysToReset = [];
-    const modes = currentMode === 'all' ? ['normal', 'special', 'custom'] : [currentMode];
-
-    if (confirm(`Are you sure you want to reset all stats and match history for ${currentMode === 'all' ? 'all modes' : 'this mode'} and SKID?`)) {
-        modes.forEach(mode => {
-            keysToReset.push(getModeKey('matchHistory', currentSkid, mode));
-            keysToReset.push(getModeKey('gamesJoined', currentSkid, mode));
-            keysToReset.push(getModeKey('gamesStarted', currentSkid, mode));
-            keysToReset.push(getModeKey('gamesQuit', currentSkid, mode));
-            keysToReset.push(getModeKey('matchesCompleted', currentSkid, mode));
-        });
-
-        const setObj = {};
-        keysToReset.forEach(key => setObj[key] = key.includes('matchHistory') ? [] : 0);
-
-        chrome.storage.sync.set(setObj, () => {
-            console.log('[SKMT][RESET] Stats reset for', modes, 'mode(s).');
-            loadStats(); // Reload stats after reset
-        });
     }
 });
 
@@ -820,13 +908,111 @@ chrome.runtime.onMessage.addListener(
     }
 );
 
-// Function to generate a secure hash for the stats data
-async function generateStatsHash(data) {
+// Encryption key generation and management
+const ENCRYPTION_VERSION = '1.4';
+let ENCRYPTION_KEY = null;
+
+async function initializeEncryption() {
+    if (!ENCRYPTION_KEY) {
+        ENCRYPTION_KEY = await generateEncryptionKey();
+    }
+    return ENCRYPTION_KEY;
+}
+
+async function generateEncryptionKey() {
+    // Generate a key based on a fixed salt
+    const salt = 'SKMT_SECURE_SALT_v1.4';
+    const keyMaterial = salt;
     const encoder = new TextEncoder();
-    const dataBuffer = encoder.encode(JSON.stringify(data));
-    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    const data = encoder.encode(keyMaterial);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    return await crypto.subtle.importKey(
+        'raw',
+        hashBuffer,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+    );
+}
+
+async function encryptData(data) {
+    try {
+        // Ensure encryption key is initialized
+        await initializeEncryption();
+        
+        // Generate a random IV
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        
+        // Convert data to string and encode
+        const encoder = new TextEncoder();
+        const dataBuffer = encoder.encode(JSON.stringify(data));
+        
+        // Encrypt the data
+        const encryptedBuffer = await crypto.subtle.encrypt(
+            {
+                name: 'AES-GCM',
+                iv: iv
+            },
+            ENCRYPTION_KEY,
+            dataBuffer
+        );
+        
+        // Combine IV and encrypted data
+        const encryptedArray = new Uint8Array(iv.length + encryptedBuffer.byteLength);
+        encryptedArray.set(iv);
+        encryptedArray.set(new Uint8Array(encryptedBuffer), iv.length);
+        
+        // Convert to base64 and add a custom header
+        const base64Data = btoa(String.fromCharCode.apply(null, encryptedArray));
+        return `SKMT_ENCRYPTED_v${ENCRYPTION_VERSION}_${base64Data}`;
+    } catch (error) {
+        console.error('Encryption error:', error);
+        throw new Error('Failed to encrypt data');
+    }
+}
+
+async function decryptData(encryptedData) {
+    try {
+        // Ensure encryption key is initialized
+        await initializeEncryption();
+        
+        // Verify and remove header
+        const headerMatch = encryptedData.match(/^SKMT_ENCRYPTED_v(\d+\.\d+)_(.+)$/);
+        if (!headerMatch) {
+            throw new Error('Invalid encrypted data format');
+        }
+        
+        const version = headerMatch[1];
+        if (version !== ENCRYPTION_VERSION) {
+            throw new Error('Incompatible encryption version');
+        }
+        
+        const base64Data = headerMatch[2];
+        
+        // Convert base64 back to array
+        const encryptedArray = new Uint8Array(atob(base64Data).split('').map(c => c.charCodeAt(0)));
+        
+        // Extract IV and encrypted data
+        const iv = encryptedArray.slice(0, 12);
+        const data = encryptedArray.slice(12);
+        
+        // Decrypt
+        const decryptedBuffer = await crypto.subtle.decrypt(
+            {
+                name: 'AES-GCM',
+                iv: iv
+            },
+            ENCRYPTION_KEY,
+            data
+        );
+        
+        // Convert back to string and parse JSON
+        const decoder = new TextDecoder();
+        return JSON.parse(decoder.decode(decryptedBuffer));
+    } catch (error) {
+        console.error('Decryption error:', error);
+        throw new Error('Failed to decrypt data');
+    }
 }
 
 // Function to export stats
@@ -846,6 +1032,11 @@ async function exportStats() {
 
         const data = await new Promise(resolve => {
             chrome.storage.sync.get(keysToFetch, resolve);
+        });
+
+        // Get section states
+        const sectionStates = await new Promise(resolve => {
+            chrome.storage.local.get(['openSections'], resolve);
         });
 
         // Calculate streaks for each mode
@@ -898,7 +1089,7 @@ async function exportStats() {
                             if (quickKillStreak === 6) gooseySmash++;
                             if (quickKillStreak === 7) crazyMultiMegaUltraSmash++;
                         } else {
-                            quickKillStreak = 1; // Reset streak if more than 3 seconds between kills
+                            quickKillStreak = 1;
                         }
                         lastKillTime = currentKillTime;
                     }
@@ -927,24 +1118,26 @@ async function exportStats() {
         // Add streaks data to the export
         data.streaks = streaksData;
 
-        // Generate hash for security
-        const hash = await generateStatsHash(data);
+        // Add UI state data
+        data.uiState = {
+            currentMode: currentMode,
+            openSections: sectionStates.openSections || {},
+            skid: currentSkid
+        };
 
-        // Create export object
+        // Add metadata
         const exportData = {
-            version: '1.2', // Increment version to indicate new quick kills streak data
+            version: ENCRYPTION_VERSION,
             timestamp: Date.now(),
             skid: currentSkid,
-            hash: hash,
             data: data
         };
 
-        // Convert to binary format
-        const encoder = new TextEncoder();
-        const binaryData = encoder.encode(JSON.stringify(exportData));
+        // Encrypt the data
+        const encryptedData = await encryptData(exportData);
         
         // Create blob and download
-        const blob = new Blob([binaryData], { type: 'application/octet-stream' });
+        const blob = new Blob([encryptedData], { type: 'application/octet-stream' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -966,25 +1159,21 @@ async function importStats(file) {
         
         reader.onload = async function(e) {
             try {
-                // Decode binary data
-                const decoder = new TextDecoder();
-                const jsonData = decoder.decode(e.target.result);
-                const importData = JSON.parse(jsonData);
-
-                // Verify version
-                if (!['1.0', '1.1', '1.2'].includes(importData.version)) {
-                    throw new Error('Unsupported stats file version');
-                }
+                // Read the encrypted data
+                const encryptedData = new TextDecoder().decode(e.target.result);
+                
+                // Decrypt the data
+                const importData = await decryptData(encryptedData);
 
                 // Verify SKID match
                 if (importData.skid !== currentSkid) {
                     throw new Error('Stats file SKID does not match current SKID');
                 }
 
-                // Verify hash
-                const calculatedHash = await generateStatsHash(importData.data);
-                if (calculatedHash !== importData.hash) {
-                    throw new Error('Stats file has been tampered with');
+                // Verify timestamp (optional: prevent importing very old files)
+                const maxAge = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
+                if (Date.now() - importData.timestamp > maxAge) {
+                    throw new Error('Stats file is too old');
                 }
 
                 // Confirm import
@@ -996,6 +1185,26 @@ async function importStats(file) {
                 await new Promise(resolve => {
                     chrome.storage.sync.set(importData.data, resolve);
                 });
+
+                // Import UI state if available
+                if (importData.data.uiState) {
+                    const uiState = importData.data.uiState;
+                    
+                    // Set current mode
+                    if (uiState.currentMode) {
+                        currentMode = uiState.currentMode;
+                        document.querySelectorAll('.mode-btn').forEach(btn => {
+                            btn.classList.toggle('active', btn.dataset.mode === currentMode);
+                        });
+                    }
+
+                    // Set section states
+                    if (uiState.openSections) {
+                        await new Promise(resolve => {
+                            chrome.storage.local.set({ openSections: uiState.openSections }, resolve);
+                        });
+                    }
+                }
 
                 // Reload stats
                 loadStats();
@@ -1016,18 +1225,6 @@ async function importStats(file) {
         alert('Failed to import stats. Please try again.');
     }
 }
-
-// Add event listeners for export/import buttons
-document.getElementById('exportStatsBtn').addEventListener('click', exportStats);
-document.getElementById('importStatsBtn').addEventListener('click', () => {
-    document.getElementById('importStatsInput').click();
-});
-document.getElementById('importStatsInput').addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        importStats(e.target.files[0]);
-        e.target.value = ''; // Reset input
-    }
-});
 
 // Add function to save section states
 function saveSectionStates() {
@@ -1056,4 +1253,146 @@ function restoreSectionStates() {
             });
         }
     });
+}
+
+function openMatchInfo(match) {
+    // Populate modal body
+    const modal = document.getElementById('matchInfoModal');
+    const body = document.getElementById('match-info-modal-body');
+    let indicators = [];
+    if (match.joined) indicators.push('Joined');
+    if (match.started) indicators.push('Started');
+    if (match.quit) indicators.push('Quit');
+    else indicators.push('Completed');
+    if (match.isSpecialMode) indicators.push('Special Mode');
+    if (match.isCustomMode) indicators.push('Custom Match');
+    if (match.mode) indicators.push(`${match.mode.charAt(0).toUpperCase() + match.mode.slice(1)} Mode`);
+    const duration = match.playerStats?.timeSpent || (match.endTime && match.startTime ? match.endTime - match.startTime : 0);
+
+    // Detect players in room
+    let detectedPlayers = [];
+    if (Array.isArray(match.playerNames)) {
+        detectedPlayers = [...new Set(match.playerNames)];
+    } else if (Array.isArray(match.logs)) {
+        // Parse logs for player names
+        const playerSet = new Set();
+        const regex = /setting (?:new|original) head position - ([^\n]+)/;
+        match.logs.forEach(line => {
+            const m = regex.exec(line);
+            if (m && m[1]) playerSet.add(m[1].trim());
+        });
+        detectedPlayers = Array.from(playerSet);
+    }
+
+    // Streaks (without dying) calculation for this match
+    const streaksWithoutDying = [
+        { name: 'Smash Streak (3)', value: 0 },
+        { name: 'Smashtacular Streak (5)', value: 0 },
+        { name: 'Smashosaurus Streak (7)', value: 0 },
+        { name: 'Smashlvania Streak (10)', value: 0 },
+        { name: 'Monster Smash Streak (15)', value: 0 },
+        { name: 'Potato Streak (20)', value: 0 },
+        { name: 'Smash Smash Smash Smash Smash Smash Smash Smash Streak (25)', value: 0 },
+        { name: 'Potoatachio Streak (30)', value: 0 }
+    ];
+    // Calculate streaks for this match
+    let currentStreak = 0;
+    let achievedMilestones = {};
+    const timeline = [];
+    if (match.killTimestamps) match.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+    if (match.deathTimestamps) match.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+    timeline.sort((a, b) => a.time - b.time);
+    timeline.forEach(event => {
+        if (event.type === 'death') {
+            currentStreak = 0;
+            achievedMilestones = {};
+        } else if (event.type === 'kill') {
+            currentStreak++;
+            if (currentStreak >= 3 && !achievedMilestones[3]) { streaksWithoutDying[0].value++; achievedMilestones[3] = true; }
+            if (currentStreak >= 5 && !achievedMilestones[5]) { streaksWithoutDying[1].value++; achievedMilestones[5] = true; }
+            if (currentStreak >= 7 && !achievedMilestones[7]) { streaksWithoutDying[2].value++; achievedMilestones[7] = true; }
+            if (currentStreak >= 10 && !achievedMilestones[10]) { streaksWithoutDying[3].value++; achievedMilestones[10] = true; }
+            if (currentStreak >= 15 && !achievedMilestones[15]) { streaksWithoutDying[4].value++; achievedMilestones[15] = true; }
+            if (currentStreak >= 20 && !achievedMilestones[20]) { streaksWithoutDying[5].value++; achievedMilestones[20] = true; }
+            if (currentStreak >= 25 && !achievedMilestones[25]) { streaksWithoutDying[6].value++; achievedMilestones[25] = true; }
+            if (currentStreak >= 30 && !achievedMilestones[30]) { streaksWithoutDying[7].value++; achievedMilestones[30] = true; }
+        }
+    });
+    // Quick kills streaks for this match
+    const quickStreaks = [
+        { name: 'Double Smash (2)', value: 0 },
+        { name: 'Multi Smash (3)', value: 0 },
+        { name: 'Multi Mega Smash (4)', value: 0 },
+        { name: 'Multi Mega Ultra Smash (5)', value: 0 },
+        { name: 'Goosey Smash (6)', value: 0 },
+        { name: 'Crazy Multi Mega Ultra Smash (7)', value: 0 }
+    ];
+    if (match.killTimestamps && match.killTimestamps.length > 0) {
+        let quickKillStreak = 1;
+        let lastKillTime = match.killTimestamps[0];
+        for (let i = 1; i < match.killTimestamps.length; i++) {
+            const currentKillTime = match.killTimestamps[i];
+            const timeDiff = currentKillTime - lastKillTime;
+            if (timeDiff <= 3000) {
+                quickKillStreak++;
+                if (quickKillStreak === 2) quickStreaks[0].value++;
+                if (quickKillStreak === 3) quickStreaks[1].value++;
+                if (quickKillStreak === 4) quickStreaks[2].value++;
+                if (quickKillStreak === 5) quickStreaks[3].value++;
+                if (quickKillStreak === 6) quickStreaks[4].value++;
+                if (quickKillStreak === 7) quickStreaks[5].value++;
+            } else {
+                quickKillStreak = 1;
+            }
+            lastKillTime = currentKillTime;
+        }
+    }
+    body.innerHTML = `
+        <div class="match-info-title">Match Information</div>
+        <div class="match-info-section"><span class="match-info-label">Start:</span><span class="match-info-value">${formatDateTime(match.matchStartTime || match.startTime)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">End:</span><span class="match-info-value">${formatDateTime(match.matchEndTime || match.endTime)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">Kills:</span><span class="match-info-value">${match.kills}</span></div>
+        <div class="match-info-section"><span class="match-info-label">Deaths:</span><span class="match-info-value">${match.deaths}</span></div>
+        <div class="match-info-section"><span class="match-info-label">KDR:</span><span class="match-info-value">${formatKDR(match.kills, match.deaths)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">Duration:</span><span class="match-info-value">${formatTimeSpent(duration)}</span></div>
+        ${streaksWithoutDying.filter(s => s.value > 0).length > 0 ? `
+        <div class="match-info-section">
+            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Without Dying):</span>
+            <table style="width:100%;font-size:16px;margin-bottom:8px;">
+                <tbody>
+                ${streaksWithoutDying.filter(s => s.value > 0).map(s => `<tr><td>${s.name}</td><td style='text-align:right;'>${s.value}</td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>` : ''}
+        ${quickStreaks.filter(s => s.value > 0).length > 0 ? `
+        <div class="match-info-section">
+            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Quick Kills):</span>
+            <table style="width:100%;font-size:16px;margin-bottom:8px;">
+                <tbody>
+                ${quickStreaks.filter(s => s.value > 0).map(s => `<tr><td>${s.name}</td><td style='text-align:right;'>${s.value}</td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>` : ''}
+        <div class="match-info-section">
+            <span class="match-info-label" style="display:block;margin-bottom:6px;">Detected Players In Room:</span>
+            <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
+                ${detectedPlayers.length > 0 ? detectedPlayers.map(p => `<li style='font-size:16px;'>${p}</li>`).join('') : '<li style="color:#aaa;font-size:16px;">No players detected</li>'}
+            </ul>
+        </div>
+        <div class="match-info-indicators">${indicators.join(' | ')}</div>
+    `;
+    modal.style.display = 'flex';
+}
+
+// Modal close handler
+if (document.getElementById('closeMatchInfoModal')) {
+    document.getElementById('closeMatchInfoModal').onclick = function() {
+        document.getElementById('matchInfoModal').style.display = 'none';
+    };
+}
+// Optional: close modal when clicking outside content
+if (document.getElementById('matchInfoModal')) {
+    document.getElementById('matchInfoModal').onclick = function(e) {
+        if (e.target === this) this.style.display = 'none';
+    };
 } 

@@ -1,8 +1,4 @@
-// Import Firebase modules
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-
-// Your web app's Firebase configuration
+// Initialize Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCtkDvbYbosr5ZhTh9g3VO1q7Fe45KvAqg",
   authDomain: "smash-karts-match-tracker.firebaseapp.com",
@@ -13,22 +9,29 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+let db = null;
+try {
+  const app = firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+} catch (error) {
+  console.error('Error initializing Firebase:', error);
+}
 
 // Store match data in Firebase
 async function storeMatchData(matchData) {
+    if (!db) return;
+    
     try {
         // Only store non-special mode matches in the main collection
         if (!matchData.isSpecialMode) {
-        const matchRef = db.collection('matches').doc();
-        await matchRef.set({
-            ...matchData,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
+            const matchRef = db.collection('matches').doc();
+            await matchRef.set({
+                ...matchData,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
 
-        // Update player statistics
-        await updatePlayerStats(matchData.playerStats);
+            // Update player statistics
+            await updatePlayerStats(matchData.playerStats);
         } else {
             // Store special mode matches in a separate collection
             const specialMatchRef = db.collection('special_matches').doc();
@@ -44,6 +47,8 @@ async function storeMatchData(matchData) {
 
 // Update player statistics in Firebase
 async function updatePlayerStats(playerStats) {
+    if (!db) return;
+    
     try {
         const playerRef = db.collection('players').doc(playerStats.skid);
         
@@ -80,6 +85,30 @@ async function updatePlayerStats(playerStats) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'matchComplete') {
         storeMatchData(message.data);
+    } else if (message.type === 'OPEN_VISUALIZERS') {
+        console.log('[SKMT] Opening visualizers page');
+        try {
+            const visualizersUrl = chrome.runtime.getURL('visualizers.html');
+            console.log('[SKMT] Visualizers URL:', visualizersUrl);
+            
+            chrome.tabs.create({ 
+                url: visualizersUrl,
+                active: true
+            }, (tab) => {
+                if (chrome.runtime.lastError) {
+                    console.error('[SKMT] Error creating tab:', chrome.runtime.lastError);
+                    sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                } else {
+                    console.log('[SKMT] Visualizers page opened successfully in tab:', tab.id);
+                    sendResponse({ success: true, tabId: tab.id });
+                }
+            });
+            return true; // Keep the message channel open for the async response
+        } catch (error) {
+            console.error('[SKMT] Error in OPEN_VISUALIZERS handler:', error);
+            sendResponse({ success: false, error: error.message });
+            return false;
+        }
     }
 });
 

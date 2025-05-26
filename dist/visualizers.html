@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion - Stats Visualizers</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&family=Bungee&family=Luckiest+Guy&display=swap" rel="stylesheet">
+    <script src="chart.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #fff;
+            --header-bg: #f5f8fa;
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+        }
+        body {
+            font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--header-bg);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .logo-title {
+            font-family: 'Bungee', 'Luckiest Guy', 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            color: var(--primary-blue);
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #222, 4px 4px 0 #fff, 0 2px 8px #217dbb44;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+        .skid-display {
+            text-align: center;
+            font-size: 1.5em;
+            font-family: 'Bungee', 'Luckiest Guy', 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            color: #222;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .section {
+            background: var(--container-bg);
+            padding: 24px 24px 16px 24px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e3eaf1;
+            margin-bottom: 32px;
+            overflow-x: auto;
+        }
+        .section-title {
+            font-size: 2em;
+            color: var(--primary-blue-dark);
+            margin-bottom: 18px;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            font-family: 'Bungee', 'Luckiest Guy', 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            text-shadow: 1px 1px 0 #fff, 0 2px 8px #217dbb22;
+        }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--primary-blue);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            border: none;
+            transition: background 0.2s;
+        }
+        .back-button:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        .chart-canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 1000px;
+            max-height: 500px;
+            width: 100%;
+            height: 400px;
+        }
+        /* Ensure bar charts have enough width for all labels */
+        #streaksWithoutDyingChart, #streaksQuickKillsChart {
+            min-width: 900px;
+        }
+        /* Larger font for chart legends and labels */
+        .chartjs-render-monitor, .chartjs-size-monitor {
+            font-size: 1.2em !important;
+            font-family: 'Bungee', 'Luckiest Guy', 'Quicksand', 'Segoe UI', Arial, sans-serif !important;
+        }
+        .section label, .section select, .section summary {
+            font-size: 1.25em;
+            font-family: 'Bungee', 'Luckiest Guy', 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+        }
+        .section input[type="checkbox"] {
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        .section select {
+            padding: 4px 8px;
+            border-radius: 5px;
+            border: 1px solid #b0c4de;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-title">Kart Companion Charts</h1>
+        </div>
+        <div class="skid-display" id="skidDisplay">SKID: ...</div>
+
+        <div class="section">
+            <div class="section-title">Stats Per Game</div>
+            <details open>
+                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                <div id="trendCheckboxes">
+                    <label><input type="checkbox" value="kills" checked> Kills</label>
+                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                    <label><input type="checkbox" value="kdr" checked> KDR</label>
+                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                    <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
+                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                </div>
+            </details>
+            <canvas id="customTrendsChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Stats Per Day</div>
+            <details open>
+                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                <div id="trendPerDayCheckboxes">
+                    <label><input type="checkbox" value="kills" checked> Kills</label>
+                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                    <label><input type="checkbox" value="kdr" checked> KDR</label>
+                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                    <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
+                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                    <label><input type="checkbox" value="games"> Games</label>
+                    <label><input type="checkbox" value="totalGames"> Total Games</label>
+                </div>
+                <div style="margin-top:10px;">
+                    <label for="trendPerDayGroupBy">Group by: </label>
+                    <select id="trendPerDayGroupBy">
+                        <option value="day">Day</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </select>
+                </div>
+            </details>
+            <canvas id="customTrendsPerDayChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Streaks (Without Dying)</div>
+            <canvas id="streaksWithoutDyingChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Streaks (Quick Kills)</div>
+            <canvas id="streaksQuickKillsChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Games Joined vs Started</div>
+            <canvas id="gamesJoinedStartedChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Games Completed vs Quit</div>
+            <canvas id="gamesCompletedQuitChart" class="chart-canvas"></canvas>
+        </div>
+    </div>
+    <script src="visualizers.js"></script>
+</body>
+</html> 

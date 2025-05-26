@@ -3,17 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smash Karts Match Tracker</title>
+    <title>Kart Companion</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles/popup.css">
     <style>
         body { font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; }
+        .hud-toggle-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+        .hud-toggle-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            min-width: 120px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            border-radius: 26px;
+            transition: background 0.2s;
+        }
+        .slider:before {
+            position: absolute;
+            content: '';
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        input:checked + .slider {
+            background-color: #4caf50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1 class="logo-title"><span class="logo-smash">SMASH</span> <span class="logo-karts">KARTS</span> <span class="logo-insights">Insights</span></h1>
+            <h1 class="logo-title">Kart <span style="color: #FFA500;">Companion</span></h1>
             <div class="skid-display">SKID: <span id="skidValue">-</span></div>
             <div class="section-selector">
                 <button id="statsBtn" class="section-btn selected">Stats</button>
@@ -112,6 +160,7 @@
                     <input type="file" id="importStatsInput" accept=".skmt" style="display: none;">
                     <button id="importStatsBtn" class="action-btn">Import Stats</button>
                 </div>
+                <button id="visualizeStatsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">Export to Visualizers</button>
                 <button id="resetStatsBtn" class="reset-btn">Reset All Stats</button>
                 <div class="match-history">
                     <h2>Match History</h2>
@@ -122,12 +171,29 @@
             </div>
             <div id="hudSection" class="section-content" style="display:none;">
                 <h2 class="stats-section-label">HUD Overlay</h2>
-                <label>
-                    <input type="checkbox" id="toggleDeathsHud">
-                    Show Deaths HUD Overlay
-                </label>
+                <div class="hud-toggle-row">
+                    <span class="hud-toggle-label">Deaths HUD</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleDeathsHud">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hud-toggle-row">
+                    <span class="hud-toggle-label">Kill Streak HUD</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleKillStreakHud">
+                        <span class="slider"></span>
+                    </label>
+                </div>
             </div>
         </header>
+    </div>
+    <!-- Match Info Modal -->
+    <div id="matchInfoModal" class="match-info-modal" style="display:none;">
+        <div class="match-info-modal-content">
+            <button id="closeMatchInfoModal" class="close-modal-btn">&times;</button>
+            <div id="match-info-modal-body"></div>
+        </div>
     </div>
     <script src="popup.js"></script>
 </body>

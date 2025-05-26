@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Information</title>
+    <link rel="stylesheet" href="styles/popup.css">
+    <style>
+        .match-info-container {
+            max-width: 400px;
+            margin: 32px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.10);
+            padding: 24px 24px 18px 24px;
+            color: #2c3e50;
+            font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+        }
+        .match-info-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #4a90e2;
+            margin-bottom: 18px;
+        }
+        .match-info-section {
+            margin-bottom: 18px;
+        }
+        .match-info-label {
+            font-weight: 600;
+            color: #888;
+            margin-right: 8px;
+        }
+        .match-info-value {
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .match-info-indicators {
+            margin-top: 10px;
+            font-size: 15px;
+            color: #4a90e2;
+            font-weight: 600;
+        }
+        .back-btn {
+            background: #4a90e2;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 15px;
+            font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 18px;
+            transition: background 0.2s;
+        }
+        .back-btn:hover {
+            background: #217dbb;
+        }
+    </style>
+</head>
+<body>
+    <div class="match-info-container">
+        <div class="match-info-title">Match Information</div>
+        <div id="match-info-content"></div>
+        <button class="back-btn" onclick="window.close()">Back</button>
+    </div>
+    <script src="match_info.js"></script>
+</body>
+</html> 

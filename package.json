@@ -1,7 +1,7 @@
 {
-  "name": "smash-karts-match-tracker",
+  "name": "kart-companion",
   "version": "1.0.0",
-  "description": "Chrome extension to track Smash Karts gameplay statistics",
+  "description": "Your ultimate companion for tracking and analyzing Smash Karts gameplay",
   "main": "background.js",
   "scripts": {
     "build": "webpack --mode production",
