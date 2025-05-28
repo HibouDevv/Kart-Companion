@@ -172,6 +172,24 @@ function displayStats(data, mode) {
             let modeHighestKillStreakRecord = 0;
             let modeHighestKDRRecord = 0;
 
+            // Initialize mode streak counters
+            let modeSmashStreak = 0;
+            let modeSmashtacularStreak = 0;
+            let modeSmashosaurusStreak = 0;
+            let modeSmashlvaniaStreak = 0;
+            let modeMonsterSmashStreak = 0;
+            let modePotatoStreak = 0;
+            let modeSmashSmashStreak = 0;
+            let modePotoatachioStreak = 0;
+
+            // Initialize mode quick kills streak counters
+            let modeDoubleSmash = 0;
+            let modeMultiSmash = 0;
+            let modeMultiMegaSmash = 0;
+            let modeMultiMegaUltraSmash = 0;
+            let modeGooseySmash = 0;
+            let modeCrazyMultiMegaUltraSmash = 0;
+
             // Calculate kills, deaths, and time spent
             modeHistory.forEach(m => {
                 modeKills += m.kills || 0;
@@ -214,13 +232,82 @@ function displayStats(data, mode) {
                     });
                     if (maxStreak > modeHighestKillStreakRecord) modeHighestKillStreakRecord = maxStreak;
                 }
-            });
 
-            // Update overall records
-            if (modeHighestKillsRecord > highestKillsRecord) highestKillsRecord = modeHighestKillsRecord;
-            if (modeHighestDeathsRecord > highestDeathsRecord) highestDeathsRecord = modeHighestDeathsRecord;
-            if (modeHighestKillStreakRecord > highestKillStreakRecord) highestKillStreakRecord = modeHighestKillStreakRecord;
-            if (modeHighestKDRRecord > highestKDRRecord) highestKDRRecord = modeHighestKDRRecord;
+                // Calculate streaks for this match
+                let currentStreak = 0;
+                let achievedMilestones = {};
+                let lastKillTime = null;
+                let quickKillStreak = 0;
+
+                // Create a combined timeline of kills and deaths
+                const timeline = [];
+                if (m.killTimestamps) {
+                    m.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+                }
+                if (m.deathTimestamps) {
+                    m.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+                }
+                // Sort timeline by timestamp
+                timeline.sort((a, b) => a.time - b.time);
+
+                // Process events in chronological order
+                timeline.forEach(event => {
+                    if (event.type === 'death') {
+                        currentStreak = 0; // Reset streak immediately on death
+                        achievedMilestones = {}; // Reset achieved milestones for the new life
+                        quickKillStreak = 0; // Reset quick kill streak on death
+                    } else if (event.type === 'kill') {
+                        currentStreak++;
+                        // Check for streak milestones only once per life
+                        if (currentStreak >= 3 && !achievedMilestones[3]) {
+                            modeSmashStreak++;
+                            achievedMilestones[3] = true;
+                        }
+                        if (currentStreak >= 5 && !achievedMilestones[5]) {
+                            modeSmashtacularStreak++;
+                            achievedMilestones[5] = true;
+                        }
+                        if (currentStreak >= 7 && !achievedMilestones[7]) {
+                            modeSmashosaurusStreak++;
+                            achievedMilestones[7] = true;
+                        }
+                        if (currentStreak >= 10 && !achievedMilestones[10]) {
+                            modeSmashlvaniaStreak++;
+                            achievedMilestones[10] = true;
+                        }
+                        if (currentStreak >= 15 && !achievedMilestones[15]) {
+                            modeMonsterSmashStreak++;
+                            achievedMilestones[15] = true;
+                        }
+                        if (currentStreak >= 20 && !achievedMilestones[20]) {
+                            modePotatoStreak++;
+                            achievedMilestones[20] = true;
+                        }
+                        if (currentStreak >= 25 && !achievedMilestones[25]) {
+                            modeSmashSmashStreak++;
+                            achievedMilestones[25] = true;
+                        }
+                        if (currentStreak >= 30 && !achievedMilestones[30]) {
+                            modePotoatachioStreak++;
+                            achievedMilestones[30] = true;
+                        }
+
+                        // Handle quick kills streak
+                        if (lastKillTime && (event.time - lastKillTime) <= 4000) {
+                            quickKillStreak++;
+                            if (quickKillStreak === 2) modeDoubleSmash++;
+                            if (quickKillStreak === 3) modeMultiSmash++;
+                            if (quickKillStreak === 4) modeMultiMegaSmash++;
+                            if (quickKillStreak === 5) modeMultiMegaUltraSmash++;
+                            if (quickKillStreak === 6) modeGooseySmash++;
+                            if (quickKillStreak === 7) modeCrazyMultiMegaUltraSmash++;
+                        } else {
+                            quickKillStreak = 1;
+                        }
+                        lastKillTime = event.time;
+                    }
+                });
+            });
 
             // Store mode stats
             modeStats[mode] = {
@@ -235,20 +322,20 @@ function displayStats(data, mode) {
                 highestDeathsRecord: modeHighestDeathsRecord,
                 highestKillStreakRecord: modeHighestKillStreakRecord,
                 highestKDRRecord: modeHighestKDRRecord,
-                smashStreak: smashStreak,
-                smashtacularStreak: smashtacularStreak,
-                smashosaurusStreak: smashosaurusStreak,
-                smashlvaniaStreak: smashlvaniaStreak,
-                monsterSmashStreak: monsterSmashStreak,
-                potatoStreak: potatoStreak,
-                smashSmashStreak: smashSmashStreak,
-                potoatachioStreak: potoatachioStreak,
-                doubleSmash: doubleSmash,
-                multiSmash: multiSmash,
-                multiMegaSmash: multiMegaSmash,
-                multiMegaUltraSmash: multiMegaUltraSmash,
-                gooseySmash: gooseySmash,
-                crazyMultiMegaUltraSmash: crazyMultiMegaUltraSmash
+                smashStreak: modeSmashStreak,
+                smashtacularStreak: modeSmashtacularStreak,
+                smashosaurusStreak: modeSmashosaurusStreak,
+                smashlvaniaStreak: modeSmashlvaniaStreak,
+                monsterSmashStreak: modeMonsterSmashStreak,
+                potatoStreak: modePotatoStreak,
+                smashSmashStreak: modeSmashSmashStreak,
+                potoatachioStreak: modePotoatachioStreak,
+                doubleSmash: modeDoubleSmash,
+                multiSmash: modeMultiSmash,
+                multiMegaSmash: modeMultiMegaSmash,
+                multiMegaUltraSmash: modeMultiMegaUltraSmash,
+                gooseySmash: modeGooseySmash,
+                crazyMultiMegaUltraSmash: modeCrazyMultiMegaUltraSmash
             };
         });
 

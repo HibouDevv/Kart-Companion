@@ -133,7 +133,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('kills')) {
         datasets.push({
             label: 'Kills',
-            data: killsArr,
+            data: killsArr.map(v => Math.round(v)),
             borderColor: '#3498db',
             backgroundColor: '#3498db',
             tension: 0.1
@@ -142,7 +142,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('deaths')) {
         datasets.push({
             label: 'Deaths',
-            data: deathsArr,
+            data: deathsArr.map(v => Math.round(v)),
             borderColor: '#FFA500',
             backgroundColor: '#FFA500',
             tension: 0.1
@@ -151,7 +151,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('kdr')) {
         datasets.push({
             label: 'KDR',
-            data: kdrArr,
+            data: kdrArr.map(v => Math.round(v)),
             borderColor: '#8e44ad',
             backgroundColor: '#8e44ad',
             tension: 0.1
@@ -160,7 +160,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('totalKills')) {
         datasets.push({
             label: 'Total Kills',
-            data: totalKillsArr,
+            data: totalKillsArr.map(v => Math.round(v)),
             borderColor: '#00b894',
             backgroundColor: '#00b894',
             tension: 0.1
@@ -169,7 +169,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('totalDeaths')) {
         datasets.push({
             label: 'Total Deaths',
-            data: totalDeathsArr,
+            data: totalDeathsArr.map(v => Math.round(v)),
             borderColor: '#e67e22',
             backgroundColor: '#e67e22',
             tension: 0.1
@@ -178,7 +178,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('totalKdr')) {
         datasets.push({
             label: 'Total KDR',
-            data: totalKdrArr,
+            data: totalKdrArr.map(v => Math.round(v)),
             borderColor: '#f39c12',
             backgroundColor: '#f39c12',
             tension: 0.1
@@ -187,7 +187,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('timePlayed')) {
         datasets.push({
             label: 'Time Played (min)',
-            data: timePlayedArr,
+            data: timePlayedArr.map(v => Math.round(v)),
             borderColor: '#16a085',
             backgroundColor: '#16a085',
             tension: 0.1
@@ -196,7 +196,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     if (selectedMetrics.includes('totalTimePlayed')) {
         datasets.push({
             label: 'Total Time Played (min)',
-            data: totalTimeArr,
+            data: totalTimeArr.map(v => Math.round(v)),
             borderColor: '#e67e22',
             backgroundColor: '#e67e22',
             tension: 0.1
@@ -575,7 +575,7 @@ function renderCustomTrendsPerDayChart(matchHistory, selectedMetrics, groupBy) {
     selectedMetrics.forEach(metric => {
         datasets.push({
             label: metricsMap[metric].label,
-            data: keys.map(k => groups[k][metric]),
+            data: keys.map(k => Math.round(groups[k][metric])),
             borderColor: metricsMap[metric].color,
             backgroundColor: metricsMap[metric].color,
             tension: 0.1
