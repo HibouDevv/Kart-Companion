@@ -167,12 +167,10 @@ function interceptConsole(method, original) {
                     window.kartStats.matchEndTime = Date.now();
                     window.kartStats.matchActive = false;
                     
-                    // Only reset modes when explicitly quitting
+                    // Only set quit flag when explicitly quitting
                     if (msg.includes('confirmexitgame')) {
                         window.kartStats.quit = true;
-                        window.kartStats.isSpecialMode = false;
-                        window.kartStats.isCustomMode = false;
-                        originalLog('[SKMT] Mode: Reset to normal');
+                        originalLog('[SKMT] Match quit detected');
                     }
                     
                     // Calculate match duration
@@ -218,6 +216,44 @@ function interceptConsole(method, original) {
                     // Reset stats after sending match data
                     resetStats();
                     detectedPlayersSet.clear();
+                }
+            }
+
+            // Handle actual game exit (loading_unity_awake)
+            if (msg.includes('bytebrew: sending custom event: loading_unity_awake')) {
+                if (window.kartStats.matchActive) {
+                    // Set quit flag and preserve mode info for the current match
+                    window.kartStats.quit = true;
+                    window.kartStats.matchEndTime = Date.now();
+                    
+                    // Send match data before resetting modes
+                    const matchObj = {
+                        kills: window.kartStats.kills,
+                        deaths: window.kartStats.deaths,
+                        matchStartTime: window.kartStats.matchStartTime,
+                        matchEndTime: window.kartStats.matchEndTime,
+                        duration: window.kartStats.matchEndTime - window.kartStats.matchStartTime,
+                        isSpecialMode: window.kartStats.isSpecialMode,
+                        isCustomMode: window.kartStats.isCustomMode,
+                        joined: window.kartStats.joined,
+                        started: window.kartStats.started,
+                        quit: true,
+                        killTimestamps: [...window.kartStats.killTimestamps],
+                        deathTimestamps: [...window.kartStats.deathTimestamps],
+                        players: Array.from(detectedPlayersSet)
+                    };
+                    
+                    window.postMessage({
+                        type: 'SKMT_MATCH_COMPLETE',
+                        data: matchObj
+                    }, '*');
+                    
+                    // Now reset everything including modes
+                    window.kartStats.isSpecialMode = false;
+                    window.kartStats.isCustomMode = false;
+                    resetStats();
+                    detectedPlayersSet.clear();
+                    originalLog('[SKMT] Game exit detected - modes reset');
                 }
             }
 

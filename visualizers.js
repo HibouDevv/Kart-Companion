@@ -43,6 +43,8 @@ async function getStats() {
                     return timeA - timeB;
                 });
 
+                // Add currentSkid to the returned object
+                combinedData.currentSkid = currentSkid;
                 resolve(combinedData);
             });
         });
@@ -147,6 +149,7 @@ function createCompletionRateChart(data) {
         options: {
             responsive: true,
             plugins: {
+                legend: { display: true, position: 'top' },
                 title: {
                     display: true,
                     text: 'Match Completion Rate'
@@ -201,6 +204,9 @@ function createStreakChart(data) {
 // Initialize all charts when the page loads
 async function initializeCharts() {
     const stats = await getStats();
+    // Set SKID display from stats
+    const skidDisplay = document.getElementById('skidDisplay');
+    if (skidDisplay && stats.currentSkid) skidDisplay.textContent = `SKID: ${stats.currentSkid}`;
     
     if (Object.keys(stats).length === 0) {
         document.querySelector('.charts-grid').innerHTML = '<p style="text-align: center; grid-column: 1/-1;">No stats data available. Play some matches first!</p>';

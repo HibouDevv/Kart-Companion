@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kart Companion</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles/popup.css">
     <style>
         body { font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; }
@@ -121,6 +122,19 @@
                     </div>
                 </details>
 
+                <!-- Records Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="recordsHeader">Records</h2>
+                    </summary>
+                    <div class="records-list">
+                        <div class="stat-card"><span class="stat-label">Highest Kills in a Match</span><span class="stat-value" id="highestKillsRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest Deaths in a Match</span><span class="stat-value" id="highestDeathsRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest Kill Streak in a Match</span><span class="stat-value" id="highestKillStreakRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest KDR in a Match</span><span class="stat-value" id="highestKDRRecord">0.00</span></div>
+                    </div>
+                </details>
+
                 <!-- Streaks (Without Dying) Section -->
                 <details class="stats-details">
                     <summary class="stats-summary">
@@ -171,8 +185,12 @@
             </div>
             <div id="hudSection" class="section-content" style="display:none;">
                 <h2 class="stats-section-label">HUD Overlay</h2>
+                <p class="hud-tip">Tip: You can drag and drop the overlays wherever you want them to be!</p>
                 <div class="hud-toggle-row">
                     <span class="hud-toggle-label">Deaths HUD</span>
+                    <button class="settings-btn" id="deathsHudSettings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
                     <label class="switch">
                         <input type="checkbox" id="toggleDeathsHud">
                         <span class="slider"></span>
@@ -180,6 +198,9 @@
                 </div>
                 <div class="hud-toggle-row">
                     <span class="hud-toggle-label">Kill Streak HUD</span>
+                    <button class="settings-btn" id="killStreakHudSettings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
                     <label class="switch">
                         <input type="checkbox" id="toggleKillStreakHud">
                         <span class="slider"></span>
@@ -193,6 +214,50 @@
         <div class="match-info-modal-content">
             <button id="closeMatchInfoModal" class="close-modal-btn">&times;</button>
             <div id="match-info-modal-body"></div>
+        </div>
+    </div>
+    <!-- HUD Settings Modal -->
+    <div id="hudSettingsModal" class="match-info-modal" style="display:none;">
+        <div class="match-info-modal-content">
+            <button id="closeHudSettingsModal" class="close-modal-btn">&times;</button>
+            <h2 class="match-info-title" id="hudSettingsTitle">HUD Settings</h2>
+            <div class="hud-settings-form">
+                <div class="setting-group">
+                    <label for="hudFontSize">Font Size:</label>
+                    <input type="range" id="hudFontSize" min="16" max="48" value="32" step="1">
+                    <span id="fontSizeValue">32px</span>
+                </div>
+                <div class="setting-group">
+                    <label for="hudFontColor">Font Color:</label>
+                    <select id="hudFontColor">
+                        <option value="#ffffff">White</option>
+                        <option value="#ff0000">Red</option>
+                        <option value="#00ff00">Green</option>
+                        <option value="#0000ff">Blue</option>
+                        <option value="#ffff00">Yellow</option>
+                        <option value="#ff00ff">Magenta</option>
+                        <option value="#00ffff">Cyan</option>
+                        <option value="#ffa500">Orange</option>
+                        <option value="#800080">Purple</option>
+                        <option value="#008000">Dark Green</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="hudFontFamily">Font Family:</label>
+                    <select id="hudFontFamily">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Raleway', sans-serif">Raleway</option>
+                        <option value="'Ubuntu', sans-serif">Ubuntu</option>
+                        <option value="'Lato', sans-serif">Lato</option>
+                        <option value="'Nunito', sans-serif">Nunito</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
     <script src="popup.js"></script>

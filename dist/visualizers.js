@@ -122,8 +122,8 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
         totalKillsArr.push(totalKills);
         totalDeathsArr.push(totalDeaths);
         totalKdrArr.push(totalDeaths === 0 ? (totalKills > 0 ? totalKills : 0) : (totalKills / totalDeaths));
-        // Time played per game
-        let time = m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+        // Robust time played per game
+        let time = m.duration || m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0) || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0) || 0;
         timePlayedArr.push(time / 1000 / 60); // minutes
         totalTime += time;
         totalTimeArr.push(totalTime / 1000 / 60); // minutes
@@ -407,7 +407,7 @@ function renderGamesJoinedStartedChart(gamesJoined, gamesStarted) {
         options: {
             responsive: true,
             plugins: {
-                legend: { labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } }, display: false },
+                legend: { display: true, position: 'top', labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } } },
                 title: { display: false },
                 tooltip: {
                     mode: 'index',
@@ -437,7 +437,7 @@ function renderGamesCompletedQuitChart(matchesCompleted, gamesQuit) {
         options: {
             responsive: true,
             plugins: {
-                legend: { labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } }, display: false },
+                legend: { display: true, position: 'top', labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } } },
                 title: { display: false },
                 tooltip: {
                     mode: 'index',
@@ -541,7 +541,8 @@ function aggregateByPeriod(matchHistory, groupBy) {
         groups[key].totalKdr = totalDeaths === 0 ? (totalKills > 0 ? totalKills : 0) : (totalKills / totalDeaths);
         groups[key].kdr = groups[key].deaths === 0 ? (groups[key].kills > 0 ? groups[key].kills : 0) : (groups[key].kills / groups[key].deaths);
         groups[key].totalGames = totalGames;
-        let time = m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0);
+        // Robust time played per game
+        let time = m.duration || m.playerStats?.timeSpent || (m.endTime && m.startTime ? m.endTime - m.startTime : 0) || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0) || 0;
         groups[key].timePlayed += time / 1000 / 60; // minutes
         totalTime += time;
         groups[key].totalTimePlayed = totalTime / 1000 / 60; // minutes

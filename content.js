@@ -584,3 +584,55 @@ function collectPlayerLogLine(line) {
 // If you have a place where you process or intercept logs, call collectPlayerLogLine(line) for each log line.
 // For example, if you have a function that processes logs:
 // collectPlayerLogLine(logLine);
+
+// Load HUD settings on initialization
+chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings'], (result) => {
+    // Apply Deaths HUD settings
+    if (result.deathsHudSettings) {
+        applyHudSettings(hud, result.deathsHudSettings);
+    } else {
+        // Set default settings for Deaths HUD if none exist
+        const defaultDeathsSettings = {
+            fontSize: 32,
+            fontColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        };
+        chrome.storage.sync.set({ deathsHudSettings: defaultDeathsSettings });
+        applyHudSettings(hud, defaultDeathsSettings);
+    }
+
+    // Apply Kill Streak HUD settings
+    if (result.killStreakHudSettings) {
+        applyHudSettings(killStreakHud, result.killStreakHudSettings);
+    } else {
+        // Set default settings for Kill Streak HUD if none exist
+        const defaultKillStreakSettings = {
+            fontSize: 32,
+            fontColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        };
+        chrome.storage.sync.set({ killStreakHudSettings: defaultKillStreakSettings });
+        applyHudSettings(killStreakHud, defaultKillStreakSettings);
+    }
+});
+
+// Listen for HUD style updates
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'update-deaths-hud-style') {
+        applyHudSettings(hud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ deathsHudSettings: msg.settings });
+    } else if (msg.type === 'update-killstreak-hud-style') {
+        applyHudSettings(killStreakHud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ killStreakHudSettings: msg.settings });
+    }
+});
+
+function applyHudSettings(hudElement, settings) {
+    if (!settings) return;
+    
+    hudElement.style.fontSize = `${settings.fontSize}px`;
+    hudElement.style.color = settings.fontColor;
+    hudElement.style.fontFamily = settings.fontFamily;
+}

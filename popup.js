@@ -126,6 +126,12 @@ function displayStats(data, mode) {
     let gamesQuit = 0;
     let matchesCompleted = 0;
 
+    // Initialize record tracking
+    let highestKillsRecord = 0;
+    let highestDeathsRecord = 0;
+    let highestKillStreakRecord = 0;
+    let highestKDRRecord = 0;
+
     // Initialize streak counters
     let smashStreak = 0;
     let smashtacularStreak = 0;
@@ -159,105 +165,62 @@ function displayStats(data, mode) {
             let modeGamesStarted = data[getModeKey('gamesStarted', currentSkid, mode)] || 0;
             let modeGamesQuit = data[getModeKey('gamesQuit', currentSkid, mode)] || 0;
             let modeMatchesCompleted = data[getModeKey('matchesCompleted', currentSkid, mode)] || 0;
-            let modeSmashStreak = 0;
-            let modeSmashtacularStreak = 0;
-            let modeSmashosaurusStreak = 0;
-            let modeSmashlvaniaStreak = 0;
-            let modeMonsterSmashStreak = 0;
-            let modePotatoStreak = 0;
-            let modeSmashSmashStreak = 0;
-            let modePotoatachioStreak = 0;
 
-            // Initialize quick kills streak counters for this mode
-            let modeDoubleSmash = 0;
-            let modeMultiSmash = 0;
-            let modeMultiMegaSmash = 0;
-            let modeMultiMegaUltraSmash = 0;
-            let modeGooseySmash = 0;
-            let modeCrazyMultiMegaUltraSmash = 0;
+            // Initialize mode records
+            let modeHighestKillsRecord = 0;
+            let modeHighestDeathsRecord = 0;
+            let modeHighestKillStreakRecord = 0;
+            let modeHighestKDRRecord = 0;
 
             // Calculate kills, deaths, and time spent
             modeHistory.forEach(m => {
                 modeKills += m.kills || 0;
                 modeDeaths += m.deaths || 0;
                 modeTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
-            });
 
-            // Calculate streaks for this mode
-            modeHistory.forEach(match => {
-                let currentStreak = 0;
-                let lastKillTime = null;
-                let quickKillStreak = 0;
-                let achievedMilestones = {}; // Track milestones achieved in the current life for without dying streaks
+                // Update mode records
+                if (m.kills > modeHighestKillsRecord) modeHighestKillsRecord = m.kills;
+                if (m.deaths > modeHighestDeathsRecord) modeHighestDeathsRecord = m.deaths;
+                
+                // Calculate KDR for this match
+                const matchKDR = m.deaths > 0 ? m.kills / m.deaths : m.kills;
+                if (matchKDR > modeHighestKDRRecord) modeHighestKDRRecord = matchKDR;
 
-                // Create a combined timeline of kills and deaths
-                const timeline = [];
-                if (match.killTimestamps) {
-                    match.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
-                }
-                if (match.deathTimestamps) {
-                    match.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
-                }
-                // Sort timeline by timestamp
-                timeline.sort((a, b) => a.time - b.time);
-
-                // Process events in chronological order
-                timeline.forEach(event => {
-                    if (event.type === 'death') {
-                        currentStreak = 0; // Reset streak immediately on death
-                        achievedMilestones = {}; // Reset achieved milestones for the new life
-                    } else if (event.type === 'kill') {
-                        currentStreak++;
-                        // Check for streak milestones only once per life
-                        if (currentStreak >= 3 && !achievedMilestones[3]) {
-                            modeSmashStreak++;
-                            achievedMilestones[3] = true;
-                        }
-                        if (currentStreak >= 5 && !achievedMilestones[5]) {
-                            modeSmashtacularStreak++;
-                            achievedMilestones[5] = true;
-                        }
-                        if (currentStreak >= 7 && !achievedMilestones[7]) {
-                            modeSmashosaurusStreak++;
-                            achievedMilestones[7] = true;
-                        }
-                        if (currentStreak >= 10 && !achievedMilestones[10]) {
-                            modeSmashlvaniaStreak++;
-                            achievedMilestones[10] = true;
-                        }
-                        if (currentStreak >= 15 && !achievedMilestones[15]) {
-                            modeMonsterSmashStreak++;
-                            achievedMilestones[15] = true;
-                        }
-                        if (currentStreak >= 20 && !achievedMilestones[20]) {
-                            modePotatoStreak++;
-                            achievedMilestones[20] = true;
-                        }
-                        if (currentStreak >= 25 && !achievedMilestones[25]) {
-                            modeSmashSmashStreak++;
-                            achievedMilestones[25] = true;
-                        }
-                        if (currentStreak >= 30 && !achievedMilestones[30]) {
-                            modePotoatachioStreak++;
-                            achievedMilestones[30] = true;
-                        }
-
-                        // Handle quick kills streak
-                        if (lastKillTime && (event.time - lastKillTime) <= 3000) {
-                            quickKillStreak++;
-                            if (quickKillStreak === 2) modeDoubleSmash++;
-                            if (quickKillStreak === 3) modeMultiSmash++;
-                            if (quickKillStreak === 4) modeMultiMegaSmash++;
-                            if (quickKillStreak === 5) modeMultiMegaUltraSmash++;
-                            if (quickKillStreak === 6) modeGooseySmash++;
-                            if (quickKillStreak === 7) modeCrazyMultiMegaUltraSmash++;
-                        } else {
-                            quickKillStreak = 1;
-                        }
-                        lastKillTime = event.time;
+                // Calculate highest kill streak for this match
+                if (m.killTimestamps && m.killTimestamps.length > 0) {
+                    let currentStreak = 0;
+                    let maxStreak = 0;
+                    
+                    // Create a combined timeline of kills and deaths
+                    const timeline = [];
+                    if (m.killTimestamps) {
+                        m.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
                     }
-                });
+                    if (m.deathTimestamps) {
+                        m.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+                    }
+                    // Sort timeline by timestamp
+                    timeline.sort((a, b) => a.time - b.time);
+
+                    // Process events in chronological order
+                    timeline.forEach(event => {
+                        if (event.type === 'death') {
+                            if (currentStreak > maxStreak) maxStreak = currentStreak;
+                            currentStreak = 0; // Reset streak on death
+                        } else if (event.type === 'kill') {
+                            currentStreak++;
+                            if (currentStreak > maxStreak) maxStreak = currentStreak;
+                        }
+                    });
+                    if (maxStreak > modeHighestKillStreakRecord) modeHighestKillStreakRecord = maxStreak;
+                }
             });
+
+            // Update overall records
+            if (modeHighestKillsRecord > highestKillsRecord) highestKillsRecord = modeHighestKillsRecord;
+            if (modeHighestDeathsRecord > highestDeathsRecord) highestDeathsRecord = modeHighestDeathsRecord;
+            if (modeHighestKillStreakRecord > highestKillStreakRecord) highestKillStreakRecord = modeHighestKillStreakRecord;
+            if (modeHighestKDRRecord > highestKDRRecord) highestKDRRecord = modeHighestKDRRecord;
 
             // Store mode stats
             modeStats[mode] = {
@@ -268,20 +231,24 @@ function displayStats(data, mode) {
                 gamesStarted: modeGamesStarted,
                 gamesQuit: modeGamesQuit,
                 matchesCompleted: modeMatchesCompleted,
-                smashStreak: modeSmashStreak,
-                smashtacularStreak: modeSmashtacularStreak,
-                smashosaurusStreak: modeSmashosaurusStreak,
-                smashlvaniaStreak: modeSmashlvaniaStreak,
-                monsterSmashStreak: modeMonsterSmashStreak,
-                potatoStreak: modePotatoStreak,
-                smashSmashStreak: modeSmashSmashStreak,
-                potoatachioStreak: modePotoatachioStreak,
-                doubleSmash: modeDoubleSmash,
-                multiSmash: modeMultiSmash,
-                multiMegaSmash: modeMultiMegaSmash,
-                multiMegaUltraSmash: modeMultiMegaUltraSmash,
-                gooseySmash: modeGooseySmash,
-                crazyMultiMegaUltraSmash: modeCrazyMultiMegaUltraSmash
+                highestKillsRecord: modeHighestKillsRecord,
+                highestDeathsRecord: modeHighestDeathsRecord,
+                highestKillStreakRecord: modeHighestKillStreakRecord,
+                highestKDRRecord: modeHighestKDRRecord,
+                smashStreak: smashStreak,
+                smashtacularStreak: smashtacularStreak,
+                smashosaurusStreak: smashosaurusStreak,
+                smashlvaniaStreak: smashlvaniaStreak,
+                monsterSmashStreak: monsterSmashStreak,
+                potatoStreak: potatoStreak,
+                smashSmashStreak: smashSmashStreak,
+                potoatachioStreak: potoatachioStreak,
+                doubleSmash: doubleSmash,
+                multiSmash: multiSmash,
+                multiMegaSmash: multiMegaSmash,
+                multiMegaUltraSmash: multiMegaUltraSmash,
+                gooseySmash: gooseySmash,
+                crazyMultiMegaUltraSmash: crazyMultiMegaUltraSmash
             };
         });
 
@@ -316,6 +283,43 @@ function displayStats(data, mode) {
             totalKills += m.kills || 0;
             totalDeaths += m.deaths || 0;
             totalTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
+
+            // Update records
+            if (m.kills > highestKillsRecord) highestKillsRecord = m.kills;
+            if (m.deaths > highestDeathsRecord) highestDeathsRecord = m.deaths;
+            
+            // Calculate KDR for this match
+            const matchKDR = m.deaths > 0 ? m.kills / m.deaths : m.kills;
+            if (matchKDR > highestKDRRecord) highestKDRRecord = matchKDR;
+
+            // Calculate highest kill streak for this match
+            if (m.killTimestamps && m.killTimestamps.length > 0) {
+                let currentStreak = 0;
+                let maxStreak = 0;
+                
+                // Create a combined timeline of kills and deaths
+                const timeline = [];
+                if (m.killTimestamps) {
+                    m.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+                }
+                if (m.deathTimestamps) {
+                    m.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+                }
+                // Sort timeline by timestamp
+                timeline.sort((a, b) => a.time - b.time);
+
+                // Process events in chronological order
+                timeline.forEach(event => {
+                    if (event.type === 'death') {
+                        if (currentStreak > maxStreak) maxStreak = currentStreak;
+                        currentStreak = 0; // Reset streak on death
+                    } else if (event.type === 'kill') {
+                        currentStreak++;
+                        if (currentStreak > maxStreak) maxStreak = currentStreak;
+                    }
+                });
+                if (maxStreak > highestKillStreakRecord) highestKillStreakRecord = maxStreak;
+            }
         });
 
         // Access secondary stats using getModeKey for individual modes
@@ -384,7 +388,7 @@ function displayStats(data, mode) {
                     }
 
                     // Handle quick kills streak
-                    if (lastKillTime && (event.time - lastKillTime) <= 3000) {
+                    if (lastKillTime && (event.time - lastKillTime) <= 4000) {
                         quickKillStreak++;
                         if (quickKillStreak === 2) doubleSmash++;
                         if (quickKillStreak === 3) multiSmash++;
@@ -400,6 +404,12 @@ function displayStats(data, mode) {
             });
         });
     }
+
+    // Update record displays
+    document.getElementById('highestKillsRecord').textContent = highestKillsRecord;
+    document.getElementById('highestDeathsRecord').textContent = highestDeathsRecord;
+    document.getElementById('highestKillStreakRecord').textContent = highestKillStreakRecord;
+    document.getElementById('highestKDRRecord').textContent = highestKDRRecord.toFixed(2);
 
     // Update streak displays
     document.getElementById('smashStreak').textContent = smashStreak;
@@ -690,6 +700,11 @@ function loadStats() {
 }
 
 function deleteMatch(index, mode) {
+    // Add confirmation prompt
+    if (!confirm('Are you sure you want to delete this match? This action cannot be undone.')) {
+        return;
+    }
+    
     // Remove the match at the given index from the current mode's history
     chrome.storage.sync.get(['currentSkid'], (skidData) => {
         const skid = skidData.currentSkid || 'Default';
@@ -1039,8 +1054,8 @@ async function exportStats() {
             chrome.storage.local.get(['openSections'], resolve);
         });
 
-        // Calculate streaks for each mode
-        const streaksData = {};
+        // Calculate streaks and records for each mode
+        const statsData = {};
         modes.forEach(mode => {
             const history = data[getModeKey('matchHistory', currentSkid, mode)] || [];
             let smashStreak = 0;
@@ -1060,6 +1075,12 @@ async function exportStats() {
             let gooseySmash = 0;
             let crazyMultiMegaUltraSmash = 0;
 
+            // Initialize records
+            let highestKillsRecord = 0;
+            let highestDeathsRecord = 0;
+            let highestKillStreakRecord = 0;
+            let highestKDRRecord = 0;
+
             history.forEach(match => {
                 // Calculate regular streaks
                 if (match.kills >= 3) smashStreak++;
@@ -1071,6 +1092,43 @@ async function exportStats() {
                 if (match.kills >= 25) smashSmashStreak++;
                 if (match.kills >= 30) potoatachioStreak++;
 
+                // Update records
+                if (match.kills > highestKillsRecord) highestKillsRecord = match.kills;
+                if (match.deaths > highestDeathsRecord) highestDeathsRecord = match.deaths;
+                
+                // Calculate KDR for this match
+                const matchKDR = match.deaths > 0 ? match.kills / match.deaths : match.kills;
+                if (matchKDR > highestKDRRecord) highestKDRRecord = matchKDR;
+
+                // Calculate highest kill streak for this match
+                if (match.killTimestamps && match.killTimestamps.length > 0) {
+                    let currentStreak = 0;
+                    let maxStreak = 0;
+                    
+                    // Create a combined timeline of kills and deaths
+                    const timeline = [];
+                    if (match.killTimestamps) {
+                        match.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+                    }
+                    if (match.deathTimestamps) {
+                        match.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+                    }
+                    // Sort timeline by timestamp
+                    timeline.sort((a, b) => a.time - b.time);
+
+                    // Process events in chronological order
+                    timeline.forEach(event => {
+                        if (event.type === 'death') {
+                            if (currentStreak > maxStreak) maxStreak = currentStreak;
+                            currentStreak = 0; // Reset streak on death
+                        } else if (event.type === 'kill') {
+                            currentStreak++;
+                            if (currentStreak > maxStreak) maxStreak = currentStreak;
+                        }
+                    });
+                    if (maxStreak > highestKillStreakRecord) highestKillStreakRecord = maxStreak;
+                }
+
                 // Calculate quick kills streaks
                 if (match.killTimestamps && match.killTimestamps.length > 0) {
                     let quickKillStreak = 1;
@@ -1080,7 +1138,7 @@ async function exportStats() {
                         const currentKillTime = match.killTimestamps[i];
                         const timeDiff = currentKillTime - lastKillTime;
                         
-                        if (timeDiff <= 3000) { // 3 seconds in milliseconds
+                        if (timeDiff <= 4000) { // 4 seconds in milliseconds
                             quickKillStreak++;
                             if (quickKillStreak === 2) doubleSmash++;
                             if (quickKillStreak === 3) multiSmash++;
@@ -1096,7 +1154,7 @@ async function exportStats() {
                 }
             });
 
-            streaksData[mode] = {
+            statsData[mode] = {
                 smashStreak,
                 smashtacularStreak,
                 smashosaurusStreak,
@@ -1105,18 +1163,21 @@ async function exportStats() {
                 potatoStreak,
                 smashSmashStreak,
                 potoatachioStreak,
-                // Add quick kills streak data
                 doubleSmash,
                 multiSmash,
                 multiMegaSmash,
                 multiMegaUltraSmash,
                 gooseySmash,
-                crazyMultiMegaUltraSmash
+                crazyMultiMegaUltraSmash,
+                highestKillsRecord,
+                highestDeathsRecord,
+                highestKillStreakRecord,
+                highestKDRRecord
             };
         });
 
-        // Add streaks data to the export
-        data.streaks = streaksData;
+        // Add streaks and records data to the export
+        data.stats = statsData;
 
         // Add UI state data
         data.uiState = {
@@ -1326,7 +1387,7 @@ function openMatchInfo(match) {
         for (let i = 1; i < match.killTimestamps.length; i++) {
             const currentKillTime = match.killTimestamps[i];
             const timeDiff = currentKillTime - lastKillTime;
-            if (timeDiff <= 3000) {
+            if (timeDiff <= 4000) {
                 quickKillStreak++;
                 if (quickKillStreak === 2) quickStreaks[0].value++;
                 if (quickKillStreak === 3) quickStreaks[1].value++;
@@ -1388,4 +1449,85 @@ if (document.getElementById('matchInfoModal')) {
     document.getElementById('matchInfoModal').onclick = function(e) {
         if (e.target === this) this.style.display = 'none';
     };
+}
+
+// HUD Settings functionality
+let currentHudType = null; // 'deaths' or 'killstreak'
+
+// Settings buttons
+document.getElementById('deathsHudSettings').addEventListener('click', () => {
+    currentHudType = 'deaths';
+    openHudSettings();
+});
+
+document.getElementById('killStreakHudSettings').addEventListener('click', () => {
+    currentHudType = 'killstreak';
+    openHudSettings();
+});
+
+// Close HUD settings modal
+document.getElementById('closeHudSettingsModal').addEventListener('click', () => {
+    document.getElementById('hudSettingsModal').style.display = 'none';
+});
+
+// Close modal when clicking outside
+document.getElementById('hudSettingsModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('hudSettingsModal')) {
+        document.getElementById('hudSettingsModal').style.display = 'none';
+    }
+});
+
+function openHudSettings() {
+    const modal = document.getElementById('hudSettingsModal');
+    const title = document.getElementById('hudSettingsTitle');
+    title.textContent = `${currentHudType === 'deaths' ? 'Deaths' : 'Kill Streak'} HUD Settings`;
+    
+    // Load current settings
+    const storageKey = `${currentHudType}HudSettings`;
+    chrome.storage.sync.get([storageKey], (result) => {
+        const settings = result[storageKey] || {
+            fontSize: 32,
+            fontColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        };
+        
+        document.getElementById('hudFontSize').value = settings.fontSize;
+        document.getElementById('fontSizeValue').textContent = `${settings.fontSize}px`;
+        document.getElementById('hudFontColor').value = settings.fontColor;
+        document.getElementById('hudFontFamily').value = settings.fontFamily;
+    });
+    
+    modal.style.display = 'flex';
+}
+
+// Font size slider
+document.getElementById('hudFontSize').addEventListener('input', (e) => {
+    const size = e.target.value;
+    document.getElementById('fontSizeValue').textContent = `${size}px`;
+    updateHudSettings();
+});
+
+// Font color select
+document.getElementById('hudFontColor').addEventListener('change', updateHudSettings);
+
+// Font family select
+document.getElementById('hudFontFamily').addEventListener('change', updateHudSettings);
+
+function updateHudSettings() {
+    const settings = {
+        fontSize: document.getElementById('hudFontSize').value,
+        fontColor: document.getElementById('hudFontColor').value,
+        fontFamily: document.getElementById('hudFontFamily').value
+    };
+    
+    const storageKey = `${currentHudType}HudSettings`;
+    chrome.storage.sync.set({ [storageKey]: settings });
+    
+    // Send update to content script
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {
+            type: `update-${currentHudType}-hud-style`,
+            settings: settings
+        });
+    });
 } 
