@@ -186,7 +186,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     }
     if (selectedMetrics.includes('timePlayed')) {
         datasets.push({
-            label: 'Time Played Per Game (min)',
+            label: 'Time Played',
             data: timePlayedArr,
             borderColor: '#16a085',
             backgroundColor: '#16a085',
@@ -547,9 +547,9 @@ function aggregateByPeriod(matchHistory, groupBy) {
         totalTime += time;
         groups[key].totalTimePlayed = totalTime / 1000 / 60; // minutes
     });
-    // For timePlayed, average per group
+    // For timePlayed, total per group
     Object.values(groups).forEach(g => {
-        if (g.count > 0) g.timePlayed = g.timePlayed / g.count;
+        g.timePlayed = g.timePlayed; // Keep as total, don't divide by count
     });
     return groups;
 }
@@ -566,7 +566,7 @@ function renderCustomTrendsPerDayChart(matchHistory, selectedMetrics, groupBy) {
         totalKills: { label: 'Total Kills', color: '#00b894' },
         totalDeaths: { label: 'Total Deaths', color: '#e67e22' },
         totalKdr: { label: 'Total KDR', color: '#f39c12' },
-        timePlayed: { label: 'Time Played Per ' + groupBy.charAt(0).toUpperCase() + groupBy.slice(1) + ' (min)', color: '#16a085' },
+        timePlayed: { label: 'Time Played', color: '#16a085' },
         totalTimePlayed: { label: 'Total Time Played (min)', color: '#e67e22' },
         games: { label: 'Games', color: '#0984e3' },
         totalGames: { label: 'Total Games', color: '#6c5ce7' }
