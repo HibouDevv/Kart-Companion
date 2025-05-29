@@ -37,7 +37,8 @@ window.kartStats = {
     sawStartGame: false,
     killStreak: 0,
     joinedFirst: null,
-    players: []
+    players: [],
+    currentMap: null
 };
 
 let collectingPlayerLogs = false;
@@ -160,6 +161,39 @@ function interceptConsole(method, original) {
                 }
             }
 
+            // Detect map from Unity asset bundle URL
+            if (msg.includes('[unitycache]') && msg.includes('assetbundles/remote/webgl/')) {
+                // First check if it's a scene bundle
+                if (msg.includes('_scenes_all_')) {
+                    const mapMatch = args[0].match(/assetbundles\/remote\/webgl\/([^_]+)-v1/);
+                    if (mapMatch && mapMatch[1]) {
+                        let mapName = mapMatch[1];
+                        
+                        // Map name formatting
+                        mapName = mapName
+                            .replace('smashislandscene', 'Smash Island')
+                            .replace('dinoisland', 'Dino Island')
+                            .replace('graveyardscene', 'Graveyard/Graveyard CTF')
+                            .replace('lavapitscene', 'Lava Pit/Lava Pit CTF')
+                            .replace('skatepark', 'Skate Park')
+                            .replace('skyarenadropzonepinball', 'Sky Arena Dropzone/Sky Arena Pinball')
+                            .replace('skyarenashowdownscene', 'Sky Arena Showdown')
+                            .replace('skyarenatemples', 'Sky Arena Temples')
+                            .replace('skyarenatunnels', 'Sky Arena Tunnels')
+                            .replace('slicknslidescene', 'Slick n\' Slide')
+                            .replace('smashfortscene', 'Smash Fort/Smash Fort CTF')
+                            .replace('snowpark', 'Snow Shrine/Snowpark/Snowpark CTF')
+                            .replace('spacestationscene', 'Space Station(s)')
+                            .replace('stekysspeedwayscene', 'Steky\'s Speedway')
+                            .replace('thegravelpitscene', 'Gravel Pit')
+                            .replace('theoldgraveyard', 'Old Graveyard');
+
+                        window.kartStats.currentMap = mapName;
+                        originalLog('[SKMT] Map detected:', mapName);
+                    }
+                }
+            }
+
             // Handle game end
             if (msg.includes('bytebrew: sending custom event: game_end') || 
                 msg.includes('bytebrew: sending custom event: confirmexitgame')) {
@@ -176,7 +210,7 @@ function interceptConsole(method, original) {
                     // Calculate match duration
                     const matchDuration = window.kartStats.matchEndTime - window.kartStats.matchStartTime;
                     
-                    // Capture match data with players
+                    // Capture match data with players and map
                     const matchObj = {
                         kills: window.kartStats.kills,
                         deaths: window.kartStats.deaths,
@@ -190,7 +224,8 @@ function interceptConsole(method, original) {
                         quit: window.kartStats.quit,
                         killTimestamps: [...window.kartStats.killTimestamps],
                         deathTimestamps: [...window.kartStats.deathTimestamps],
-                        players: Array.from(detectedPlayersSet) // Use real-time detected players
+                        players: Array.from(detectedPlayersSet),
+                        map: window.kartStats.currentMap
                     };
                     
                     // Log comprehensive stats

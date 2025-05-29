@@ -725,3 +725,24 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(26px);
 }
+
+.match-meta {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.match-map {
+    font-size: 16px;
+    color: #4a90e2;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.match-stats {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 18px;
+    font-size: 16px;
+    font-weight: 700;
+}

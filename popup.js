@@ -613,6 +613,14 @@ function displayStats(data, mode) {
             meta.textContent = `#${allHistory.length - idx} | ${formatDateTime(m.matchStartTime)} - ${formatDateTime(m.matchEndTime)}`;
             content.appendChild(meta);
 
+            // Map info
+            if (m.map) {
+                const mapInfo = document.createElement('div');
+                mapInfo.className = 'match-map';
+                mapInfo.textContent = m.map;
+                content.appendChild(mapInfo);
+            }
+
             // Stats
             const stats = document.createElement('div');
             stats.className = 'match-stats';
@@ -686,6 +694,14 @@ function displayStats(data, mode) {
             meta.className = 'match-meta';
             meta.textContent = `#${history.length - idx} | ${formatDateTime(m.matchStartTime)} - ${formatDateTime(m.matchEndTime)}`;
             content.appendChild(meta);
+
+            // Map info
+            if (m.map) {
+                const mapInfo = document.createElement('div');
+                mapInfo.className = 'match-map';
+                mapInfo.textContent = m.map;
+                content.appendChild(mapInfo);
+            }
 
             // Stats
             const stats = document.createElement('div');
@@ -1425,95 +1441,15 @@ function openMatchInfo(match) {
         detectedPlayers = [...new Set(match.players)];
     }
 
-    // Streaks (without dying) calculation for this match
-    const streaksWithoutDying = [
-        { name: 'Smash Streak (3)', value: 0 },
-        { name: 'Smashtacular Streak (5)', value: 0 },
-        { name: 'Smashosaurus Streak (7)', value: 0 },
-        { name: 'Smashlvania Streak (10)', value: 0 },
-        { name: 'Monster Smash Streak (15)', value: 0 },
-        { name: 'Potato Streak (20)', value: 0 },
-        { name: 'Smash Smash Smash Smash Smash Smash Smash Smash Streak (25)', value: 0 },
-        { name: 'Potoatachio Streak (30)', value: 0 }
-    ];
-    // Calculate streaks for this match
-    let currentStreak = 0;
-    let achievedMilestones = {};
-    const timeline = [];
-    if (match.killTimestamps) match.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
-    if (match.deathTimestamps) match.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
-    timeline.sort((a, b) => a.time - b.time);
-    timeline.forEach(event => {
-        if (event.type === 'death') {
-            currentStreak = 0;
-            achievedMilestones = {};
-        } else if (event.type === 'kill') {
-            currentStreak++;
-            if (currentStreak >= 3 && !achievedMilestones[3]) { streaksWithoutDying[0].value++; achievedMilestones[3] = true; }
-            if (currentStreak >= 5 && !achievedMilestones[5]) { streaksWithoutDying[1].value++; achievedMilestones[5] = true; }
-            if (currentStreak >= 7 && !achievedMilestones[7]) { streaksWithoutDying[2].value++; achievedMilestones[7] = true; }
-            if (currentStreak >= 10 && !achievedMilestones[10]) { streaksWithoutDying[3].value++; achievedMilestones[10] = true; }
-            if (currentStreak >= 15 && !achievedMilestones[15]) { streaksWithoutDying[4].value++; achievedMilestones[15] = true; }
-            if (currentStreak >= 20 && !achievedMilestones[20]) { streaksWithoutDying[5].value++; achievedMilestones[20] = true; }
-            if (currentStreak >= 25 && !achievedMilestones[25]) { streaksWithoutDying[6].value++; achievedMilestones[25] = true; }
-            if (currentStreak >= 30 && !achievedMilestones[30]) { streaksWithoutDying[7].value++; achievedMilestones[30] = true; }
-        }
-    });
-    // Quick kills streaks for this match
-    const quickStreaks = [
-        { name: 'Double Smash (2)', value: 0 },
-        { name: 'Multi Smash (3)', value: 0 },
-        { name: 'Multi Mega Smash (4)', value: 0 },
-        { name: 'Multi Mega Ultra Smash (5)', value: 0 },
-        { name: 'Goosey Smash (6)', value: 0 },
-        { name: 'Crazy Multi Mega Ultra Smash (7)', value: 0 }
-    ];
-    if (match.killTimestamps && match.killTimestamps.length > 0) {
-        let quickKillStreak = 1;
-        let lastKillTime = match.killTimestamps[0];
-        for (let i = 1; i < match.killTimestamps.length; i++) {
-            const currentKillTime = match.killTimestamps[i];
-            const timeDiff = currentKillTime - lastKillTime;
-            if (timeDiff <= 4000) {
-                quickKillStreak++;
-                if (quickKillStreak === 2) quickStreaks[0].value++;
-                if (quickKillStreak === 3) quickStreaks[1].value++;
-                if (quickKillStreak === 4) quickStreaks[2].value++;
-                if (quickKillStreak === 5) quickStreaks[3].value++;
-                if (quickKillStreak === 6) quickStreaks[4].value++;
-                if (quickKillStreak === 7) quickStreaks[5].value++;
-            } else {
-                quickKillStreak = 1;
-            }
-            lastKillTime = currentKillTime;
-        }
-    }
     body.innerHTML = `
         <div class="match-info-title">Match Information</div>
+        ${match.map ? `<div class="match-info-section"><span class="match-info-label">Map:</span><span class="match-info-value">${match.map}</span></div>` : ''}
         <div class="match-info-section"><span class="match-info-label">Start:</span><span class="match-info-value">${formatDateTime(match.matchStartTime)}</span></div>
         <div class="match-info-section"><span class="match-info-label">End:</span><span class="match-info-value">${formatDateTime(match.matchEndTime)}</span></div>
         <div class="match-info-section"><span class="match-info-label">Kills:</span><span class="match-info-value">${match.kills}</span></div>
         <div class="match-info-section"><span class="match-info-label">Deaths:</span><span class="match-info-value">${match.deaths}</span></div>
         <div class="match-info-section"><span class="match-info-label">KDR:</span><span class="match-info-value">${formatKDR(match.kills, match.deaths)}</span></div>
         <div class="match-info-section"><span class="match-info-label">Duration:</span><span class="match-info-value">${formatTimeSpent(duration)}</span></div>
-        ${streaksWithoutDying.filter(s => s.value > 0).length > 0 ? `
-        <div class="match-info-section">
-            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Without Dying):</span>
-            <table style="width:100%;font-size:16px;margin-bottom:8px;">
-                <tbody>
-                ${streaksWithoutDying.filter(s => s.value > 0).map(s => `<tr><td>${s.name}</td><td style='text-align:right;'>${s.value}</td></tr>`).join('')}
-                </tbody>
-            </table>
-        </div>` : ''}
-        ${quickStreaks.filter(s => s.value > 0).length > 0 ? `
-        <div class="match-info-section">
-            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Quick Kills):</span>
-            <table style="width:100%;font-size:16px;margin-bottom:8px;">
-                <tbody>
-                ${quickStreaks.filter(s => s.value > 0).map(s => `<tr><td>${s.name}</td><td style='text-align:right;'>${s.value}</td></tr>`).join('')}
-                </tbody>
-            </table>
-        </div>` : ''}
         <div class="match-info-section">
             <span class="match-info-label" style="display:block;margin-bottom:6px;">Detected Players In Room:</span>
             <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
