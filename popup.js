@@ -121,6 +121,59 @@ function displayStats(data, mode) {
     const history = data[getModeKey('matchHistory', currentSkid, mode)] || [];
     let totalKills = 0, totalDeaths = 0, totalTimeSpent = 0;
 
+    // Initialize map tracking
+    const mapStats = new Map();
+
+    // Process history to collect map stats
+    if (mode === 'all') {
+        // Combine map stats from all modes
+        const modes = ['normal', 'special', 'custom'];
+        modes.forEach(mode => {
+            const modeHistory = data[getModeKey('matchHistory', currentSkid, mode)] || [];
+            modeHistory.forEach(match => {
+                if (match.map) {
+                    const count = mapStats.get(match.map) || 0;
+                    mapStats.set(match.map, count + 1);
+                }
+            });
+        });
+    } else {
+        // Individual mode map stats
+        history.forEach(match => {
+            if (match.map) {
+                const count = mapStats.get(match.map) || 0;
+                mapStats.set(match.map, count + 1);
+            }
+        });
+    }
+
+    // Update maps section
+    const mapsList = document.getElementById('mapsList');
+    mapsList.innerHTML = ''; // Clear existing content
+
+    // Sort maps by count (descending)
+    const sortedMaps = Array.from(mapStats.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    // Create stat cards for each map
+    sortedMaps.forEach(([mapName, count]) => {
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = `
+            <span class="stat-label">${mapName}</span>
+            <span class="stat-value">${count}</span>
+        `;
+        mapsList.appendChild(card);
+    });
+
+    // If no maps played, show a message
+    if (sortedMaps.length === 0) {
+        const noMaps = document.createElement('div');
+        noMaps.className = 'no-maps';
+        noMaps.textContent = 'No maps played yet';
+        mapsList.appendChild(noMaps);
+    }
+
     let gamesJoined = 0;
     let gamesStarted = 0;
     let gamesQuit = 0;
@@ -363,6 +416,12 @@ function displayStats(data, mode) {
             multiMegaUltraSmash += stats.multiMegaUltraSmash;
             gooseySmash += stats.gooseySmash;
             crazyMultiMegaUltraSmash += stats.crazyMultiMegaUltraSmash;
+
+            // Update records with highest values across all modes
+            if (stats.highestKillsRecord > highestKillsRecord) highestKillsRecord = stats.highestKillsRecord;
+            if (stats.highestDeathsRecord > highestDeathsRecord) highestDeathsRecord = stats.highestDeathsRecord;
+            if (stats.highestKillStreakRecord > highestKillStreakRecord) highestKillStreakRecord = stats.highestKillStreakRecord;
+            if (stats.highestKDRRecord > highestKDRRecord) highestKDRRecord = stats.highestKDRRecord;
         });
     } else {
         // Individual modes
