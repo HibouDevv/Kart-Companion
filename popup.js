@@ -155,7 +155,7 @@ function displayStats(data, mode) {
     sortedMapsForFilter.forEach(([mapName, count]) => {
         const option = document.createElement('option');
         option.value = mapName;
-        option.textContent = `${mapName} (${count})`;
+        option.textContent = mapName;
         mapFilter.appendChild(option);
     });
     if ([...mapFilter.options].some(opt => opt.value === previousSelection)) {
@@ -216,6 +216,7 @@ function displayStats(data, mode) {
     let highestDeathsRecord = 0;
     let highestKillStreakRecord = 0;
     let highestKDRRecord = 0;
+    let longestTimePlayedRecord = 0;
 
     // Initialize streak counters
     let smashStreak = 0;
@@ -244,6 +245,10 @@ function displayStats(data, mode) {
         // Calculate KDR for this match
         const matchKDR = m.deaths > 0 ? m.kills / m.deaths : m.kills;
         if (matchKDR > highestKDRRecord) highestKDRRecord = matchKDR;
+
+        // Calculate longest time played in a match
+        const matchDuration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
+        if (matchDuration > longestTimePlayedRecord) longestTimePlayedRecord = matchDuration;
 
         // Calculate highest kill streak for this match
         if (m.killTimestamps && m.killTimestamps.length > 0) {
@@ -361,6 +366,7 @@ function displayStats(data, mode) {
     document.getElementById('highestDeathsRecord').textContent = highestDeathsRecord;
     document.getElementById('highestKillStreakRecord').textContent = highestKillStreakRecord;
     document.getElementById('highestKDRRecord').textContent = highestKDRRecord.toFixed(2);
+    document.getElementById('longestTimePlayedRecord').textContent = formatTimeSpent(longestTimePlayedRecord);
 
     // Update streak displays
     document.getElementById('smashStreak').textContent = smashStreak;
