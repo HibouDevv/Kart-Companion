@@ -815,3 +815,44 @@ input:checked + .slider:before {
     display: block;
     width: 100%;
 }
+
+.match-sort-bar {
+    margin-bottom: 10px;
+    padding: 0 10px;
+}
+.match-sort-bar select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.match-sort-bar select:hover {
+    border-color: #4CAF50;
+}
+.match-sort-bar select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.star-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 4px 0 0;
+    display: flex;
+    align-items: center;
+    transition: filter 0.2s;
+}
+.star-btn svg polygon {
+    transition: fill 0.2s;
+}
+.star-btn:hover svg polygon {
+    filter: brightness(1.2);
+}

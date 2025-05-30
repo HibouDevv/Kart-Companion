@@ -197,6 +197,14 @@
                 <button id="resetStatsBtn" class="reset-btn">Reset All Stats</button>
                 <div class="match-history">
                     <h2>Match History</h2>
+                    <div class="match-sort-bar map-filter">
+                        <select id="matchSortSelect">
+                            <option value="recent">Recent Matches</option>
+                            <option value="oldest">Oldest Matches</option>
+                            <option value="kills">By Highest Kills</option>
+                            <option value="favorites">Favorites</option>
+                        </select>
+                    </div>
                     <div id="matches-list" class="matches-list">
                         <!-- Match cards will be dynamically inserted here -->
                     </div>

@@ -446,11 +446,11 @@ function displayStats(data, mode) {
     const matchesList = document.getElementById('matches-list');
     matchesList.innerHTML = '';
     
+    let matchesToRender = [];
     if (mode === 'all') {
         // Combine and sort match history from all modes
         const allHistory = [];
         const modes = ['normal', 'special', 'custom'];
-        
         modes.forEach(mode => {
             const modeHistory = data[getModeKey('matchHistory', currentSkid, mode)] || [];
             modeHistory.forEach(match => {
@@ -460,176 +460,25 @@ function displayStats(data, mode) {
                 });
             });
         });
-
-        // Sort by match start time, newest first
-        allHistory.sort((a, b) => {
-            const timeA = a.matchStartTime || a.startTime || 0;
-            const timeB = b.matchStartTime || b.startTime || 0;
-            return timeB - timeA;
-        });
-
-        // Display combined history
-        allHistory.forEach((m, idx) => {
-            const card = document.createElement('div');
-            card.className = 'match-card';
-
-            // Content container for meta, stats, flags
-            const content = document.createElement('div');
-            content.className = 'match-card-content';
-
-            // Meta info
-            const meta = document.createElement('div');
-            meta.className = 'match-meta';
-            meta.textContent = `#${allHistory.length - idx} | ${formatDateTime(m.matchStartTime)} - ${formatDateTime(m.matchEndTime)}`;
-            content.appendChild(meta);
-
-            // Map info
-            if (m.map) {
-                const mapInfo = document.createElement('div');
-                mapInfo.className = 'match-map';
-                mapInfo.textContent = m.map;
-                content.appendChild(mapInfo);
-            }
-
-            // Stats
-            const stats = document.createElement('div');
-            stats.className = 'match-stats';
-            stats.innerHTML = '';
-            stats.innerHTML += `<span>Kills:</span><b>${m.kills}</b>`;
-            stats.innerHTML += `<span>Deaths:</span><b>${m.deaths}</b>`;
-            stats.innerHTML += `<span>KDR:</span><b>${formatKDR(m.kills, m.deaths)}</b>`;
-            // Add match duration
-            const duration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
-            const hours = Math.floor(duration / 3600000);
-            const minutes = Math.floor((duration % 3600000) / 60000);
-            const seconds = Math.floor((duration % 60000) / 1000);
-            let durationText;
-            if (hours > 0) {
-                durationText = `${hours}h ${minutes}m ${seconds}s`;
-            } else {
-                durationText = `${minutes}m ${seconds}s`;
-            }
-            stats.innerHTML += `<span>Duration:</span><b>${durationText}</b>`;
-            content.appendChild(stats);
-
-            // Flags
-            const flags = document.createElement('div');
-            flags.className = 'match-flags';
-            let flagText = [];
-            if (m.joined) flagText.push('Joined');
-            if (m.started) flagText.push('Started');
-            if (m.quit) {
-                flagText.push('Quit');
-            } else { // Only add completed if not quit
-                flagText.push('Completed');
-            }
-            if (m.isSpecialMode) flagText.push('Special Mode');
-            if (m.isCustomMode) flagText.push('Custom Match');
-            // Add mode information
-            flagText.push(`${m.mode.charAt(0).toUpperCase() + m.mode.slice(1)} Mode`);
-            if (flagText.length > 0) flags.textContent = flagText.join(' | ');
-            content.appendChild(flags);
-
-            // Info icon button
-            const infoBtn = document.createElement('button');
-            infoBtn.className = 'info-btn';
-            infoBtn.title = 'View match information';
-            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
-            infoBtn.onclick = () => openMatchInfo(m);
-
-            // Trash icon button
-            const trashBtn = document.createElement('button');
-            trashBtn.className = 'trash-btn';
-            trashBtn.title = 'Delete this match';
-            trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-            trashBtn.onclick = () => deleteMatch(allHistory.length - 1 - idx, m.mode);
-
-            card.appendChild(content);
-            card.appendChild(infoBtn);
-            card.appendChild(trashBtn);
-            matchesList.appendChild(card);
-        });
+        matchesToRender = allHistory;
     } else {
-        // Individual mode history display (existing code)
-        history.slice().reverse().forEach((m, idx) => {
-            const card = document.createElement('div');
-            card.className = 'match-card';
-
-            // Content container for meta, stats, flags
-            const content = document.createElement('div');
-            content.className = 'match-card-content';
-
-            // Meta info
-            const meta = document.createElement('div');
-            meta.className = 'match-meta';
-            meta.textContent = `#${history.length - idx} | ${formatDateTime(m.matchStartTime)} - ${formatDateTime(m.matchEndTime)}`;
-            content.appendChild(meta);
-
-            // Map info
-            if (m.map) {
-                const mapInfo = document.createElement('div');
-                mapInfo.className = 'match-map';
-                mapInfo.textContent = m.map;
-                content.appendChild(mapInfo);
-            }
-
-            // Stats
-            const stats = document.createElement('div');
-            stats.className = 'match-stats';
-            stats.innerHTML = '';
-            stats.innerHTML += `<span>Kills:</span><b>${m.kills}</b>`;
-            stats.innerHTML += `<span>Deaths:</span><b>${m.deaths}</b>`;
-            stats.innerHTML += `<span>KDR:</span><b>${formatKDR(m.kills, m.deaths)}</b>`;
-            // Add match duration
-            const duration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
-            const hours = Math.floor(duration / 3600000);
-            const minutes = Math.floor((duration % 3600000) / 60000);
-            const seconds = Math.floor((duration % 60000) / 1000);
-            let durationText;
-            if (hours > 0) {
-                durationText = `${hours}h ${minutes}m ${seconds}s`;
-            } else {
-                durationText = `${minutes}m ${seconds}s`;
-            }
-            stats.innerHTML += `<span>Duration:</span><b>${durationText}</b>`;
-            content.appendChild(stats);
-
-            // Flags
-            const flags = document.createElement('div');
-            flags.className = 'match-flags';
-            let flagText = [];
-            if (m.joined) flagText.push('Joined');
-            if (m.started) flagText.push('Started');
-            if (m.quit) {
-                flagText.push('Quit');
-            } else { // Only add completed if not quit
-                flagText.push('Completed');
-            }
-            if (m.isSpecialMode) flagText.push('Special Mode');
-            if (m.isCustomMode) flagText.push('Custom Match');
-            if (flagText.length > 0) flags.textContent = flagText.join(' | ');
-            content.appendChild(flags);
-
-            // Info icon button
-            const infoBtn = document.createElement('button');
-            infoBtn.className = 'info-btn';
-            infoBtn.title = 'View match information';
-            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
-            infoBtn.onclick = () => openMatchInfo(m);
-
-            // Trash icon button
-            const trashBtn = document.createElement('button');
-            trashBtn.className = 'trash-btn';
-            trashBtn.title = 'Delete this match';
-            trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-            trashBtn.onclick = () => deleteMatch(history.length - 1 - idx);
-
-            card.appendChild(content);
-            card.appendChild(infoBtn);
-            card.appendChild(trashBtn);
-            matchesList.appendChild(card);
-        });
+        matchesToRender = history.slice().reverse();
     }
+
+    // Sorting logic
+    const sortValue = document.getElementById('matchSortSelect') ? document.getElementById('matchSortSelect').value : 'recent';
+    if (sortValue === 'recent') {
+        matchesToRender.sort((a, b) => (b.matchStartTime || 0) - (a.matchStartTime || 0));
+    } else if (sortValue === 'oldest') {
+        matchesToRender.sort((a, b) => (a.matchStartTime || 0) - (b.matchStartTime || 0));
+    } else if (sortValue === 'kills') {
+        matchesToRender.sort((a, b) => (b.kills || 0) - (a.kills || 0));
+    } else if (sortValue === 'favorites') {
+        matchesToRender = matchesToRender.filter(m => favoriteMatches[m.matchStartTime]);
+        matchesToRender.sort((a, b) => (b.matchStartTime || 0) - (a.matchStartTime || 0));
+    }
+
+    renderMatches(matchesToRender, mode);
 }
 
 function loadStats() {
@@ -1429,4 +1278,122 @@ function updateHudSettings() {
 document.getElementById('mapFilter').addEventListener('change', function(e) {
     selectedMap = e.target.value;
     loadStats(); // Reload stats with the new map filter
-}); 
+});
+
+// Add favorites storage
+let favoriteMatches = JSON.parse(localStorage.getItem('favoriteMatches') || '{}');
+
+function saveFavoriteMatches() {
+    localStorage.setItem('favoriteMatches', JSON.stringify(favoriteMatches));
+}
+
+function renderMatches(matches, mode) {
+    const matchesList = document.getElementById('matches-list');
+    matchesList.innerHTML = '';
+    matches.forEach((m, idx) => {
+        const card = document.createElement('div');
+        card.className = 'match-card';
+
+        // Content container for meta, stats, flags
+        const content = document.createElement('div');
+        content.className = 'match-card-content';
+
+        // Meta info
+        const meta = document.createElement('div');
+        meta.className = 'match-meta';
+        meta.textContent = `#${matches.length - idx} | ${formatDateTime(m.matchStartTime)} - ${formatDateTime(m.matchEndTime)}`;
+        content.appendChild(meta);
+
+        // Map info
+        if (m.map) {
+            const mapInfo = document.createElement('div');
+            mapInfo.className = 'match-map';
+            mapInfo.textContent = m.map;
+            content.appendChild(mapInfo);
+        }
+
+        // Stats
+        const stats = document.createElement('div');
+        stats.className = 'match-stats';
+        stats.innerHTML = '';
+        stats.innerHTML += `<span>Kills:</span><b>${m.kills}</b>`;
+        stats.innerHTML += `<span>Deaths:</span><b>${m.deaths}</b>`;
+        stats.innerHTML += `<span>KDR:</span><b>${formatKDR(m.kills, m.deaths)}</b>`;
+        // Add match duration
+        const duration = m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
+        const hours = Math.floor(duration / 3600000);
+        const minutes = Math.floor((duration % 3600000) / 60000);
+        const seconds = Math.floor((duration % 60000) / 1000);
+        let durationText;
+        if (hours > 0) {
+            durationText = `${hours}h ${minutes}m ${seconds}s`;
+        } else {
+            durationText = `${minutes}m ${seconds}s`;
+        }
+        stats.innerHTML += `<span>Duration:</span><b>${durationText}</b>`;
+        content.appendChild(stats);
+
+        // Flags
+        const flags = document.createElement('div');
+        flags.className = 'match-flags';
+        let flagText = [];
+        if (m.joined) flagText.push('Joined');
+        if (m.started) flagText.push('Started');
+        if (m.quit) {
+            flagText.push('Quit');
+        } else { // Only add completed if not quit
+            flagText.push('Completed');
+        }
+        if (m.isSpecialMode) flagText.push('Special Mode');
+        if (m.isCustomMode) flagText.push('Custom Match');
+        if (m.mode) flagText.push(`${m.mode.charAt(0).toUpperCase() + m.mode.slice(1)} Mode`);
+        if (flagText.length > 0) flags.textContent = flagText.join(' | ');
+        content.appendChild(flags);
+
+        // Star (favorite) button
+        const starBtn = document.createElement('button');
+        starBtn.className = 'star-btn';
+        starBtn.title = 'Favorite this match';
+        starBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.09 10,15.27 4.82,18.09 6,12.26 1.49,8.09 7.41,7.36" stroke="#FFD700" stroke-width="1.5" fill="' + (favoriteMatches[m.matchStartTime] ? '#FFD700' : 'white') + '"/></svg>';
+        starBtn.style.background = 'none';
+        starBtn.style.border = 'none';
+        starBtn.style.cursor = 'pointer';
+        starBtn.style.marginRight = '4px';
+        starBtn.onclick = () => {
+            if (favoriteMatches[m.matchStartTime]) {
+                delete favoriteMatches[m.matchStartTime];
+            } else {
+                favoriteMatches[m.matchStartTime] = true;
+            }
+            saveFavoriteMatches();
+            renderMatches(matches, mode);
+        };
+
+        // Info icon button
+        const infoBtn = document.createElement('button');
+        infoBtn.className = 'info-btn';
+        infoBtn.title = 'View match information';
+        infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
+        infoBtn.onclick = () => openMatchInfo(m);
+
+        // Trash icon button
+        const trashBtn = document.createElement('button');
+        trashBtn.className = 'trash-btn';
+        trashBtn.title = 'Delete this match';
+        trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        trashBtn.onclick = () => deleteMatch(matches.length - 1 - idx, m.mode);
+
+        card.appendChild(content);
+        card.appendChild(starBtn);
+        card.appendChild(infoBtn);
+        card.appendChild(trashBtn);
+        matchesList.appendChild(card);
+    });
+}
+
+// Add event listener for match sort select
+if (document.getElementById('matchSortSelect')) {
+    document.getElementById('matchSortSelect').addEventListener('change', function(e) {
+        loadStats();
+    });
+} 
