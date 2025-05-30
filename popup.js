@@ -87,9 +87,9 @@ function formatTimeSpent(milliseconds) {
     }
 }
 
-let currentSkid = null;
-let currentMode = 'normal'; // 'normal', 'special', or 'custom', or 'all'
-let currentMap = 'all'; // Track selected map filter
+let currentSkid = 'Default';
+let currentMode = 'normal';
+let selectedMap = 'all';
 
 // Add state for tracking open sections
 let openSections = {
@@ -119,18 +119,15 @@ function updateModeSelector() {
 }
 
 function displayStats(data, mode) {
-    const history = data[getModeKey('matchHistory', currentSkid, mode)] || [];
-    let totalKills = 0, totalDeaths = 0, totalTimeSpent = 0;
+    let history = [];
+    let mapStats = new Map();
 
-    // Initialize map tracking
-    const mapStats = new Map();
-
-    // Process history to collect map stats
     if (mode === 'all') {
-        // Combine map stats from all modes
+        // Combine history and map stats from all modes
         const modes = ['normal', 'special', 'custom'];
-        modes.forEach(mode => {
-            const modeHistory = data[getModeKey('matchHistory', currentSkid, mode)] || [];
+        modes.forEach(m => {
+            const modeHistory = data[getModeKey('matchHistory', currentSkid, m)] || [];
+            history = history.concat(modeHistory);
             modeHistory.forEach(match => {
                 if (match.map) {
                     const count = mapStats.get(match.map) || 0;
@@ -139,7 +136,8 @@ function displayStats(data, mode) {
             });
         });
     } else {
-        // Individual mode map stats
+        // Current mode only
+        history = data[getModeKey('matchHistory', currentSkid, mode)] || [];
         history.forEach(match => {
             if (match.map) {
                 const count = mapStats.get(match.map) || 0;
@@ -148,31 +146,49 @@ function displayStats(data, mode) {
         });
     }
 
-    // Update map filter dropdown
+    // Update map filter options
     const mapFilter = document.getElementById('mapFilter');
+    const previousSelection = mapFilter.value || 'all';
     mapFilter.innerHTML = '<option value="all">All Maps</option>';
-    
-    // Sort maps by count (descending)
-    const sortedMaps = Array.from(mapStats.entries())
+    const sortedMapsForFilter = Array.from(mapStats.entries())
         .sort((a, b) => b[1] - a[1]);
-
-    // Add map options to dropdown
-    sortedMaps.forEach(([mapName, count]) => {
+    sortedMapsForFilter.forEach(([mapName, count]) => {
         const option = document.createElement('option');
         option.value = mapName;
         option.textContent = `${mapName} (${count})`;
         mapFilter.appendChild(option);
     });
+    if ([...mapFilter.options].some(opt => opt.value === previousSelection)) {
+        mapFilter.value = previousSelection;
+        selectedMap = previousSelection;
+    } else {
+        mapFilter.value = 'all';
+        selectedMap = 'all';
+    }
 
-    // Set the current map filter value
-    mapFilter.value = currentMap;
+    // Filter history based on selected map
+    const filteredHistory = selectedMap === 'all'
+        ? history
+        : history.filter(match => match.map === selectedMap);
 
-    // Update maps section
+    // Calculate stats using filtered history
+    let totalKills = 0, totalDeaths = 0, totalTimeSpent = 0;
+    filteredHistory.forEach(m => {
+        totalKills += m.kills || 0;
+        totalDeaths += m.deaths || 0;
+        totalTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
+    });
+
+    // Update maps section to show only maps played in current mode
     const mapsList = document.getElementById('mapsList');
     mapsList.innerHTML = ''; // Clear existing content
 
-    // Create stat cards for each map
-    sortedMaps.forEach(([mapName, count]) => {
+    // Sort maps by count (descending)
+    const sortedMapsForDisplay = Array.from(mapStats.entries())
+        .sort((a, b) => b[1] - a[1]);
+
+    // Create stat cards for each map played in current mode
+    sortedMapsForDisplay.forEach(([mapName, count]) => {
         const card = document.createElement('div');
         card.className = 'stat-card';
         card.innerHTML = `
@@ -182,11 +198,11 @@ function displayStats(data, mode) {
         mapsList.appendChild(card);
     });
 
-    // If no maps played, show a message
-    if (sortedMaps.length === 0) {
+    // If no maps played in current mode, show a message
+    if (sortedMapsForDisplay.length === 0) {
         const noMaps = document.createElement('div');
         noMaps.className = 'no-maps';
-        noMaps.textContent = 'No maps played yet';
+        noMaps.textContent = 'No maps played yet in this mode';
         mapsList.appendChild(noMaps);
     }
 
@@ -219,169 +235,134 @@ function displayStats(data, mode) {
     let gooseySmash = 0;
     let crazyMultiMegaUltraSmash = 0;
 
-    if (mode === 'all') {
-        // Calculate stats for each mode first
-        const modes = ['normal', 'special', 'custom'];
-        const modeStats = {};
+    // Calculate stats for the current mode
+    filteredHistory.forEach(m => {
+        // Update records
+        if (m.kills > highestKillsRecord) highestKillsRecord = m.kills;
+        if (m.deaths > highestDeathsRecord) highestDeathsRecord = m.deaths;
+        
+        // Calculate KDR for this match
+        const matchKDR = m.deaths > 0 ? m.kills / m.deaths : m.kills;
+        if (matchKDR > highestKDRRecord) highestKDRRecord = matchKDR;
 
-        // Calculate stats for each individual mode
-        modes.forEach(mode => {
-            const modeHistory = data[getModeKey('matchHistory', currentSkid, mode)] || [];
-            let modeKills = 0;
-            let modeDeaths = 0;
-            let modeTimeSpent = 0;
-            let modeGamesJoined = data[getModeKey('gamesJoined', currentSkid, mode)] || 0;
-            let modeGamesStarted = data[getModeKey('gamesStarted', currentSkid, mode)] || 0;
-            let modeGamesQuit = data[getModeKey('gamesQuit', currentSkid, mode)] || 0;
-            let modeMatchesCompleted = data[getModeKey('matchesCompleted', currentSkid, mode)] || 0;
+        // Calculate highest kill streak for this match
+        if (m.killTimestamps && m.killTimestamps.length > 0) {
+            let currentStreak = 0;
+            let maxStreak = 0;
+            
+            // Create a combined timeline of kills and deaths
+            const timeline = [];
+            if (m.killTimestamps) {
+                m.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+            }
+            if (m.deathTimestamps) {
+                m.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+            }
+            // Sort timeline by timestamp
+            timeline.sort((a, b) => a.time - b.time);
 
-            // Initialize mode records
-            let modeHighestKillsRecord = 0;
-            let modeHighestDeathsRecord = 0;
-            let modeHighestKillStreakRecord = 0;
-            let modeHighestKDRRecord = 0;
-
-            // Initialize mode streak counters
-            let modeSmashStreak = 0;
-            let modeSmashtacularStreak = 0;
-            let modeSmashosaurusStreak = 0;
-            let modeSmashlvaniaStreak = 0;
-            let modeMonsterSmashStreak = 0;
-            let modePotatoStreak = 0;
-            let modeSmashSmashStreak = 0;
-            let modePotoatachioStreak = 0;
-
-            // Initialize mode quick kills streak counters
-            let modeDoubleSmash = 0;
-            let modeMultiSmash = 0;
-            let modeMultiMegaSmash = 0;
-            let modeMultiMegaUltraSmash = 0;
-            let modeGooseySmash = 0;
-            let modeCrazyMultiMegaUltraSmash = 0;
-
-            // Calculate kills, deaths, and time spent
-            modeHistory.forEach(m => {
-                // Only include stats for the selected map
-                if (currentMap === 'all' || m.map === currentMap) {
-                    modeKills += m.kills || 0;
-                    modeDeaths += m.deaths || 0;
-                    modeTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
+            // Process events in chronological order
+            timeline.forEach(event => {
+                if (event.type === 'death') {
+                    if (currentStreak > maxStreak) maxStreak = currentStreak;
+                    currentStreak = 0; // Reset streak on death
+                } else if (event.type === 'kill') {
+                    currentStreak++;
+                    if (currentStreak > maxStreak) maxStreak = currentStreak;
                 }
             });
+            if (maxStreak > highestKillStreakRecord) highestKillStreakRecord = maxStreak;
+        }
 
-            // Store mode stats
-            modeStats[mode] = {
-                kills: modeKills,
-                deaths: modeDeaths,
-                timeSpent: modeTimeSpent,
-                gamesJoined: modeGamesJoined,
-                gamesStarted: modeGamesStarted,
-                gamesQuit: modeGamesQuit,
-                matchesCompleted: modeMatchesCompleted,
-                highestKillsRecord: modeHighestKillsRecord,
-                highestDeathsRecord: modeHighestDeathsRecord,
-                highestKillStreakRecord: modeHighestKillStreakRecord,
-                highestKDRRecord: modeHighestKDRRecord,
-                smashStreak: modeSmashStreak,
-                smashtacularStreak: modeSmashtacularStreak,
-                smashosaurusStreak: modeSmashosaurusStreak,
-                smashlvaniaStreak: modeSmashlvaniaStreak,
-                monsterSmashStreak: modeMonsterSmashStreak,
-                potatoStreak: modePotatoStreak,
-                smashSmashStreak: modeSmashSmashStreak,
-                potoatachioStreak: modePotoatachioStreak,
-                doubleSmash: modeDoubleSmash,
-                multiSmash: modeMultiSmash,
-                multiMegaSmash: modeMultiMegaSmash,
-                multiMegaUltraSmash: modeMultiMegaUltraSmash,
-                gooseySmash: modeGooseySmash,
-                crazyMultiMegaUltraSmash: modeCrazyMultiMegaUltraSmash
-            };
-        });
+        // Calculate streaks for this match
+        let currentStreak = 0;
+        let lastKillTime = null;
+        let quickKillStreak = 0;
+        let achievedMilestones = {}; // Track milestones achieved in the current life
 
-        // Sum up all mode stats
-        modes.forEach(mode => {
-            const stats = modeStats[mode];
-            totalKills += stats.kills;
-            totalDeaths += stats.deaths;
-            totalTimeSpent += stats.timeSpent;
-            gamesJoined += stats.gamesJoined;
-            gamesStarted += stats.gamesStarted;
-            gamesQuit += stats.gamesQuit;
-            matchesCompleted += stats.matchesCompleted;
-            smashStreak += stats.smashStreak;
-            smashtacularStreak += stats.smashtacularStreak;
-            smashosaurusStreak += stats.smashosaurusStreak;
-            smashlvaniaStreak += stats.smashlvaniaStreak;
-            monsterSmashStreak += stats.monsterSmashStreak;
-            potatoStreak += stats.potatoStreak;
-            smashSmashStreak += stats.smashSmashStreak;
-            potoatachioStreak += stats.potoatachioStreak;
-            doubleSmash += stats.doubleSmash;
-            multiSmash += stats.multiSmash;
-            multiMegaSmash += stats.multiMegaSmash;
-            multiMegaUltraSmash += stats.multiMegaUltraSmash;
-            gooseySmash += stats.gooseySmash;
-            crazyMultiMegaUltraSmash += stats.crazyMultiMegaUltraSmash;
+        // Create a combined timeline of kills and deaths
+        const timeline = [];
+        if (m.killTimestamps) {
+            m.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+        }
+        if (m.deathTimestamps) {
+            m.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+        }
+        // Sort timeline by timestamp
+        timeline.sort((a, b) => a.time - b.time);
 
-            // Update records with highest values across all modes
-            if (stats.highestKillsRecord > highestKillsRecord) highestKillsRecord = stats.highestKillsRecord;
-            if (stats.highestDeathsRecord > highestDeathsRecord) highestDeathsRecord = stats.highestDeathsRecord;
-            if (stats.highestKillStreakRecord > highestKillStreakRecord) highestKillStreakRecord = stats.highestKillStreakRecord;
-            if (stats.highestKDRRecord > highestKDRRecord) highestKDRRecord = stats.highestKDRRecord;
-        });
-    } else {
-        // Individual mode stats
-        history.forEach(match => {
-            // Only include stats for the selected map
-            if (currentMap === 'all' || match.map === currentMap) {
-                totalKills += match.kills || 0;
-                totalDeaths += match.deaths || 0;
-                totalTimeSpent += match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
+        // Process events in chronological order
+        timeline.forEach(event => {
+            if (event.type === 'death') {
+                currentStreak = 0; // Reset streak immediately on death
+                achievedMilestones = {}; // Reset achieved milestones for the new life
+                quickKillStreak = 0; // Reset quick kill streak on death
+            } else if (event.type === 'kill') {
+                currentStreak++;
+                // Check for streak milestones only once per life
+                if (currentStreak >= 3 && !achievedMilestones[3]) {
+                    smashStreak++;
+                    achievedMilestones[3] = true;
+                }
+                if (currentStreak >= 5 && !achievedMilestones[5]) {
+                    smashtacularStreak++;
+                    achievedMilestones[5] = true;
+                }
+                if (currentStreak >= 7 && !achievedMilestones[7]) {
+                    smashosaurusStreak++;
+                    achievedMilestones[7] = true;
+                }
+                if (currentStreak >= 10 && !achievedMilestones[10]) {
+                    smashlvaniaStreak++;
+                    achievedMilestones[10] = true;
+                }
+                if (currentStreak >= 15 && !achievedMilestones[15]) {
+                    monsterSmashStreak++;
+                    achievedMilestones[15] = true;
+                }
+                if (currentStreak >= 20 && !achievedMilestones[20]) {
+                    potatoStreak++;
+                    achievedMilestones[20] = true;
+                }
+                if (currentStreak >= 25 && !achievedMilestones[25]) {
+                    smashSmashStreak++;
+                    achievedMilestones[25] = true;
+                }
+                if (currentStreak >= 30 && !achievedMilestones[30]) {
+                    potoatachioStreak++;
+                    achievedMilestones[30] = true;
+                }
+
+                // Handle quick kills streak
+                if (lastKillTime && (event.time - lastKillTime) <= 4000) {
+                    quickKillStreak++;
+                    if (quickKillStreak === 2) doubleSmash++;
+                    if (quickKillStreak === 3) multiSmash++;
+                    if (quickKillStreak === 4) multiMegaSmash++;
+                    if (quickKillStreak === 5) multiMegaUltraSmash++;
+                    if (quickKillStreak === 6) gooseySmash++;
+                    if (quickKillStreak === 7) crazyMultiMegaUltraSmash++;
+                } else {
+                    quickKillStreak = 1;
+                }
+                lastKillTime = event.time;
             }
         });
 
-        gamesJoined = data[getModeKey('gamesJoined', currentSkid, mode)] || 0;
-        gamesStarted = data[getModeKey('gamesStarted', currentSkid, mode)] || 0;
-        gamesQuit = data[getModeKey('gamesQuit', currentSkid, mode)] || 0;
-        matchesCompleted = data[getModeKey('matchesCompleted', currentSkid, mode)] || 0;
-    }
+        // Update game stats
+        if (m.joined) gamesJoined++;
+        if (m.started) gamesStarted++;
+        if (m.quit) gamesQuit++;
+        if (!m.quit) matchesCompleted++;
+    });
 
-    // Update all stat displays
-    document.getElementById('kills').textContent = totalKills;
-    document.getElementById('deaths').textContent = totalDeaths;
-    document.getElementById('kdr').textContent = formatKDR(totalKills, totalDeaths);
-    document.getElementById('totalTimeSpent').textContent = formatTimeSpent(totalTimeSpent);
-    document.getElementById('gamesJoined').textContent = gamesJoined;
-    document.getElementById('gamesStarted').textContent = gamesStarted;
-    document.getElementById('gamesQuit').textContent = gamesQuit;
-    document.getElementById('matchesCompleted').textContent = matchesCompleted;
-    document.getElementById('totalMatches').textContent = gamesJoined + gamesQuit;
-
-    // Calculate and display rates
-    const totalMatches = gamesJoined + gamesQuit;
-    const completedRate = totalMatches > 0 ? (matchesCompleted / totalMatches) * 100 : 0;
-    const quitRate = totalMatches > 0 ? (gamesQuit / totalMatches) * 100 : 0;
-
-    document.getElementById('matchesCompletedRate').textContent = `${completedRate.toFixed(2)}%`;
-    document.getElementById('matchesQuitRate').textContent = `${quitRate.toFixed(2)}%`;
-
-    // Calculate and display average stats
-    const avgKills = totalMatches > 0 ? totalKills / totalMatches : 0;
-    const avgDeaths = totalMatches > 0 ? totalDeaths / totalMatches : 0;
-    const avgTimeSpent = totalMatches > 0 ? totalTimeSpent / totalMatches : 0;
-
-    document.getElementById('avgKills').textContent = avgKills.toFixed(2);
-    document.getElementById('avgDeaths').textContent = avgDeaths.toFixed(2);
-    document.getElementById('avgTimeSpent').textContent = formatTimeSpent(avgTimeSpent);
-
-    // Update records
+    // Update record displays
     document.getElementById('highestKillsRecord').textContent = highestKillsRecord;
     document.getElementById('highestDeathsRecord').textContent = highestDeathsRecord;
     document.getElementById('highestKillStreakRecord').textContent = highestKillStreakRecord;
     document.getElementById('highestKDRRecord').textContent = highestKDRRecord.toFixed(2);
 
-    // Update streaks
+    // Update streak displays
     document.getElementById('smashStreak').textContent = smashStreak;
     document.getElementById('smashtacularStreak').textContent = smashtacularStreak;
     document.getElementById('smashosaurusStreak').textContent = smashosaurusStreak;
@@ -391,7 +372,7 @@ function displayStats(data, mode) {
     document.getElementById('smashSmashStreak').textContent = smashSmashStreak;
     document.getElementById('potoatachioStreak').textContent = potoatachioStreak;
 
-    // Update quick kills streaks
+    // Update quick kills streak displays
     document.getElementById('doubleSmash').textContent = doubleSmash;
     document.getElementById('multiSmash').textContent = multiSmash;
     document.getElementById('multiMegaSmash').textContent = multiMegaSmash;
@@ -423,24 +404,65 @@ function displayStats(data, mode) {
     // Updated label for Total Matches (Completed + Quit)
     document.getElementById('totalMatchesLabel').textContent = mode === 'all' ? 'Total Matches (Completed + Quit)' : 'Total Matches (Completed + Quit)';
 
+    console.log('[SKMT][POPUP][DISPLAY] Updating gamesQuit display. Value:', gamesQuit, 'Element:', document.getElementById('gamesQuit'));
+    document.getElementById('kills').textContent = totalKills;
+    document.getElementById('deaths').textContent = totalDeaths;
+    document.getElementById('kdr').textContent = formatKDR(totalKills, totalDeaths);
+    document.getElementById('totalTimeSpent').textContent = formatTimeSpent(totalTimeSpent);
+
+    document.getElementById('gamesJoined').textContent = gamesJoined;
+    document.getElementById('gamesStarted').textContent = gamesStarted;
+    document.getElementById('gamesQuit').textContent = gamesQuit;
+    document.getElementById('matchesCompleted').textContent = matchesCompleted;
+    document.getElementById('totalMatches').textContent = totalMatchesCount;
+
+    // Calculate and display rates for both individual and all modes
+    const totalMatches = totalMatchesCount;
+    const completedRate = totalMatches > 0 ? ((matchesCompleted || 0) / totalMatches) * 100 : 0;
+    const quitRate = totalMatches > 0 ? ((gamesQuit || 0) / totalMatches) * 100 : 0;
+
+    document.getElementById('matchesCompletedRate').textContent = `${completedRate.toFixed(2)}%`;
+    document.getElementById('matchesQuitRate').textContent = `${quitRate.toFixed(2)}%`;
+
+    // Calculate and display average stats
+    const avgKills = totalMatches > 0 ? totalKills / totalMatches : 0;
+    const avgDeaths = totalMatches > 0 ? totalDeaths / totalMatches : 0;
+    const avgTimeSpent = totalMatches > 0 ? totalTimeSpent / totalMatches : 0;
+
+    document.getElementById('avgKills').textContent = avgKills.toFixed(2);
+    document.getElementById('avgDeaths').textContent = avgDeaths.toFixed(2);
+    document.getElementById('avgTimeSpent').textContent = formatTimeSpent(avgTimeSpent);
+
     // Update average stats header label
     document.getElementById('averageStatsHeader').textContent = mode === 'all' ? 'All Modes Average Stats' : 'Average Stats';
 
-    // Render match history (unfiltered by map)
+    // Render match history only for individual modes
     const matchesList = document.getElementById('matches-list');
     matchesList.innerHTML = '';
-
+    
     if (mode === 'all') {
-        // Combine and sort all mode histories
+        // Combine and sort match history from all modes
         const allHistory = [];
+        const modes = ['normal', 'special', 'custom'];
+        
         modes.forEach(mode => {
             const modeHistory = data[getModeKey('matchHistory', currentSkid, mode)] || [];
             modeHistory.forEach(match => {
-                allHistory.push({...match, mode});
+                allHistory.push({
+                    ...match,
+                    mode: mode // Add mode information to each match
+                });
             });
         });
-        allHistory.sort((a, b) => b.matchStartTime - a.matchStartTime);
 
+        // Sort by match start time, newest first
+        allHistory.sort((a, b) => {
+            const timeA = a.matchStartTime || a.startTime || 0;
+            const timeB = b.matchStartTime || b.startTime || 0;
+            return timeB - timeA;
+        });
+
+        // Display combined history
         allHistory.forEach((m, idx) => {
             const card = document.createElement('div');
             card.className = 'match-card';
@@ -487,16 +509,42 @@ function displayStats(data, mode) {
             // Flags
             const flags = document.createElement('div');
             flags.className = 'match-flags';
-            if (m.quit) flags.innerHTML += '<span class="flag quit">Quit</span>';
-            if (m.started) flags.innerHTML += '<span class="flag started">Started</span>';
-            if (m.joined) flags.innerHTML += '<span class="flag joined">Joined</span>';
+            let flagText = [];
+            if (m.joined) flagText.push('Joined');
+            if (m.started) flagText.push('Started');
+            if (m.quit) {
+                flagText.push('Quit');
+            } else { // Only add completed if not quit
+                flagText.push('Completed');
+            }
+            if (m.isSpecialMode) flagText.push('Special Mode');
+            if (m.isCustomMode) flagText.push('Custom Match');
+            // Add mode information
+            flagText.push(`${m.mode.charAt(0).toUpperCase() + m.mode.slice(1)} Mode`);
+            if (flagText.length > 0) flags.textContent = flagText.join(' | ');
             content.appendChild(flags);
 
+            // Info icon button
+            const infoBtn = document.createElement('button');
+            infoBtn.className = 'info-btn';
+            infoBtn.title = 'View match information';
+            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
+            infoBtn.onclick = () => openMatchInfo(m);
+
+            // Trash icon button
+            const trashBtn = document.createElement('button');
+            trashBtn.className = 'trash-btn';
+            trashBtn.title = 'Delete this match';
+            trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            trashBtn.onclick = () => deleteMatch(allHistory.length - 1 - idx, m.mode);
+
             card.appendChild(content);
+            card.appendChild(infoBtn);
+            card.appendChild(trashBtn);
             matchesList.appendChild(card);
         });
     } else {
-        // Individual mode history display
+        // Individual mode history display (existing code)
         history.slice().reverse().forEach((m, idx) => {
             const card = document.createElement('div');
             card.className = 'match-card';
@@ -543,12 +591,36 @@ function displayStats(data, mode) {
             // Flags
             const flags = document.createElement('div');
             flags.className = 'match-flags';
-            if (m.quit) flags.innerHTML += '<span class="flag quit">Quit</span>';
-            if (m.started) flags.innerHTML += '<span class="flag started">Started</span>';
-            if (m.joined) flags.innerHTML += '<span class="flag joined">Joined</span>';
+            let flagText = [];
+            if (m.joined) flagText.push('Joined');
+            if (m.started) flagText.push('Started');
+            if (m.quit) {
+                flagText.push('Quit');
+            } else { // Only add completed if not quit
+                flagText.push('Completed');
+            }
+            if (m.isSpecialMode) flagText.push('Special Mode');
+            if (m.isCustomMode) flagText.push('Custom Match');
+            if (flagText.length > 0) flags.textContent = flagText.join(' | ');
             content.appendChild(flags);
 
+            // Info icon button
+            const infoBtn = document.createElement('button');
+            infoBtn.className = 'info-btn';
+            infoBtn.title = 'View match information';
+            infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
+            infoBtn.onclick = () => openMatchInfo(m);
+
+            // Trash icon button
+            const trashBtn = document.createElement('button');
+            trashBtn.className = 'trash-btn';
+            trashBtn.title = 'Delete this match';
+            trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+            trashBtn.onclick = () => deleteMatch(history.length - 1 - idx);
+
             card.appendChild(content);
+            card.appendChild(infoBtn);
+            card.appendChild(trashBtn);
             matchesList.appendChild(card);
         });
     }
@@ -1348,7 +1420,7 @@ function updateHudSettings() {
 }
 
 // Add event listener for map filter
-document.getElementById('mapFilter').addEventListener('change', function() {
-    currentMap = this.value;
-    loadStats();
+document.getElementById('mapFilter').addEventListener('change', function(e) {
+    selectedMap = e.target.value;
+    loadStats(); // Reload stats with the new map filter
 }); 

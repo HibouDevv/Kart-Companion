@@ -781,3 +781,31 @@ input:checked + .slider:before {
     padding: 20px;
     font-style: italic;
 }
+
+.map-filter {
+    margin: 10px 0;
+    padding: 0 10px;
+}
+
+.map-filter select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+    font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.map-filter select:hover {
+    border-color: #4CAF50;
+}
+
+.map-filter select:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}

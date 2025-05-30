@@ -48,46 +48,4 @@
 
 #exportStatsBtn:hover {
     background-color: #1976D2;
-}
-
-.mode-selector {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 10px;
-}
-
-.map-filter {
-    margin: 15px 0 20px 0;
-    width: 100%;
-}
-
-.map-select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: #f8f8f8;
-    font-size: 14px;
-    color: #333;
-    cursor: pointer;
-    font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
-    transition: all 0.2s ease;
-}
-
-.map-select:hover {
-    border-color: #4CAF50;
-    background-color: #fff;
-}
-
-.map-select:focus {
-    outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-    background-color: #fff;
-}
-
-.map-select option {
-    padding: 8px;
-    font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
-    background-color: #fff;
 } 
