@@ -30,7 +30,18 @@ async function getStats() {
                     const timeB = b.matchStartTime || b.startTime || 0;
                     return timeA - timeB;
                 });
-                resolve({ matchHistory, gamesJoined, gamesStarted, gamesQuit, matchesCompleted });
+                resolve({ 
+                    matchHistory, 
+                    gamesJoined, 
+                    gamesStarted, 
+                    gamesQuit, 
+                    matchesCompleted,
+                    currentSkid,
+                    // Add mode-specific completed games data
+                    [`matchesCompleted_${currentSkid}_normal`]: data[`matchesCompleted_${currentSkid}_normal`] || 0,
+                    [`matchesCompleted_${currentSkid}_special`]: data[`matchesCompleted_${currentSkid}_special`] || 0,
+                    [`matchesCompleted_${currentSkid}_custom`]: data[`matchesCompleted_${currentSkid}_custom`] || 0
+                });
             });
         });
     });
@@ -429,21 +440,101 @@ function renderGamesCompletedQuitChart(matchesCompleted, gamesQuit) {
             labels: ['Completed', 'Quit'],
             datasets: [{
                 data: [matchesCompleted, gamesQuit],
-                backgroundColor: ['#3498db', '#FFA500'],
-                borderColor: ['#217dbb', '#FFA500'],
-                borderWidth: 1
+                backgroundColor: ['#3498db', '#e74c3c']
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { display: true, position: 'top', labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } } },
+                legend: { labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } } },
+                title: { display: false }
+            }
+        }
+    });
+}
+
+// Function to render game mode distribution pie chart
+function renderGameModeDistributionChart(data) {
+    const ctx = document.getElementById('gameModeDistributionChart').getContext('2d');
+    const modes = ['normal', 'special', 'custom'];
+    const modeData = modes.map(mode => data[`matchesCompleted_${data.currentSkid}_${mode}`] || 0);
+    
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ['Normal Mode', 'Special Mode', 'Custom Mode'],
+            datasets: [{
+                data: modeData,
+                backgroundColor: ['#3498db', '#2ecc71', '#e74c3c']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { labels: { color: '#217dbb', font: { weight: 'bold', size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' } } },
+                title: { display: false }
+            }
+        }
+    });
+}
+
+// Function to render map distribution pie chart
+function renderMapDistributionChart(matchHistory) {
+    const ctx = document.getElementById('mapDistributionChart').getContext('2d');
+    
+    // Count occurrences of each map
+    const mapCounts = {};
+    matchHistory.forEach(match => {
+        if (match.map) {
+            mapCounts[match.map] = (mapCounts[match.map] || 0) + 1;
+        }
+    });
+
+    // Sort maps by count (descending) and take top 10
+    const sortedMaps = Object.entries(mapCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 10);
+
+    // Generate colors for the pie chart
+    const colors = [
+        '#3498db', '#2ecc71', '#e74c3c', '#f1c40f', '#9b59b6',
+        '#1abc9c', '#e67e22', '#34495e', '#16a085', '#d35400'
+    ];
+
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: sortedMaps.map(([map]) => map),
+            datasets: [{
+                data: sortedMaps.map(([,count]) => count),
+                backgroundColor: colors
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { 
+                    labels: { 
+                        color: '#217dbb', 
+                        font: { 
+                            weight: 'bold', 
+                            size: 16, 
+                            family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' 
+                        } 
+                    },
+                    position: 'right'
+                },
                 title: { display: false },
                 tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    bodyFont: { size: 18, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' },
-                    titleFont: { size: 20, family: 'Bungee, Luckiest Guy, Quicksand, Segoe UI, Arial, sans-serif' }
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} games (${percentage}%)`;
+                        }
+                    }
                 }
             }
         }
@@ -652,6 +743,8 @@ async function initializeCharts() {
     renderStreaksQuickKillsChart(quickStreaks);
     renderGamesJoinedStartedChart(stats.gamesJoined, stats.gamesStarted);
     renderGamesCompletedQuitChart(stats.matchesCompleted, stats.gamesQuit);
+    renderGameModeDistributionChart(stats);
+    renderMapDistributionChart(stats.matchHistory);
     renderGamesPlayedPerDayChart(stats.matchHistory);
 }
 document.addEventListener('DOMContentLoaded', initializeCharts); 
