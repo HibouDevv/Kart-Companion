@@ -119,12 +119,25 @@ function calculateStreaks(matchHistory) {
 }
 
 // Customizable Game Trends Chart
-function renderCustomTrendsChart(matchHistory, selectedMetrics) {
+function renderCustomTrendsChart(matchHistory, selectedMetrics, selectedMap = 'all') {
     const ctx = document.getElementById('customTrendsChart').getContext('2d');
+    
+    // Filter match history by selected map
+    const filteredHistory = selectedMap === 'all' 
+        ? matchHistory 
+        : matchHistory.filter(m => m.map === selectedMap);
+
+    if (filteredHistory.length === 0) {
+        if (window.customTrendsChartInstance) {
+            window.customTrendsChartInstance.destroy();
+        }
+        return;
+    }
+
     // Compute all possible data arrays
     let totalKills = 0, totalDeaths = 0, totalTime = 0;
     const killsArr = [], deathsArr = [], kdrArr = [], totalKillsArr = [], totalDeathsArr = [], totalKdrArr = [], timePlayedArr = [], totalTimeArr = [];
-    matchHistory.forEach((m, i) => {
+    filteredHistory.forEach((m, i) => {
         killsArr.push(m.kills);
         deathsArr.push(m.deaths);
         kdrArr.push(m.deaths === 0 ? (m.kills > 0 ? m.kills : 0) : (m.kills / m.deaths));
@@ -139,6 +152,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
         totalTime += time;
         totalTimeArr.push(totalTime / 1000 / 60); // minutes
     });
+
     // Build datasets based on selected metrics
     const datasets = [];
     if (selectedMetrics.includes('kills')) {
@@ -213,6 +227,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
             tension: 0.1
         });
     }
+
     // Destroy previous chart if exists
     if (window.customTrendsChartInstance) {
         window.customTrendsChartInstance.destroy();
@@ -220,7 +235,7 @@ function renderCustomTrendsChart(matchHistory, selectedMetrics) {
     window.customTrendsChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: matchHistory.map((_, i) => `Game ${i + 1}`),
+            labels: filteredHistory.map((_, i) => `Game ${i + 1}`),
             datasets
         },
         options: {
@@ -646,9 +661,22 @@ function aggregateByPeriod(matchHistory, groupBy) {
 }
 
 // Customizable Per-Day/Month/Year Trends Chart
-function renderCustomTrendsPerDayChart(matchHistory, selectedMetrics, groupBy) {
+function renderCustomTrendsPerDayChart(matchHistory, selectedMetrics, groupBy, selectedMap = 'all') {
     const ctx = document.getElementById('customTrendsPerDayChart').getContext('2d');
-    const groups = aggregateByPeriod(matchHistory, groupBy);
+    
+    // Filter match history by selected map
+    const filteredHistory = selectedMap === 'all' 
+        ? matchHistory 
+        : matchHistory.filter(m => m.map === selectedMap);
+
+    if (filteredHistory.length === 0) {
+        if (window.customTrendsPerDayChartInstance) {
+            window.customTrendsPerDayChartInstance.destroy();
+        }
+        return;
+    }
+
+    const groups = aggregateByPeriod(filteredHistory, groupBy);
     const keys = Object.keys(groups).sort();
     const metricsMap = {
         kills: { label: 'Kills', color: '#3498db' },
@@ -713,32 +741,62 @@ async function initializeCharts() {
         document.querySelector('.container').innerHTML += '<p style="text-align: center; color: #888;">No stats data available. Play some matches first!</p>';
         return;
     }
+
+    // Get unique maps and populate map filters
+    const uniqueMaps = [...new Set(stats.matchHistory.map(m => m.map).filter(Boolean))].sort();
+    const mapFilter = document.getElementById('trendMapFilter');
+    const perDayMapFilter = document.getElementById('trendPerDayMapFilter');
+    
+    uniqueMaps.forEach(map => {
+        mapFilter.add(new Option(map, map));
+        perDayMapFilter.add(new Option(map, map));
+    });
+
     const { streaks, quickStreaks } = calculateStreaks(stats.matchHistory);
+    
     // Stats Per Game
     const defaultMetrics = ['kills', 'deaths', 'kdr'];
     renderCustomTrendsChart(stats.matchHistory, defaultMetrics);
+    
     // Checkbox logic for per game
     const checkboxes = document.querySelectorAll('#trendCheckboxes input[type=checkbox]');
     checkboxes.forEach(cb => {
         cb.addEventListener('change', () => {
             const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
-            renderCustomTrendsChart(stats.matchHistory, selected);
+            const selectedMap = document.getElementById('trendMapFilter').value;
+            renderCustomTrendsChart(stats.matchHistory, selected, selectedMap);
         });
     });
+
+    // Map filter logic for per game
+    mapFilter.addEventListener('change', () => {
+        const selected = Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+        const selectedMap = mapFilter.value;
+        renderCustomTrendsChart(stats.matchHistory, selected, selectedMap);
+    });
+
     // Stats Per Day
     const perDayCheckboxes = document.querySelectorAll('#trendPerDayCheckboxes input[type=checkbox]');
     const groupBySelect = document.getElementById('trendPerDayGroupBy');
+    
     function renderPerDayChartFromUI() {
         const selected = Array.from(perDayCheckboxes).filter(c => c.checked).map(c => c.value);
         const groupBy = groupBySelect.value;
-        renderCustomTrendsPerDayChart(stats.matchHistory, selected, groupBy);
+        const selectedMap = perDayMapFilter.value;
+        renderCustomTrendsPerDayChart(stats.matchHistory, selected, groupBy, selectedMap);
     }
+    
     perDayCheckboxes.forEach(cb => {
         cb.addEventListener('change', renderPerDayChartFromUI);
     });
+    
     groupBySelect.addEventListener('change', renderPerDayChartFromUI);
+    perDayMapFilter.addEventListener('change', renderPerDayChartFromUI);
+    
     // Initial render for per day
     renderPerDayChartFromUI();
+    
+    // Render other charts (unchanged)
     renderStreaksWithoutDyingChart(streaks);
     renderStreaksQuickKillsChart(quickStreaks);
     renderGamesJoinedStartedChart(stats.gamesJoined, stats.gamesStarted);
@@ -747,4 +805,5 @@ async function initializeCharts() {
     renderMapDistributionChart(stats.matchHistory);
     renderGamesPlayedPerDayChart(stats.matchHistory);
 }
+document.addEventListener('DOMContentLoaded', initializeCharts); 
 document.addEventListener('DOMContentLoaded', initializeCharts); 

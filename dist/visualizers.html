@@ -143,6 +143,12 @@
                     <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
                     <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
                 </div>
+                <div style="margin-top:10px;">
+                    <label for="trendMapFilter">Filter by Map: </label>
+                    <select id="trendMapFilter">
+                        <option value="all">All Maps</option>
+                    </select>
+                </div>
             </details>
             <canvas id="customTrendsChart" class="chart-canvas"></canvas>
         </div>
@@ -169,6 +175,10 @@
                         <option value="day">Day</option>
                         <option value="month">Month</option>
                         <option value="year">Year</option>
+                    </select>
+                    <label for="trendPerDayMapFilter" style="margin-left: 20px;">Filter by Map: </label>
+                    <select id="trendPerDayMapFilter">
+                        <option value="all">All Maps</option>
                     </select>
                 </div>
             </details>
