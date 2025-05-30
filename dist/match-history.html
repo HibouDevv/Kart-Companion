@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion - Match History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <script src="chart.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #fff;
+            --header-bg: #f5f8fa;
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+        }
+        body {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            margin: 0;
+            padding: 0;
+            background-color: var(--header-bg);
+        }
+        .nav-container {
+            background: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e3eaf1;
+        }
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .nav-item {
+            padding: 15px 0;
+        }
+        .nav-link {
+            color: var(--primary-blue-dark);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        .nav-link.active:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .logo-title {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            color: var(--primary-blue);
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 #222, 4px 4px 0 #fff, 0 2px 8px #217dbb44;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav-container">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="visualizers.html" class="nav-link">All Stats</a></li>
+                <li class="nav-item"><a href="3min-mode.html" class="nav-link">3 Minute Mode</a></li>
+                <li class="nav-item"><a href="special-mode.html" class="nav-link">Special Mode</a></li>
+                <li class="nav-item"><a href="stats-numbers.html" class="nav-link">Stats In Numbers</a></li>
+                <li class="nav-item"><a href="match-history.html" class="nav-link active">Match History</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-title">Match History</h1>
+        </div>
+        <!-- Content will go here -->
+    </div>
+</body>
+</html> 

@@ -18,8 +18,59 @@
         body {
             font-family: 'Baloo 2', Arial, sans-serif !important;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background-color: var(--header-bg);
+        }
+        .nav-container {
+            background: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e3eaf1;
+        }
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .nav-item {
+            padding: 15px 0;
+        }
+        .nav-link {
+            color: var(--primary-blue-dark);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        .nav-link.active:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        .content-section {
+            display: none;
+            padding: 20px;
+        }
+        .content-section.active {
+            display: block;
         }
         .container {
             max-width: 1400px;
@@ -123,98 +174,206 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1 class="logo-title">Kart Companion Charts</h1>
+    <nav class="nav-container">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="visualizers.html" class="nav-link active">All Stats</a></li>
+                <li class="nav-item"><a href="3min-mode.html" class="nav-link">3 Minute Mode</a></li>
+                <li class="nav-item"><a href="special-mode.html" class="nav-link">Special Mode</a></li>
+                <li class="nav-item"><a href="stats-numbers.html" class="nav-link">Stats In Numbers</a></li>
+                <li class="nav-item"><a href="match-history.html" class="nav-link">Match History</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
         </div>
-        <div class="skid-display" id="skidDisplay">SKID: ...</div>
+    </nav>
 
-        <div class="section">
-            <div class="section-title">Stats Per Game</div>
-            <details open>
-                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
-                <div id="trendCheckboxes">
-                    <label><input type="checkbox" value="kills" checked> Kills</label>
-                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
-                    <label><input type="checkbox" value="kdr" checked> KDR</label>
-                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
-                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
-                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
-                    <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
-                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
-                </div>
-                <div style="margin-top:10px;">
-                    <label for="trendMapFilter">Filter by Map: </label>
-                    <select id="trendMapFilter">
-                        <option value="all">All Maps</option>
-                    </select>
-                </div>
-            </details>
-            <canvas id="customTrendsChart" class="chart-canvas"></canvas>
-        </div>
+    <div id="all-stats" class="content-section active">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">Kart Companion Charts</h1>
+            </div>
+            <div class="skid-display" id="skidDisplay">SKID: ...</div>
 
-        <div class="section">
-            <div class="section-title">Stats Over Time</div>
-            <details open>
-                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
-                <div id="trendPerDayCheckboxes">
-                    <label><input type="checkbox" value="kills" checked> Kills</label>
-                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
-                    <label><input type="checkbox" value="kdr" checked> KDR</label>
-                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
-                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
-                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
-                    <label><input type="checkbox" value="timePlayed"> Time Played</label>
-                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
-                    <label><input type="checkbox" value="games"> Games</label>
-                    <label><input type="checkbox" value="totalGames"> Total Games</label>
-                </div>
-                <div style="margin-top:10px;">
-                    <label for="trendPerDayGroupBy">Group by: </label>
-                    <select id="trendPerDayGroupBy">
-                        <option value="day">Day</option>
-                        <option value="month">Month</option>
-                        <option value="year">Year</option>
-                    </select>
-                    <label for="trendPerDayMapFilter" style="margin-left: 20px;">Filter by Map: </label>
-                    <select id="trendPerDayMapFilter">
-                        <option value="all">All Maps</option>
-                    </select>
-                </div>
-            </details>
-            <canvas id="customTrendsPerDayChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Stats Per Game</div>
+                <details open>
+                    <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                    <div id="trendCheckboxes">
+                        <label><input type="checkbox" value="kills" checked> Kills</label>
+                        <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                        <label><input type="checkbox" value="kdr" checked> KDR</label>
+                        <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                        <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                        <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                        <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
+                        <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <label for="trendMapFilter">Filter by Map: </label>
+                        <select id="trendMapFilter">
+                            <option value="all">All Maps</option>
+                        </select>
+                    </div>
+                </details>
+                <canvas id="customTrendsChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Streaks (Without Dying)</div>
-            <canvas id="streaksWithoutDyingChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Stats Over Time</div>
+                <details open>
+                    <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                    <div id="trendPerDayCheckboxes">
+                        <label><input type="checkbox" value="kills" checked> Kills</label>
+                        <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                        <label><input type="checkbox" value="kdr" checked> KDR</label>
+                        <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                        <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                        <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                        <label><input type="checkbox" value="timePlayed"> Time Played</label>
+                        <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                        <label><input type="checkbox" value="games"> Games</label>
+                        <label><input type="checkbox" value="totalGames"> Total Games</label>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <label for="trendPerDayGroupBy">Group by: </label>
+                        <select id="trendPerDayGroupBy">
+                            <option value="day">Day</option>
+                            <option value="month">Month</option>
+                            <option value="year">Year</option>
+                        </select>
+                        <label for="trendPerDayMapFilter" style="margin-left: 20px;">Filter by Map: </label>
+                        <select id="trendPerDayMapFilter">
+                            <option value="all">All Maps</option>
+                        </select>
+                    </div>
+                </details>
+                <canvas id="customTrendsPerDayChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Streaks (Quick Kills)</div>
-            <canvas id="streaksQuickKillsChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Streaks (Without Dying)</div>
+                <canvas id="streaksWithoutDyingChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Games Joined vs Started</div>
-            <canvas id="gamesJoinedStartedChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Streaks (Quick Kills)</div>
+                <canvas id="streaksQuickKillsChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Games Completed vs Quit</div>
-            <canvas id="gamesCompletedQuitChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Games Joined vs Started</div>
+                <canvas id="gamesJoinedStartedChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Game Mode Distribution</div>
-            <canvas id="gameModeDistributionChart" class="chart-canvas"></canvas>
-        </div>
+            <div class="section">
+                <div class="section-title">Games Completed vs Quit</div>
+                <canvas id="gamesCompletedQuitChart" class="chart-canvas"></canvas>
+            </div>
 
-        <div class="section">
-            <div class="section-title">Map Distribution</div>
-            <canvas id="mapDistributionChart" class="chart-canvas"></canvas>
+            <div class="section">
+                <div class="section-title">Game Mode Distribution</div>
+                <canvas id="gameModeDistributionChart" class="chart-canvas"></canvas>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Map Distribution</div>
+                <canvas id="mapDistributionChart" class="chart-canvas"></canvas>
+            </div>
         </div>
     </div>
+
+    <div id="3min-mode" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">3 Minute Mode</h1>
+            </div>
+        </div>
+    </div>
+
+    <div id="special-mode" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">Special Mode</h1>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-numbers" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">Stats In Numbers</h1>
+            </div>
+        </div>
+    </div>
+
+    <div id="match-history" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">Match History</h1>
+            </div>
+        </div>
+    </div>
+
+    <div id="about" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">About</h1>
+            </div>
+        </div>
+    </div>
+
     <script src="visualizers.js"></script>
+    <script>
+        // Navigation functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function switchSection(sectionId) {
+                // Hide all sections
+                contentSections.forEach(section => {
+                    section.style.display = 'none';
+                    section.classList.remove('active');
+                });
+                
+                // Remove active class from all links
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                // Show selected section and activate its link
+                const selectedSection = document.getElementById(sectionId);
+                const selectedLink = document.querySelector(`[data-section="${sectionId}"]`);
+                
+                if (selectedSection) {
+                    selectedSection.style.display = 'block';
+                    selectedSection.classList.add('active');
+                }
+                
+                if (selectedLink) {
+                    selectedLink.classList.add('active');
+                }
+            }
+
+            // Add click event listeners to all navigation links
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('data-section');
+                    switchSection(sectionId);
+                });
+            });
+
+            // Handle hash changes for direct navigation
+            window.addEventListener('hashchange', function() {
+                const hash = window.location.hash.slice(1) || 'all-stats';
+                switchSection(hash);
+            });
+
+            // Initial section based on hash or default to all-stats
+            const initialHash = window.location.hash.slice(1) || 'all-stats';
+            switchSection(initialHash);
+        });
+    </script>
 </body>
 </html> 
