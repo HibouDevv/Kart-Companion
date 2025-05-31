@@ -84,6 +84,69 @@
             margin-bottom: 0.2em;
             text-transform: uppercase;
         }
+        .skid-display {
+            text-align: center;
+            font-size: 1.5em;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            color: #222;
+            margin-bottom: 30px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .section {
+            background: var(--container-bg);
+            padding: 24px 24px 16px 24px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e3eaf1;
+            margin-bottom: 32px;
+            overflow-x: auto;
+        }
+        .section-title {
+            font-size: 2em;
+            color: var(--primary-blue-dark);
+            margin-bottom: 18px;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            text-shadow: 1px 1px 0 #fff, 0 2px 8px #217dbb22;
+        }
+        .chart-canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 1000px;
+            max-height: 500px;
+            width: 100%;
+            height: 400px;
+        }
+        #streaksWithoutDyingChart, #streaksQuickKillsChart {
+            min-width: 900px;
+        }
+        .chartjs-render-monitor, .chartjs-size-monitor {
+            font-size: 1.2em !important;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
+        .section label, .section select, .section summary {
+            font-size: 1.25em;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+        }
+        .section input[type="checkbox"] {
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
+        .section select {
+            padding: 4px 8px;
+            border-radius: 5px;
+            border: 1px solid #b0c4de;
+            font-size: 1.1em;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
     </style>
 </head>
 <body>
@@ -102,9 +165,101 @@
 
     <div class="container">
         <div class="header">
-            <h1 class="logo-title">3 Minute Mode</h1>
+            <h1 class="logo-title">3 Minute Mode Stats</h1>
         </div>
-        <!-- Content will go here -->
+        <div class="skid-display" id="skidDisplay">SKID: ...</div>
+
+        <div class="section">
+            <div class="section-title">Stats Per Game</div>
+            <details open>
+                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                <div id="trendCheckboxes">
+                    <label><input type="checkbox" value="kills" checked> Kills</label>
+                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                    <label><input type="checkbox" value="kdr" checked> KDR</label>
+                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                    <label><input type="checkbox" value="timePlayed"> Time Played Per Game</label>
+                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                </div>
+                <div style="margin-top:10px;">
+                    <label for="trendMapFilter">Filter by Map: </label>
+                    <select id="trendMapFilter">
+                        <option value="all">All Maps</option>
+                    </select>
+                </div>
+            </details>
+            <canvas id="customTrendsChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Stats Over Time</div>
+            <details open>
+                <summary style="font-weight:600;cursor:pointer;">Select Metrics to Display</summary>
+                <div id="trendPerDayCheckboxes">
+                    <label><input type="checkbox" value="kills" checked> Kills</label>
+                    <label><input type="checkbox" value="deaths" checked> Deaths</label>
+                    <label><input type="checkbox" value="kdr" checked> KDR</label>
+                    <label><input type="checkbox" value="totalKills"> Total Kills</label>
+                    <label><input type="checkbox" value="totalDeaths"> Total Deaths</label>
+                    <label><input type="checkbox" value="totalKdr"> Total KDR</label>
+                    <label><input type="checkbox" value="timePlayed"> Time Played</label>
+                    <label><input type="checkbox" value="totalTimePlayed"> Total Time Played</label>
+                    <label><input type="checkbox" value="games"> Games</label>
+                    <label><input type="checkbox" value="totalGames"> Total Games</label>
+                </div>
+                <div style="margin-top:10px;">
+                    <label for="trendPerDayGroupBy">Group by: </label>
+                    <select id="trendPerDayGroupBy">
+                        <option value="day">Day</option>
+                        <option value="month">Month</option>
+                        <option value="year">Year</option>
+                    </select>
+                    <label for="trendPerDayMapFilter" style="margin-left: 20px;">Filter by Map: </label>
+                    <select id="trendPerDayMapFilter">
+                        <option value="all">All Maps</option>
+                    </select>
+                </div>
+            </details>
+            <canvas id="customTrendsPerDayChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Streaks (Without Dying)</div>
+            <canvas id="streaksWithoutDyingChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Streaks (Quick Kills)</div>
+            <canvas id="streaksQuickKillsChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Games Joined vs Started</div>
+            <canvas id="gamesJoinedStartedChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Games Completed vs Quit</div>
+            <canvas id="gamesCompletedQuitChart" class="chart-canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Map Distribution</div>
+            <canvas id="mapDistributionChart" class="chart-canvas"></canvas>
+        </div>
     </div>
+
+    <div id="about" class="content-section">
+        <div class="container">
+            <div class="header">
+                <h1 class="logo-title">About</h1>
+            </div>
+        </div>
+    </div>
+
+    <script src="visualizers.js"></script>
+    <script src="3min-mode.js"></script>
 </body>
 </html> 

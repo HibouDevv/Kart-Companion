@@ -278,12 +278,13 @@ function interceptConsole(method, original) {
                         players: Array.from(detectedPlayersSet)
                     };
                     
+                    // Send match data and wait for popup to update
                     window.postMessage({
                         type: 'SKMT_MATCH_COMPLETE',
                         data: matchObj
                     }, '*');
-                    
-                    // Now reset everything including modes
+
+                    // Reset modes immediately after sending match data
                     window.kartStats.isSpecialMode = false;
                     window.kartStats.isCustomMode = false;
                     resetStats();
@@ -341,7 +342,8 @@ function resetStats() {
     window.kartStats.sawStartGame = false;
     window.kartStats.awaitingStartType = true;
     window.kartStats.players = [];
+    window.kartStats.isSpecialMode = false;
+    window.kartStats.isCustomMode = false;
     if (window.kartStats._gameEndTimeout) clearTimeout(window.kartStats._gameEndTimeout);
     window.kartStats._gameEndTimeout = null;
-    // Do not reset isSpecialMode or isCustomMode here
 } 

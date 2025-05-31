@@ -247,73 +247,134 @@ window.addEventListener('message', function(event) {
         }
     } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
         const match = event.data.data;
-        console.log('[SKMT] Saving match data:', { kills: match.kills, deaths: match.deaths });
+        console.log('[SKMT] Saving match data:', { kills: match.kills, deaths: match.deaths, quit: match.quit });
         
         // Determine the mode key based on the match data
-        chrome.storage.sync.get(['currentSkid'], (skidData) => {
-            const skid = skidData.currentSkid || 'default';
+        chrome.storage.sync.get(['currentSkid'], (data) => {
+            const skid = data.currentSkid || 'default';
             let mode = 'normal';
-            if (match.isCustomMode) mode = 'custom';
-            else if (match.isSpecialMode) mode = 'special';
+            
+            // Determine mode based on match data
+            if (match.isCustomMode) {
+                mode = 'custom';
+                console.log('[SKMT] Recording quit in custom mode');
+            } else if (match.isSpecialMode) {
+                mode = 'special';
+                console.log('[SKMT] Recording quit in special mode');
+            } else {
+                console.log('[SKMT] Recording quit in normal mode');
+            }
+            
             const getModeKey = (base) => `${base}_${skid}_${mode}`;
 
-            // Handle quit matches
+            // Get all relevant keys
+            const keys = [];
+            
             if (match.quit) {
-                const gamesQuitKey = getModeKey('gamesQuit');
-                chrome.storage.sync.get([gamesQuitKey], (result) => {
-                    let gamesQuit = result[gamesQuitKey] || 0;
-                    gamesQuit++;
-                    const setObj = {};
-                    setObj[gamesQuitKey] = gamesQuit;
-                    chrome.storage.sync.set(setObj, () => {
-                        console.log('[SKMT] Match quit saved');
-                        chrome.runtime.sendMessage(event.data);
-                    });
-                });
+                // For quit games, only get gamesQuit
+                keys.push(getModeKey('gamesQuit'));
             } else {
-                // Handle completed matches
-                const keys = [
+                // For completed games, get all stats
+                keys.push(
                     getModeKey('matchHistory'),
                     getModeKey('gamesJoined'),
                     getModeKey('gamesStarted'),
-                    getModeKey('gamesQuit'),
                     getModeKey('matchesCompleted')
-                ];
-                
-                chrome.storage.sync.get(keys, (result) => {
-                    const history = result[getModeKey('matchHistory')] || [];
-                    history.push(match);
+                );
+            }
+            
+            chrome.storage.sync.get(keys, (result) => {
+                const setObj = {};
 
+                if (match.quit) {
+                    // For quit games, only update gamesQuit
+                    let gamesQuit = result[getModeKey('gamesQuit')] || 0;
+                    gamesQuit++;
+                    setObj[getModeKey('gamesQuit')] = gamesQuit;
+                    console.log('[SKMT] Incrementing gamesQuit for mode:', mode, 'New value:', gamesQuit);
+                } else {
+                    // For completed games, update all stats
+                    let history = result[getModeKey('matchHistory')] || [];
+                    history.push(match);
+                    
                     let gamesJoined = result[getModeKey('gamesJoined')] || 0;
                     let gamesStarted = result[getModeKey('gamesStarted')] || 0;
-                    let gamesQuit = result[getModeKey('gamesQuit')] || 0;
                     let matchesCompleted = result[getModeKey('matchesCompleted')] || 0;
 
                     if (match.joined) gamesJoined++;
                     if (match.started) gamesStarted++;
-                    if (!match.quit) matchesCompleted++;
+                    matchesCompleted++;
 
-                    const setObj = {};
                     setObj[getModeKey('matchHistory')] = history;
                     setObj[getModeKey('gamesJoined')] = gamesJoined;
                     setObj[getModeKey('gamesStarted')] = gamesStarted;
-                    setObj[getModeKey('gamesQuit')] = gamesQuit;
                     setObj[getModeKey('matchesCompleted')] = matchesCompleted;
+                }
 
-                    chrome.storage.sync.set(setObj, () => {
-                        console.log('[SKMT] Match data saved');
-                        chrome.runtime.sendMessage(event.data);
+                // Save the stats
+                chrome.storage.sync.set(setObj, () => {
+                    console.log('[SKMT] Match data saved:', {
+                        mode,
+                        quit: match.quit,
+                        isSpecialMode: match.isSpecialMode,
+                        isCustomMode: match.isCustomMode,
+                        savedToHistory: !match.quit,
+                        statsUpdated: !match.quit
                     });
+
+                    // Send message to popup with the updated data
+                    chrome.runtime.sendMessage({
+                        type: 'SKMT_MATCH_COMPLETE',
+                        data: {
+                            ...match,
+                            mode: mode, // Add mode to the data
+                            quit: match.quit // Ensure quit flag is included
+                        }
+                    }, () => {
+                        if (chrome.runtime.lastError) {
+                            console.error('[SKMT] Error sending message to popup:', chrome.runtime.lastError);
+                        } else {
+                            console.log('[SKMT] Successfully sent match data to popup:', {
+                                mode,
+                                quit: match.quit,
+                                isSpecialMode: match.isSpecialMode,
+                                isCustomMode: match.isCustomMode
+                            });
+                        }
+                    });
+
+                    // If this was a quit, wait 1 second before resetting the mode flags
+                    if (match.quit) {
+                        setTimeout(() => {
+                            const resetObj = {};
+                            if (match.isCustomMode) {
+                                resetObj.isCustomMode = false;
+                                console.log('[SKMT] Resetting custom mode flag after delay');
+                            }
+                            if (match.isSpecialMode) {
+                                resetObj.isSpecialMode = false;
+                                console.log('[SKMT] Resetting special mode flag after delay');
+                            }
+                            if (Object.keys(resetObj).length > 0) {
+                                chrome.storage.sync.set(resetObj, () => {
+                                    console.log('[SKMT] Mode flags reset after delay');
+                                });
+                            }
+                        }, 1000); // 1 second delay
+                    }
                 });
-            }
+            });
         });
     } else if (event.data.type === 'SKMT_DEATHS_UPDATE') {
+        console.log('[SKMT] Received deaths update:', event.data.deaths);
         hud.textContent = `Deaths: ${event.data.deaths}`;
         console.log('[SKMT] HUD: Deaths display updated to', event.data.deaths);
     } else if (event.data.type === 'SKMT_KILLSTREAK_UPDATE') {
+        console.log('[SKMT] Received kill streak update:', event.data.killStreak);
         killStreakHud.textContent = `Kill Streak: ${event.data.killStreak}`;
         console.log('[SKMT] HUD: Kill streak display updated to', event.data.killStreak);
     } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
+        console.log('[SKMT] Match complete, resetting HUD displays');
         hud.textContent = 'Deaths: 0';
         killStreakHud.textContent = 'Kill Streak: 0';
         console.log('[SKMT] HUD: Reset to initial state');
@@ -426,21 +487,28 @@ document.body.appendChild(hud);
 
 // Initialize HUD states on page load
 chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled'], (result) => {
-    if (result.deathsHudEnabled !== false) { // default ON
-        hud.style.display = 'block';
-    }
-    if (result.killStreakHudEnabled !== false) { // default ON
-        killStreakHud.style.display = 'block';
-    }
+    // Set display to block by default if not explicitly disabled
+    hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
+    killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
+    
+    // Log the current state for debugging
+    console.log('[SKMT] HUD states:', {
+        deathsHud: hud.style.display,
+        killStreakHud: killStreakHud.style.display,
+        deathsHudEnabled: result.deathsHudEnabled,
+        killStreakHudEnabled: result.killStreakHudEnabled
+    });
 });
 
 // Listen for toggle from popup
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg.type === 'toggle-deaths-hud') {
-    hud.style.display = msg.enabled ? 'block' : 'none';
-  } else if (msg.type === 'toggle-killstreak-hud') {
-    killStreakHud.style.display = msg.enabled ? 'block' : 'none';
-  }
+    if (msg.type === 'toggle-deaths-hud') {
+        hud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Deaths HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-killstreak-hud') {
+        killStreakHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Kill Streak HUD toggled:', msg.enabled);
+    }
 });
 
 // HUD overlay for Kill Streak

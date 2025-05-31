@@ -179,6 +179,23 @@ function displayStats(data, mode) {
         totalTimeSpent += m.duration || (m.matchEndTime && m.matchStartTime ? m.matchEndTime - m.matchStartTime : 0);
     });
 
+    // Get gamesQuit from storage for the current mode
+    let gamesQuit = 0;
+    if (mode === 'all') {
+        // Sum up quit counts from all modes
+        const modes = ['normal', 'special', 'custom'];
+        modes.forEach(m => {
+            gamesQuit += data[getModeKey('gamesQuit', currentSkid, m)] || 0;
+        });
+    } else {
+        gamesQuit = data[getModeKey('gamesQuit', currentSkid, mode)] || 0;
+    }
+
+    console.log('[SKMT][DISPLAY] Current gamesQuit value:', gamesQuit, 'Mode:', mode);
+
+    // Update the gamesQuit display
+    document.getElementById('gamesQuit').textContent = gamesQuit;
+
     // Update maps section to show only maps played in current mode
     const mapsList = document.getElementById('mapsList');
     mapsList.innerHTML = ''; // Clear existing content
@@ -208,7 +225,6 @@ function displayStats(data, mode) {
 
     let gamesJoined = 0;
     let gamesStarted = 0;
-    let gamesQuit = 0;
     let matchesCompleted = 0;
 
     // Initialize record tracking
@@ -431,9 +447,10 @@ function displayStats(data, mode) {
     document.getElementById('matchesQuitRate').textContent = `${quitRate.toFixed(2)}%`;
 
     // Calculate and display average stats
-    const avgKills = totalMatches > 0 ? totalKills / totalMatches : 0;
-    const avgDeaths = totalMatches > 0 ? totalDeaths / totalMatches : 0;
-    const avgTimeSpent = totalMatches > 0 ? totalTimeSpent / totalMatches : 0;
+    const completedMatches = filteredHistory.filter(m => !m.quit).length;
+    const avgKills = completedMatches > 0 ? totalKills / completedMatches : 0;
+    const avgDeaths = completedMatches > 0 ? totalDeaths / completedMatches : 0;
+    const avgTimeSpent = completedMatches > 0 ? totalTimeSpent / completedMatches : 0;
 
     document.getElementById('avgKills').textContent = avgKills.toFixed(2);
     document.getElementById('avgDeaths').textContent = avgDeaths.toFixed(2);
@@ -500,11 +517,11 @@ function loadStats() {
             });
         } else {
             // Fetch data only for the current mode
-             keysToFetch.push(getModeKey('matchHistory', currentSkid, currentMode));
-             keysToFetch.push(getModeKey('gamesJoined', currentSkid, currentMode));
-             keysToFetch.push(getModeKey('gamesStarted', currentSkid, currentMode));
-             keysToFetch.push(getModeKey('gamesQuit', currentSkid, currentMode));
-             keysToFetch.push(getModeKey('matchesCompleted', currentSkid, currentMode));
+            keysToFetch.push(getModeKey('matchHistory', currentSkid, currentMode));
+            keysToFetch.push(getModeKey('gamesJoined', currentSkid, currentMode));
+            keysToFetch.push(getModeKey('gamesStarted', currentSkid, currentMode));
+            keysToFetch.push(getModeKey('gamesQuit', currentSkid, currentMode));
+            keysToFetch.push(getModeKey('matchesCompleted', currentSkid, currentMode));
         }
 
         console.log('[SKMT][LOAD] Loading stats for SKID:', currentSkid, 'Mode:', currentMode, 'Keys:', keysToFetch);
@@ -694,53 +711,72 @@ chrome.runtime.onMessage.addListener(
             // When SKID updates, reload stats for the current mode (or all modes)
             loadStats();
         } else if (request.type === 'SKMT_MATCH_COMPLETE') {
-             console.log('[SKMT][POPUP] Received MATCH_COMPLETE message:', request.data);
-             const match = request.data;
-             
-             // Determine the mode key based on the match data
-             const mode = match.isSpecialMode ? 'special' : (match.isCustomMode ? 'custom' : 'normal');
-             const skid = currentSkid || 'Default'; // Use currentSkid from popup
-             const matchHistoryKey = getModeKey('matchHistory', skid, mode);
-             const gamesJoinedKey = getModeKey('gamesJoined', skid, mode);
-             const gamesStartedKey = getModeKey('gamesStarted', skid, mode);
-             const gamesQuitKey = getModeKey('gamesQuit', skid, mode);
-             const matchesCompletedKey = getModeKey('matchesCompleted', skid, mode);
+            console.log('[SKMT][POPUP] Received MATCH_COMPLETE message:', request.data);
+            const match = request.data;
+            
+            // Determine the mode key based on the match data
+            const mode = match.isSpecialMode ? 'special' : (match.isCustomMode ? 'custom' : 'normal');
+            const skid = currentSkid || 'Default'; // Use currentSkid from popup
+            const gamesQuitKey = getModeKey('gamesQuit', skid, mode);
 
-             chrome.storage.sync.get([matchHistoryKey, gamesJoinedKey, gamesStartedKey, gamesQuitKey, matchesCompletedKey], (data) => {
-                 let history = data[matchHistoryKey] || [];
-                 let gamesJoined = data[gamesJoinedKey] || 0;
-                 let gamesStarted = data[gamesStartedKey] || 0;
-                 let gamesQuit = data[gamesQuitKey] || 0;
-                 let matchesCompleted = data[matchesCompletedKey] || 0;
+            // For quit matches, only update gamesQuit
+            if (match.quit) {
+                chrome.storage.sync.get([gamesQuitKey], (data) => {
+                    let gamesQuit = data[gamesQuitKey] || 0;
+                    gamesQuit++;
+                    
+                    const setObj = {};
+                    setObj[gamesQuitKey] = gamesQuit;
+                    
+                    console.log(`[SKMT][POPUP] Incrementing gamesQuit for ${mode} mode. New value:`, gamesQuit);
+                    
+                    chrome.storage.sync.set(setObj, () => {
+                        console.log(`[SKMT][POPUP] Saved quit counter for ${mode} mode:`, {
+                            quit: match.quit,
+                            isSpecialMode: match.isSpecialMode,
+                            isCustomMode: match.isCustomMode,
+                            gamesQuit: gamesQuit
+                        });
+                        // Force reload stats to update display
+                        loadStats();
+                    });
+                });
+            } else {
+                // For completed games, update all stats
+                const matchHistoryKey = getModeKey('matchHistory', skid, mode);
+                const gamesJoinedKey = getModeKey('gamesJoined', skid, mode);
+                const gamesStartedKey = getModeKey('gamesStarted', skid, mode);
+                const matchesCompletedKey = getModeKey('matchesCompleted', skid, mode);
 
-                 console.log(`[SKMT][POPUP] Before update - Mode: ${mode}, Games Joined: ${gamesJoined}, Games Started: ${gamesStarted}, Games Quit: ${gamesQuit}, Matches Completed: ${matchesCompleted}`);
+                chrome.storage.sync.get([matchHistoryKey, gamesJoinedKey, gamesStartedKey, matchesCompletedKey], (data) => {
+                    let history = data[matchHistoryKey] || [];
+                    let gamesJoined = data[gamesJoinedKey] || 0;
+                    let gamesStarted = data[gamesStartedKey] || 0;
+                    let matchesCompleted = data[matchesCompletedKey] || 0;
 
-                 // Add the new match to history
-                 history.push(match);
+                    history.push(match);
+                    if (match.joined) gamesJoined++;
+                    if (match.started) gamesStarted++;
+                    matchesCompleted++;
 
-                 // Update cumulative stats based on the new match
-                 if (match.joined) gamesJoined++;
-                 if (match.started) gamesStarted++;
-                 if (match.quit) gamesQuit++;
-                 // A match is considered completed if not quit, regardless of mode
-                 if (!match.quit) matchesCompleted++;
+                    const setObj = {};
+                    setObj[matchHistoryKey] = history;
+                    setObj[gamesJoinedKey] = gamesJoined;
+                    setObj[gamesStartedKey] = gamesStarted;
+                    setObj[matchesCompletedKey] = matchesCompleted;
 
-                 console.log(`[SKMT][POPUP] After update - Mode: ${mode}, Games Joined: ${gamesJoined}, Games Started: ${gamesStarted}, Games Quit: ${gamesQuit}, Matches Completed: ${matchesCompleted}`);
-
-                 // Save updated data back to storage
-                 const setObj = {};
-                 setObj[matchHistoryKey] = history;
-                 setObj[gamesJoinedKey] = gamesJoined;
-                 setObj[gamesStartedKey] = gamesStarted;
-                 setObj[gamesQuitKey] = gamesQuit;
-                 setObj[matchesCompletedKey] = matchesCompleted;
-
-                 chrome.storage.sync.set(setObj, () => {
-                     console.log(`[SKMT][POPUP] Saved match data and updated stats for ${mode} mode.`);
-                     // Reload stats in the popup to display the new data
-                     loadStats();
-                 });
-             });
+                    chrome.storage.sync.set(setObj, () => {
+                        console.log(`[SKMT][POPUP] Saved completed match data for ${mode} mode:`, {
+                            quit: match.quit,
+                            isSpecialMode: match.isSpecialMode,
+                            isCustomMode: match.isCustomMode,
+                            savedToHistory: true
+                        });
+                        // Force reload stats to update display
+                        loadStats();
+                    });
+                });
+            }
         }
     }
 );
