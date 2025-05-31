@@ -11,6 +11,8 @@ async function getStats() {
                 mode = 'normal';
             } else if (currentPage === 'special-mode.html') {
                 mode = 'special';
+            } else if (currentPage === 'custom-mode.html') {
+                mode = 'custom';
             }
 
             console.log('[SKMT][VISUALIZER][getStats] Current Page:', currentPage, 'Determined Mode:', mode, 'Current SKID:', currentSkid);
