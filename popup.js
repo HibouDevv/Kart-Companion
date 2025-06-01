@@ -721,6 +721,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Restore section states after loading stats
     restoreSectionStates();
+
+    // Add event listener for More Details button
+    const moreDetailsBtn = document.getElementById('moreDetailsBtn');
+    if (moreDetailsBtn) {
+        moreDetailsBtn.addEventListener('click', () => {
+            chrome.tabs.create({ url: 'match-history.html' });
+        });
+    }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -1488,12 +1496,6 @@ function rgbaToHex(rgba) {
     const b = parseInt(parts[2].trim());
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 }
-
-// Add event listener for map filter
-document.getElementById('mapFilter').addEventListener('change', function(e) {
-    selectedMap = e.target.value;
-    loadStats(); // Reload stats with the new map filter
-});
 
 // Add favorites storage (using chrome.storage.sync)
 let favoriteMatches = {}; // Initialize as empty, load from storage

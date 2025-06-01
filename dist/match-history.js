@@ -632,6 +632,12 @@ async function loadMatches() {
                 case 'favorites':
                     // Sort by most recent since we've already filtered to only favorites
                     return timeB - timeA;
+                case 'longest':
+                    const durationA = a.duration || (a.matchEndTime && a.matchStartTime ? a.matchEndTime - a.matchStartTime : 0);
+                    const durationB = b.duration || (b.matchEndTime && b.matchStartTime ? b.matchEndTime - b.matchStartTime : 0);
+                    return durationB - durationA; // Longest first
+                case 'deaths':
+                    return (b.deaths || 0) - (a.deaths || 0); // Highest deaths first
                 default:
                     return timeB - timeA;
             }
