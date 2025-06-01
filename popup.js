@@ -516,6 +516,9 @@ function loadStats() {
         const keysToFetch = ['currentSkid']; // Always fetch currentSkid
         const modes = ['normal', 'special', 'custom'];
 
+        // Also fetch favorite matches for the current SKID
+        keysToFetch.push(`favoriteMatches_${currentSkid}`);
+
         if (currentMode === 'all') {
             // Fetch all data for all modes
             modes.forEach(mode => {
@@ -538,6 +541,22 @@ function loadStats() {
 
         chrome.storage.sync.get(keysToFetch, (data) => {
             console.log('[SKMT][LOAD] Data returned from chrome.storage.sync:', data);
+
+            // Load favorite matches into the global object
+            favoriteMatches = data[`favoriteMatches_${currentSkid}`] || {};
+            console.log('[SKMT][POPUP] Loaded favorite matches:', favoriteMatches);
+
+            // Inject favorite state into match history objects
+            const modesToProcess = currentMode === 'all' ? modes : [currentMode];
+            modesToProcess.forEach(m => {
+                 const matchHistoryKey = getModeKey('matchHistory', currentSkid, m);
+                 if (data[matchHistoryKey]) {
+                     data[matchHistoryKey].forEach(match => {
+                          // Use matchStartTime as the key, consistent with web page
+                          match.favorite = favoriteMatches[match.matchStartTime] === true;
+                     });
+                 }
+            });
 
             // Show match history section for both all and individual modes
             document.querySelector('.match-history').style.display = 'block';
@@ -705,11 +724,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync' && currentSkid) {
-        // Only reload if the change is relevant to the current skid
-        const skidRelevant = Object.keys(changes).some(key => key.includes(`_${currentSkid}_`));
-        if (skidRelevant) {
-            loadStats(); // Reload stats for the current mode (or all modes)
+    if (area === 'sync') {
+        const favoriteKey = `favoriteMatches_${currentSkid || 'Default'}`;
+        if (changes[favoriteKey]) {
+            console.log('[SKMT][POPUP] Favorite matches changed in storage, reloading stats.');
+            loadStats(); // Reload stats to update the display
+        } else if (currentSkid) {
+             // Only reload if the change is relevant to the current skid for other data
+             const skidRelevant = Object.keys(changes).some(key => key.includes(`_${currentSkid}_`));
+             if (skidRelevant) {
+                 loadStats(); // Reload stats for the current mode (or all modes)
+             }
         }
     }
 });
@@ -1470,11 +1495,16 @@ document.getElementById('mapFilter').addEventListener('change', function(e) {
     loadStats(); // Reload stats with the new map filter
 });
 
-// Add favorites storage
-let favoriteMatches = JSON.parse(localStorage.getItem('favoriteMatches') || '{}');
+// Add favorites storage (using chrome.storage.sync)
+let favoriteMatches = {}; // Initialize as empty, load from storage
 
-function saveFavoriteMatches() {
-    localStorage.setItem('favoriteMatches', JSON.stringify(favoriteMatches));
+async function saveFavoriteMatches() {
+    // We need to save the whole favoriteMatches object under a key
+    // Let's use a key that includes the current SKID for segregation
+    const skid = currentSkid || 'Default';
+    const key = `favoriteMatches_${skid}`;
+    await new Promise(resolve => chrome.storage.sync.set({ [key]: favoriteMatches }, resolve));
+    console.log('[SKMT][POPUP] Saved favorite matches to storage.', favoriteMatches);
 }
 
 function renderMatches(matches, mode) {
@@ -1544,19 +1574,37 @@ function renderMatches(matches, mode) {
         const starBtn = document.createElement('button');
         starBtn.className = 'star-btn';
         starBtn.title = 'Favorite this match';
-        starBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.09 10,15.27 4.82,18.09 6,12.26 1.49,8.09 7.41,7.36" stroke="#FFD700" stroke-width="1.5" fill="' + (favoriteMatches[m.matchStartTime] ? '#FFD700' : 'white') + '"/></svg>';
+        // Use the favorite state from the match object (loaded from chrome.storage.sync)
+        starBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.09 10,15.27 4.82,18.09 6,12.26 1.49,8.09 7.41,7.36" stroke="#FFD700" stroke-width="1.5" fill="' + (m.favorite ? '#FFD700' : 'white') + '"/></svg>';
         starBtn.style.background = 'none';
         starBtn.style.border = 'none';
         starBtn.style.cursor = 'pointer';
         starBtn.style.marginRight = '4px';
-        starBtn.onclick = () => {
-            if (favoriteMatches[m.matchStartTime]) {
-                delete favoriteMatches[m.matchStartTime];
-            } else {
+        starBtn.onclick = async () => {
+            // Toggle the favorite state on the match object
+            m.favorite = !m.favorite;
+            
+            // Update the fill of the star icon immediately
+            starBtn.querySelector('polygon').setAttribute('fill', m.favorite ? '#FFD700' : 'white');
+
+            // Update the global favoriteMatches object (optional, but keeps state consistent)
+            if (m.favorite) {
                 favoriteMatches[m.matchStartTime] = true;
+            } else {
+                delete favoriteMatches[m.matchStartTime];
             }
-            saveFavoriteMatches();
-            renderMatches(matches, mode);
+
+            // Save the updated favorite state to storage
+            await saveFavoriteMatches();
+            
+            // No need to re-render all matches just to update the star, but needed if sorting by favorites is active
+            // check if favorites sort is active
+            const sortValue = document.getElementById('matchSortSelect') ? document.getElementById('matchSortSelect').value : 'recent';
+            if (sortValue === 'favorites') {
+                 loadStats(); // Reloads and re-renders
+            } else {
+                // Just update the single star icon visually, already done above
+            }
         };
 
         // Info icon button
@@ -1566,17 +1614,9 @@ function renderMatches(matches, mode) {
         infoBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="9" stroke="#3498db" stroke-width="2" fill="white"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#3498db"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#3498db"/></svg>';
         infoBtn.onclick = () => openMatchInfo(m);
 
-        // Trash icon button
-        const trashBtn = document.createElement('button');
-        trashBtn.className = 'trash-btn';
-        trashBtn.title = 'Delete this match';
-        trashBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 8V15M10 8V15M14 8V15M3 5H17M8 5V3H12V5M5 5V17C5 17.5523 5.44772 18 6 18H14C14.5523 18 15 17.5523 15 17V5" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-        trashBtn.onclick = () => deleteMatch(matches.length - 1 - idx, m.mode);
-
         card.appendChild(content);
         card.appendChild(starBtn);
         card.appendChild(infoBtn);
-        card.appendChild(trashBtn);
         matchesList.appendChild(card);
     });
 }
