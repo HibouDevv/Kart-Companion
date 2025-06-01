@@ -318,6 +318,7 @@ function displayStats(data, mode) {
                 currentStreak = 0; // Reset streak immediately on death
                 achievedMilestones = {}; // Reset achieved milestones for the new life
                 quickKillStreak = 0; // Reset quick kill streak on death
+                lastKillTime = null; // Reset last kill time on death
             } else if (event.type === 'kill') {
                 currentStreak++;
                 // Check for streak milestones only once per life
@@ -355,18 +356,27 @@ function displayStats(data, mode) {
                 }
 
                 // Handle quick kills streak
-                if (lastKillTime && (event.time - lastKillTime) <= 4000) {
-                    quickKillStreak++;
-                    if (quickKillStreak === 2) doubleSmash++;
-                    if (quickKillStreak === 3) multiSmash++;
-                    if (quickKillStreak === 4) multiMegaSmash++;
-                    if (quickKillStreak === 5) multiMegaUltraSmash++;
-                    if (quickKillStreak === 6) gooseySmash++;
-                    if (quickKillStreak === 7) crazyMultiMegaUltraSmash++;
-                } else {
+                if (lastKillTime === null) {
+                    // First kill after death
                     quickKillStreak = 1;
+                    lastKillTime = event.time;
+                } else {
+                    const timeSinceLastKill = event.time - lastKillTime;
+                    if (timeSinceLastKill <= 4000) {
+                        // Kill within 4 seconds of last kill - INCREASE STREAK
+                        quickKillStreak++;
+                        if (quickKillStreak === 2) doubleSmash++;
+                        if (quickKillStreak === 3) multiSmash++;
+                        if (quickKillStreak === 4) multiMegaSmash++;
+                        if (quickKillStreak === 5) multiMegaUltraSmash++;
+                        if (quickKillStreak === 6) gooseySmash++;
+                        if (quickKillStreak === 7) crazyMultiMegaUltraSmash++;
+                    } else {
+                        // Kill after more than 4 seconds - RESET STREAK
+                        quickKillStreak = 1;
+                    }
+                    lastKillTime = event.time;
                 }
-                lastKillTime = event.time;
             }
         });
 
@@ -989,7 +999,7 @@ async function exportStats() {
 
                 // Calculate quick kills streaks
                 if (match.killTimestamps && match.killTimestamps.length > 0) {
-                    let quickKillStreak = 1;
+                    let quickKillStreak = 0; // Changed from 1 to 0 to match popup
                     let lastKillTime = match.killTimestamps[0];
                     
                     for (let i = 1; i < match.killTimestamps.length; i++) {
@@ -1190,6 +1200,94 @@ function openMatchInfo(match) {
     // Calculate duration from match start and end times
     const duration = match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
 
+    // Calculate highest kill streak and streaks without dying
+    let highestKillStreak = 0;
+    let streaksWithoutDying = {
+        smashStreak: 0,
+        smashtacularStreak: 0,
+        smashosaurusStreak: 0,
+        smashlvaniaStreak: 0,
+        monsterSmashStreak: 0,
+        potatoStreak: 0,
+        smashSmashStreak: 0,
+        potoatachioStreak: 0
+    };
+    let quickKillsStreaks = {
+        doubleSmash: 0,
+        multiSmash: 0,
+        multiMegaSmash: 0,
+        multiMegaUltraSmash: 0,
+        gooseySmash: 0,
+        crazyMultiMegaUltraSmash: 0
+    };
+
+    if (match.killTimestamps && match.killTimestamps.length > 0) {
+        let currentStreak = 0;
+        let maxStreak = 0;
+        let quickKillStreak = 0;
+        let lastKillTime = null;
+        let achievedMilestones = {};
+        
+        // Create a combined timeline of kills and deaths
+        const timeline = [];
+        if (match.killTimestamps) {
+            match.killTimestamps.forEach(time => timeline.push({ type: 'kill', time }));
+        }
+        if (match.deathTimestamps) {
+            match.deathTimestamps.forEach(time => timeline.push({ type: 'death', time }));
+        }
+        // Sort timeline by timestamp
+        timeline.sort((a, b) => a.time - b.time);
+
+        // Process events in chronological order
+        timeline.forEach(event => {
+            if (event.type === 'death') {
+                if (currentStreak > maxStreak) maxStreak = currentStreak;
+                currentStreak = 0; // Reset streak on death
+                achievedMilestones = {}; // Reset achieved milestones
+                quickKillStreak = 0; // Reset quick kill streak on death
+                lastKillTime = null; // Reset last kill time on death
+            } else if (event.type === 'kill') {
+                currentStreak++;
+                if (currentStreak > maxStreak) maxStreak = currentStreak;
+
+                // Check for streaks without dying
+                if (currentStreak >= 3 && !achievedMilestones[3]) { streaksWithoutDying.smashStreak++; achievedMilestones[3] = true; }
+                if (currentStreak >= 5 && !achievedMilestones[5]) { streaksWithoutDying.smashtacularStreak++; achievedMilestones[5] = true; }
+                if (currentStreak >= 7 && !achievedMilestones[7]) { streaksWithoutDying.smashosaurusStreak++; achievedMilestones[7] = true; }
+                if (currentStreak >= 10 && !achievedMilestones[10]) { streaksWithoutDying.smashlvaniaStreak++; achievedMilestones[10] = true; }
+                if (currentStreak >= 15 && !achievedMilestones[15]) { streaksWithoutDying.monsterSmashStreak++; achievedMilestones[15] = true; }
+                if (currentStreak >= 20 && !achievedMilestones[20]) { streaksWithoutDying.potatoStreak++; achievedMilestones[20] = true; }
+                if (currentStreak >= 25 && !achievedMilestones[25]) { streaksWithoutDying.smashSmashStreak++; achievedMilestones[25] = true; }
+                if (currentStreak >= 30 && !achievedMilestones[30]) { streaksWithoutDying.potoatachioStreak++; achievedMilestones[30] = true; }
+
+                // Check for quick kills streaks
+                if (lastKillTime === null) {
+                    // First kill after death
+                    quickKillStreak = 1;
+                    lastKillTime = event.time;
+                } else {
+                    const timeSinceLastKill = event.time - lastKillTime;
+                    if (timeSinceLastKill <= 4000) {
+                        // Kill within 4 seconds of last kill - INCREASE STREAK
+                        quickKillStreak++;
+                        if (quickKillStreak === 2) quickKillsStreaks.doubleSmash++;
+                        if (quickKillStreak === 3) quickKillsStreaks.multiSmash++;
+                        if (quickKillStreak === 4) quickKillsStreaks.multiMegaSmash++;
+                        if (quickKillStreak === 5) quickKillsStreaks.multiMegaUltraSmash++;
+                        if (quickKillStreak === 6) quickKillsStreaks.gooseySmash++;
+                        if (quickKillStreak === 7) quickKillsStreaks.crazyMultiMegaUltraSmash++;
+                    } else {
+                        // Kill after more than 4 seconds - RESET STREAK
+                        quickKillStreak = 1;
+                    }
+                    lastKillTime = event.time;
+                }
+            }
+        });
+        highestKillStreak = maxStreak;
+    }
+
     // Get players from match data
     let detectedPlayers = [];
     if (Array.isArray(match.players)) {
@@ -1205,6 +1303,38 @@ function openMatchInfo(match) {
         <div class="match-info-section"><span class="match-info-label">Deaths:</span><span class="match-info-value">${match.deaths}</span></div>
         <div class="match-info-section"><span class="match-info-label">KDR:</span><span class="match-info-value">${formatKDR(match.kills, match.deaths)}</span></div>
         <div class="match-info-section"><span class="match-info-label">Duration:</span><span class="match-info-value">${formatTimeSpent(duration)}</span></div>
+        <div class="match-info-section"><span class="match-info-label">Highest Kill Streak:</span><span class="match-info-value">${highestKillStreak}</span></div>
+        
+        ${Object.values(streaksWithoutDying).some(v => v > 0) ? `
+        <div class="match-info-section">
+            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Without Dying):</span>
+            <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
+                ${streaksWithoutDying.smashStreak > 0 ? `<li style='font-size:16px;'>Smash Streak (3): ${streaksWithoutDying.smashStreak}</li>` : ''}
+                ${streaksWithoutDying.smashtacularStreak > 0 ? `<li style='font-size:16px;'>Smashtacular Streak (5): ${streaksWithoutDying.smashtacularStreak}</li>` : ''}
+                ${streaksWithoutDying.smashosaurusStreak > 0 ? `<li style='font-size:16px;'>Smashosaurus Streak (7): ${streaksWithoutDying.smashosaurusStreak}</li>` : ''}
+                ${streaksWithoutDying.smashlvaniaStreak > 0 ? `<li style='font-size:16px;'>Smashlvania Streak (10): ${streaksWithoutDying.smashlvaniaStreak}</li>` : ''}
+                ${streaksWithoutDying.monsterSmashStreak > 0 ? `<li style='font-size:16px;'>Monster Smash Streak (15): ${streaksWithoutDying.monsterSmashStreak}</li>` : ''}
+                ${streaksWithoutDying.potatoStreak > 0 ? `<li style='font-size:16px;'>Potato Streak (20): ${streaksWithoutDying.potatoStreak}</li>` : ''}
+                ${streaksWithoutDying.smashSmashStreak > 0 ? `<li style='font-size:16px;'>Smash Smash Streak (25): ${streaksWithoutDying.smashSmashStreak}</li>` : ''}
+                ${streaksWithoutDying.potoatachioStreak > 0 ? `<li style='font-size:16px;'>Potoatachio Streak (30): ${streaksWithoutDying.potoatachioStreak}</li>` : ''}
+            </ul>
+        </div>
+        ` : ''}
+
+        ${Object.values(quickKillsStreaks).some(v => v > 0) ? `
+        <div class="match-info-section">
+            <span class="match-info-label" style="display:block;margin-bottom:6px;">Streaks (Quick Kills):</span>
+            <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
+                ${quickKillsStreaks.doubleSmash > 0 ? `<li style='font-size:16px;'>Double Smash (2): ${quickKillsStreaks.doubleSmash}</li>` : ''}
+                ${quickKillsStreaks.multiSmash > 0 ? `<li style='font-size:16px;'>Multi Smash (3): ${quickKillsStreaks.multiSmash}</li>` : ''}
+                ${quickKillsStreaks.multiMegaSmash > 0 ? `<li style='font-size:16px;'>Multi Mega Smash (4): ${quickKillsStreaks.multiMegaSmash}</li>` : ''}
+                ${quickKillsStreaks.multiMegaUltraSmash > 0 ? `<li style='font-size:16px;'>Multi Mega Ultra Smash (5): ${quickKillsStreaks.multiMegaUltraSmash}</li>` : ''}
+                ${quickKillsStreaks.gooseySmash > 0 ? `<li style='font-size:16px;'>Goosey Smash (6): ${quickKillsStreaks.gooseySmash}</li>` : ''}
+                ${quickKillsStreaks.crazyMultiMegaUltraSmash > 0 ? `<li style='font-size:16px;'>Crazy Multi Mega Ultra Smash (7): ${quickKillsStreaks.crazyMultiMegaUltraSmash}</li>` : ''}
+            </ul>
+        </div>
+        ` : ''}
+
         <div class="match-info-section">
             <span class="match-info-label" style="display:block;margin-bottom:6px;">Detected Players In Room:</span>
             <ul style="margin:0 0 0 12px;padding:0;list-style:disc;">
@@ -1266,13 +1396,15 @@ function openHudSettings() {
         const settings = result[storageKey] || {
             fontSize: 32,
             fontColor: '#ffffff',
-            fontFamily: 'Arial, sans-serif'
+            fontFamily: 'Arial, sans-serif',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)'
         };
         
         document.getElementById('hudFontSize').value = settings.fontSize;
         document.getElementById('fontSizeValue').textContent = `${settings.fontSize}px`;
         document.getElementById('hudFontColor').value = settings.fontColor;
         document.getElementById('hudFontFamily').value = settings.fontFamily;
+        document.getElementById('hudBackgroundColor').value = settings.backgroundColor ? rgbaToHex(settings.backgroundColor) : '#000000';
     });
     
     modal.style.display = 'flex';
@@ -1291,11 +1423,15 @@ document.getElementById('hudFontColor').addEventListener('change', updateHudSett
 // Font family select
 document.getElementById('hudFontFamily').addEventListener('change', updateHudSettings);
 
+// Background color input
+document.getElementById('hudBackgroundColor').addEventListener('input', updateHudSettings);
+
 function updateHudSettings() {
     const settings = {
         fontSize: document.getElementById('hudFontSize').value,
         fontColor: document.getElementById('hudFontColor').value,
-        fontFamily: document.getElementById('hudFontFamily').value
+        fontFamily: document.getElementById('hudFontFamily').value,
+        backgroundColor: hexToRgba(document.getElementById('hudBackgroundColor').value, 0.5) // Assuming 50% transparency for now
     };
     
     const storageKey = `${currentHudType}HudSettings`;
@@ -1308,6 +1444,24 @@ function updateHudSettings() {
             settings: settings
         });
     });
+}
+
+// Helper function to convert hex to rgba
+function hexToRgba(hex, alpha) {
+    const bigint = parseInt(hex.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// Helper function to convert rgba to hex (simplified, ignores alpha)
+function rgbaToHex(rgba) {
+    const parts = rgba.substring(rgba.indexOf('(') + 1, rgba.indexOf(')')).split(',');
+    const r = parseInt(parts[0].trim());
+    const g = parseInt(parts[1].trim());
+    const b = parseInt(parts[2].trim());
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 }
 
 // Add event listener for map filter

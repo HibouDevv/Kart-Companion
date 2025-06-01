@@ -406,6 +406,9 @@ hud.style.webkitFontSmoothing = 'antialiased';
 hud.style.mozOsxFontSmoothing = 'grayscale';
 hud.style.letterSpacing = '0.5px';
 hud.textContent = 'Deaths: 0';
+hud.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+hud.style.padding = '0.5em 1em';
+hud.style.borderRadius = '0.5em';
 
 // Make HUD draggable
 let isDragging = false;
@@ -531,6 +534,9 @@ killStreakHud.style.webkitFontSmoothing = 'antialiased';
 killStreakHud.style.mozOsxFontSmoothing = 'grayscale';
 killStreakHud.style.letterSpacing = '0.5px';
 killStreakHud.textContent = 'Kill Streak: 0';
+killStreakHud.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+killStreakHud.style.padding = '0.5em 1em';
+killStreakHud.style.borderRadius = '0.5em';
 
 // Make Kill Streak HUD draggable
 let isDraggingKS = false;
@@ -703,4 +709,5 @@ function applyHudSettings(hudElement, settings) {
     hudElement.style.fontSize = `${settings.fontSize}px`;
     hudElement.style.color = settings.fontColor;
     hudElement.style.fontFamily = settings.fontFamily;
+    hudElement.style.backgroundColor = settings.backgroundColor || 'rgba(0, 0, 0, 0.5)';
 }

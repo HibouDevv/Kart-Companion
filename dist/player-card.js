@@ -468,19 +468,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalKills = stats.totalKills;
         const avgKillsPerMinute = totalTimeInMinutes > 0 ? totalKills / totalTimeInMinutes : 0;
 
-        // Scale to kills per 3 minutes (36 kills / 3 minutes = 12 kills/minute = 100)
+        // Scale to kills per 3 minutes and calculate percentage
         const avgKillsPer3Minutes = avgKillsPerMinute * 3;
-        const scaledKills = Math.min(100, (avgKillsPer3Minutes / 36) * 100); // 36 kills per 3 minutes is 100
+        const atk = Math.round((avgKillsPer3Minutes / 28) * 100); // 28 kills per 3 minutes is 100
 
-        // Example scaling for streaks (can be adjusted)
-        const streakScore = (stats.totalSmashStreaks * 5) + (stats.totalSmashtacularStreaks * 10) + (stats.totalSmashosaurusStreaks * 15) + (stats.totalSmashlvaniaStreaks * 20) + (stats.totalMonsterSmashStreaks * 25) + (stats.totalPotatoStreaks * 2); // Include potato streak in offense
-
-        // Simple linear scaling example for streaks (adjust based on expected max streak score)
-        const scaledStreaks = Math.min(100, streakScore / 50); // Assuming a streak score of 50 is high
-
-        // Weighted average for ATK (adjust weights)
-        const atk = (scaledKills * 0.7) + (scaledStreaks * 0.3); // Give more weight to kills per 3 minutes
-        return Math.round(Math.min(100, Math.max(0, atk)));
+        return Math.min(100, Math.max(0, atk));
     }
 
     // Function to calculate Defensive Rating (DEF)
@@ -490,16 +482,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate average deaths per minute
         const totalTimeInMinutes = stats.totalTimePlayed;
         const totalDeaths = stats.totalDeaths;
-         const avgDeathsPerMinute = totalTimeInMinutes > 0 ? totalDeaths / totalTimeInMinutes : 0;
-
+        const avgDeathsPerMinute = totalTimeInMinutes > 0 ? totalDeaths / totalTimeInMinutes : 0;
 
         // Scale to deaths per 3 minutes (0 deaths / 3 minutes = 100)
         const avgDeathsPer3Minutes = avgDeathsPerMinute * 3;
 
         // Simple linear scaling for deaths (adjust based on expected high death rate)
         // Higher deaths per 3 minutes result in a lower DEF score
-        // Assuming 15 deaths per 3 minutes (5 deaths/min) is a low DEF (close to 0)
-        const scaledDeaths = Math.max(0, 100 - (avgDeathsPer3Minutes / 15) * 100); // 15 deaths per 3 minutes is 0
+        // 14 deaths per 3 minutes (4.67 deaths/min) is a low DEF (0)
+        const scaledDeaths = Math.max(0, 100 - (avgDeathsPer3Minutes / 14) * 100); // 14 deaths per 3 minutes is 0
 
         return Math.round(Math.min(100, Math.max(0, scaledDeaths)));
     }
