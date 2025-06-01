@@ -511,14 +511,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!stats || stats.totalTimePlayed < 0) return 0; // Ensure playtime is non-negative
 
         // Logarithmic scaling for total time played
-        // Using a formula like A * log10(time + C) + B
         const timeInMinutes = stats.totalTimePlayed;
 
-        // Choose constants (these can be adjusted based on desired scaling)
-        // Aiming for ~5 at 0 min, ~60 at 1000 min, ~90 at 10000 min
-        const A = 20; // Controls the steepness of the curve
-        const B = 5; // Base rating for very low playtime
-        const C = 10; // Offset to handle playtime near zero gracefully
+        // Adjusted constants for more gradual progression
+        // Aiming for:
+        // ~5 at 0 min
+        // ~30 at 100 min
+        // ~60 at 1000 min
+        // ~90 at 10000 min
+        const A = 15; // Reduced from 20 to make the curve less steep
+        const B = 5;  // Keep base rating at 5
+        const C = 5;  // Reduced from 10 to make early progression slower
 
         const exp = A * Math.log10(timeInMinutes + C) + B;
 
@@ -530,14 +533,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!stats || stats.matchHistory.length === 0) return 0;
 
         const avgKdr = stats.totalDeaths === 0 ? stats.totalKills : (stats.totalKills / stats.totalDeaths);
-        const avgTimePerMatch = stats.totalTimePlayed / stats.matchHistory.length;
-
-        // Simple linear scaling (adjust based on expected averages)
-        const scaledAvgKdr = Math.min(100, (avgKdr / 5) * 100); // Assuming average KDR of 5 is high performance
-        const scaledAvgTime = Math.min(100, (avgTimePerMatch / 5) * 100); // Assuming average 5 minutes per match is high engagement (adjusted from 10)
-
-        // Weighted average for PRF (adjust weights)
-        const prf = (scaledAvgKdr * 0.7) + (scaledAvgTime * 0.3);
+        
+        // Simple linear scaling where KDR of 4 = 100 rating
+        const prf = Math.min(100, (avgKdr / 4) * 100);
         return Math.round(Math.min(100, Math.max(0, prf)));
     }
 
