@@ -1,111 +1,125 @@
-# Smash Karts Match Tracker
+# Kart Companion 🏎️
 
-A Chrome extension that tracks and analyzes your Smash Karts gameplay statistics.
+A powerful Chrome extension that enhances your Smash Karts gaming experience by providing detailed match analytics and performance tracking.
 
-## Features
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-- Track detailed match statistics including:
+## ✨ Features
+
+### 🎮 Real-time Match Tracking
+- Comprehensive match statistics including:
   - Kills and deaths
   - Power-ups collected and used
   - Smash streaks
   - Match duration and map information
-- Real-time data synchronization with Firebase
-- Visual performance tracking with charts
-- Match history with filtering and sorting options
-- Player-specific statistics using SKID
+- Instant data synchronization with Firebase
+- SKID-based player identification
 
-## Installation
+### 📊 Advanced Analytics
+- Interactive performance charts and graphs
+- Detailed match history with advanced filtering
+- Player-specific statistics and trends
+- Visual performance tracking over time
 
-1. Clone this repository or download the source code
-2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
+### 🔄 Data Management
+- Secure Firebase integration
+- Automatic data synchronization
+- Match history export capabilities
+- Customizable tracking preferences
+
+## 🚀 Installation
+
+### Quick Install (Chrome Web Store)
+1. Visit the Chrome Web Store (coming soon)
+2. Click "Add to Chrome"
+3. Confirm the installation
+
+### Manual Installation (Developer Mode)
+1. Download or clone this repository
+2. Open Chrome and go to `chrome://extensions/`
+3. Enable "Developer mode" (top right)
 4. Click "Load unpacked" and select the extension directory
-5. Configure Firebase:
-   - Create a new Firebase project
-   - Enable Firestore database
-   - Add your Firebase configuration to `background.js`
+5. Configure Firebase (see Configuration section)
 
-## Configuration
+## ⚙️ Configuration
 
-1. Create a Firebase project at [https://console.firebase.google.com/](https://console.firebase.google.com/)
+### Firebase Setup
+1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
 2. Enable Firestore database
 3. Get your Firebase configuration from Project Settings
-4. Update the `firebaseConfig` object in `background.js` with your configuration
+4. Update the `firebaseConfig` in `background.js`
 
-## Usage
+### Extension Settings
+- Customize tracking preferences
+- Set up data retention policies
+- Configure notification settings
 
-1. Install the extension
-2. Play Smash Karts in your browser
-3. Click the extension icon to view your statistics
-4. Use the filters to sort and view specific matches
-5. View your performance trends in the chart
+## 🎯 Usage
 
-## Data Collection
+1. Launch Smash Karts in your browser
+2. Click the Kart Companion icon in your toolbar
+3. View real-time match statistics
+4. Access detailed analytics and charts
+5. Filter and sort your match history
 
-The extension collects the following data:
-- Match statistics (kills, deaths, power-ups, etc.)
-- Player information (SKID, username)
-- Match timestamps and map information
-
-All data is stored securely in Firebase and is associated with your SKID.
-
-## Privacy
+## 🔒 Privacy & Security
 
 - All data is stored securely in Firebase
-- Data is only collected when you are actively playing
-- You can disable tracking in the extension settings
-- No personal information is collected beyond your game statistics
+- Data collection only occurs during active gameplay
+- Optional tracking features
+- No personal information beyond game statistics
+- Full control over data retention
 
-## Development
+## 🛠️ Development
 
 ### Project Structure
-
 ```
-smash-karts-match-tracker/
-├── manifest.json
-├── popup.html
-├── popup.js
-├── content.js
-├── background.js
-├── styles/
-│   └── popup.css
-└── icons/
-    ├── icon16.png
-    ├── icon48.png
-    └── icon128.png
+kart-companion/
+├── manifest.json          # Extension configuration
+├── popup.html            # Main UI interface
+├── popup.js              # UI logic
+├── content.js            # Game data collection
+├── background.js         # Background processes
+├── styles/               # CSS styles
+└── icons/                # Extension icons
 ```
 
-### Building
+### Building from Source
+```bash
+# Install dependencies
+npm install
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Build the extension:
-   ```bash
-   npm run build
-   ```
+# Build extension
+npm run build
+```
 
 ### Testing
-
 1. Load the extension in Chrome
 2. Play Smash Karts
-3. Verify that statistics are being tracked
-4. Check the extension popup for data display
+3. Verify statistics tracking
+4. Check data visualization
 
-## Contributing
+## 🤝 Contributing
 
+We welcome contributions! Please follow these steps:
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. Make your changes
+4. Submit a pull request
 
-## License
+## 📝 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support
+## 💬 Support
 
-For support, please open an issue in the GitHub repository or contact the maintainers. 
+- Open an issue in the GitHub repository
+- Contact the maintainers
+- Join our Discord community (coming soon)
+
+## 🙏 Acknowledgments
+
+- Smash Karts community
+- All contributors and supporters
+- Firebase for data management 
