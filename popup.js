@@ -753,6 +753,8 @@ chrome.runtime.onMessage.addListener(
         if (request.type === 'SKMT_SKID_UPDATED') {
             // When SKID updates, reload stats for the current mode (or all modes)
             loadStats();
+            sendResponse({ success: true });
+            return true;
         } else if (request.type === 'SKMT_MATCH_COMPLETE') {
             console.log('[SKMT][POPUP] Received MATCH_COMPLETE message:', request.data);
             const match = request.data;
@@ -787,15 +789,17 @@ chrome.runtime.onMessage.addListener(
                             });
                             // Force reload stats to update display
                             loadStats();
+                            sendResponse({ success: true });
                         });
                     });
                 } else {
                     console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 10 seconds:`, timeSpent);
                     // Still reload stats to ensure display is up to date
                     loadStats();
+                    sendResponse({ success: true });
                 }
             } else {
-                // For completed games, update all stats
+                // For completed matches, update all stats
                 const matchHistoryKey = getModeKey('matchHistory', skid, mode);
                 const gamesJoinedKey = getModeKey('gamesJoined', skid, mode);
                 const gamesStartedKey = getModeKey('gamesStarted', skid, mode);
@@ -803,23 +807,22 @@ chrome.runtime.onMessage.addListener(
 
                 chrome.storage.sync.get([matchHistoryKey, gamesJoinedKey, gamesStartedKey, matchesCompletedKey], (data) => {
                     let history = data[matchHistoryKey] || [];
+                    history.push(match);
+                    
                     let gamesJoined = data[gamesJoinedKey] || 0;
                     let gamesStarted = data[gamesStartedKey] || 0;
                     let matchesCompleted = data[matchesCompletedKey] || 0;
 
-                    // Only add to history and increment stats if not quit
-                    if (!match.quit) {
-                        history.push(match);
-                        if (match.joined) gamesJoined++;
-                        if (match.started) gamesStarted++;
-                        matchesCompleted++;
-                    }
+                    if (match.joined) gamesJoined++;
+                    if (match.started) gamesStarted++;
+                    matchesCompleted++;
 
-                    const setObj = {};
-                    setObj[matchHistoryKey] = history;
-                    setObj[gamesJoinedKey] = gamesJoined;
-                    setObj[gamesStartedKey] = gamesStarted;
-                    setObj[matchesCompletedKey] = matchesCompleted;
+                    const setObj = {
+                        [matchHistoryKey]: history,
+                        [gamesJoinedKey]: gamesJoined,
+                        [gamesStartedKey]: gamesStarted,
+                        [matchesCompletedKey]: matchesCompleted
+                    };
 
                     chrome.storage.sync.set(setObj, () => {
                         console.log(`[SKMT][POPUP] Saved completed match data for ${mode} mode:`, {
@@ -831,9 +834,11 @@ chrome.runtime.onMessage.addListener(
                         });
                         // Force reload stats to update display
                         loadStats();
+                        sendResponse({ success: true });
                     });
                 });
             }
+            return true; // Keep the message channel open for async response
         }
     }
 );
