@@ -762,10 +762,10 @@ chrome.runtime.onMessage.addListener(
             const skid = currentSkid || 'Default'; // Use currentSkid from popup
             const gamesQuitKey = getModeKey('gamesQuit', skid, mode);
 
-            // For quit matches, only update gamesQuit if spent more than 15 seconds
+            // For quit matches, only update gamesQuit if spent more than 10 seconds
             if (match.quit) {
                 const timeSpent = match.matchEndTime - match.matchStartTime;
-                const shouldIncrementQuit = timeSpent >= 15000; // 15 seconds in milliseconds
+                const shouldIncrementQuit = timeSpent >= 10000; // 10 seconds in milliseconds
 
                 if (shouldIncrementQuit) {
                     chrome.storage.sync.get([gamesQuitKey], (data) => {
@@ -790,7 +790,7 @@ chrome.runtime.onMessage.addListener(
                         });
                     });
                 } else {
-                    console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 15 seconds:`, timeSpent);
+                    console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 10 seconds:`, timeSpent);
                     // Still reload stats to ensure display is up to date
                     loadStats();
                 }

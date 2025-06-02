@@ -289,16 +289,16 @@ window.addEventListener('message', function(event) {
                 if (match.quit) {
                     // Calculate time spent in game
                     const timeSpent = match.matchEndTime - match.matchStartTime;
-                    const shouldIncrementQuit = timeSpent >= 15000; // 15 seconds in milliseconds
+                    const shouldIncrementQuit = timeSpent >= 10000; // 10 seconds in milliseconds
 
                     if (shouldIncrementQuit) {
-                        // Only increment gamesQuit if spent more than 15 seconds
+                        // Only increment gamesQuit if spent more than 10 seconds
                         let gamesQuit = result[getModeKey('gamesQuit')] || 0;
                         gamesQuit++;
                         setObj[getModeKey('gamesQuit')] = gamesQuit;
                         console.log('[SKMT] Incrementing gamesQuit for mode:', mode, 'New value:', gamesQuit, 'Time spent:', timeSpent);
                     } else {
-                        console.log('[SKMT] Not incrementing gamesQuit - time spent less than 15 seconds:', timeSpent);
+                        console.log('[SKMT] Not incrementing gamesQuit - time spent less than 10 seconds:', timeSpent);
                     }
                 } else {
                     // For completed games, update all stats
