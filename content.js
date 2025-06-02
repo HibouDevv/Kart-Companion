@@ -287,11 +287,19 @@ window.addEventListener('message', function(event) {
                 const setObj = {};
 
                 if (match.quit) {
-                    // For quit games, only update gamesQuit
-                    let gamesQuit = result[getModeKey('gamesQuit')] || 0;
-                    gamesQuit++;
-                    setObj[getModeKey('gamesQuit')] = gamesQuit;
-                    console.log('[SKMT] Incrementing gamesQuit for mode:', mode, 'New value:', gamesQuit);
+                    // Calculate time spent in game
+                    const timeSpent = match.matchEndTime - match.matchStartTime;
+                    const shouldIncrementQuit = timeSpent >= 15000; // 15 seconds in milliseconds
+
+                    if (shouldIncrementQuit) {
+                        // Only increment gamesQuit if spent more than 15 seconds
+                        let gamesQuit = result[getModeKey('gamesQuit')] || 0;
+                        gamesQuit++;
+                        setObj[getModeKey('gamesQuit')] = gamesQuit;
+                        console.log('[SKMT] Incrementing gamesQuit for mode:', mode, 'New value:', gamesQuit, 'Time spent:', timeSpent);
+                    } else {
+                        console.log('[SKMT] Not incrementing gamesQuit - time spent less than 15 seconds:', timeSpent);
+                    }
                 } else {
                     // For completed games, update all stats
                     let history = result[getModeKey('matchHistory')] || [];
@@ -319,7 +327,8 @@ window.addEventListener('message', function(event) {
                         isSpecialMode: match.isSpecialMode,
                         isCustomMode: match.isCustomMode,
                         savedToHistory: !match.quit,
-                        statsUpdated: !match.quit
+                        statsUpdated: !match.quit,
+                        timeSpent: match.matchEndTime - match.matchStartTime
                     });
 
                     // Send message to popup with the updated data
@@ -342,26 +351,6 @@ window.addEventListener('message', function(event) {
                             });
                         }
                     });
-
-                    // If this was a quit, wait 1 second before resetting the mode flags
-                    if (match.quit) {
-                        setTimeout(() => {
-                            const resetObj = {};
-                            if (match.isCustomMode) {
-                                resetObj.isCustomMode = false;
-                                console.log('[SKMT] Resetting custom mode flag after delay');
-                            }
-                            if (match.isSpecialMode) {
-                                resetObj.isSpecialMode = false;
-                                console.log('[SKMT] Resetting special mode flag after delay');
-                            }
-                            if (Object.keys(resetObj).length > 0) {
-                                chrome.storage.sync.set(resetObj, () => {
-                                    console.log('[SKMT] Mode flags reset after delay');
-                                });
-                            }
-                        }, 1000); // 1 second delay
-                    }
                 });
             });
         });

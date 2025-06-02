@@ -762,28 +762,38 @@ chrome.runtime.onMessage.addListener(
             const skid = currentSkid || 'Default'; // Use currentSkid from popup
             const gamesQuitKey = getModeKey('gamesQuit', skid, mode);
 
-            // For quit matches, only update gamesQuit
+            // For quit matches, only update gamesQuit if spent more than 15 seconds
             if (match.quit) {
-                chrome.storage.sync.get([gamesQuitKey], (data) => {
-                    let gamesQuit = data[gamesQuitKey] || 0;
-                    gamesQuit++;
-                    
-                    const setObj = {};
-                    setObj[gamesQuitKey] = gamesQuit;
-                    
-                    console.log(`[SKMT][POPUP] Incrementing gamesQuit for ${mode} mode. New value:`, gamesQuit);
-                    
-                    chrome.storage.sync.set(setObj, () => {
-                        console.log(`[SKMT][POPUP] Saved quit counter for ${mode} mode:`, {
-                            quit: match.quit,
-                            isSpecialMode: match.isSpecialMode,
-                            isCustomMode: match.isCustomMode,
-                            gamesQuit: gamesQuit
+                const timeSpent = match.matchEndTime - match.matchStartTime;
+                const shouldIncrementQuit = timeSpent >= 15000; // 15 seconds in milliseconds
+
+                if (shouldIncrementQuit) {
+                    chrome.storage.sync.get([gamesQuitKey], (data) => {
+                        let gamesQuit = data[gamesQuitKey] || 0;
+                        gamesQuit++;
+                        
+                        const setObj = {};
+                        setObj[gamesQuitKey] = gamesQuit;
+                        
+                        console.log(`[SKMT][POPUP] Incrementing gamesQuit for ${mode} mode. New value:`, gamesQuit, 'Time spent:', timeSpent);
+                        
+                        chrome.storage.sync.set(setObj, () => {
+                            console.log(`[SKMT][POPUP] Saved quit counter for ${mode} mode:`, {
+                                quit: match.quit,
+                                isSpecialMode: match.isSpecialMode,
+                                isCustomMode: match.isCustomMode,
+                                gamesQuit: gamesQuit,
+                                timeSpent: timeSpent
+                            });
+                            // Force reload stats to update display
+                            loadStats();
                         });
-                        // Force reload stats to update display
-                        loadStats();
                     });
-                });
+                } else {
+                    console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 15 seconds:`, timeSpent);
+                    // Still reload stats to ensure display is up to date
+                    loadStats();
+                }
             } else {
                 // For completed games, update all stats
                 const matchHistoryKey = getModeKey('matchHistory', skid, mode);
@@ -797,10 +807,13 @@ chrome.runtime.onMessage.addListener(
                     let gamesStarted = data[gamesStartedKey] || 0;
                     let matchesCompleted = data[matchesCompletedKey] || 0;
 
-                    history.push(match);
-                    if (match.joined) gamesJoined++;
-                    if (match.started) gamesStarted++;
-                    matchesCompleted++;
+                    // Only add to history and increment stats if not quit
+                    if (!match.quit) {
+                        history.push(match);
+                        if (match.joined) gamesJoined++;
+                        if (match.started) gamesStarted++;
+                        matchesCompleted++;
+                    }
 
                     const setObj = {};
                     setObj[matchHistoryKey] = history;
@@ -813,7 +826,8 @@ chrome.runtime.onMessage.addListener(
                             quit: match.quit,
                             isSpecialMode: match.isSpecialMode,
                             isCustomMode: match.isCustomMode,
-                            savedToHistory: true
+                            savedToHistory: !match.quit,
+                            timeSpent: match.matchEndTime - match.matchStartTime
                         });
                         // Force reload stats to update display
                         loadStats();
