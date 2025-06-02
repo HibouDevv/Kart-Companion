@@ -612,6 +612,58 @@ function deleteMatch(index, mode) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Add SKID toggle and copy functionality
+    const skidValue = document.getElementById('skidValue');
+    const toggleSkidBtn = document.getElementById('toggleSkidBtn');
+    const copySkidBtn = document.getElementById('copySkidBtn');
+
+    // Load saved blur state
+    chrome.storage.sync.get(['skidBlurred'], (result) => {
+        if (result.skidBlurred) {
+            skidValue.classList.add('skid-blurred');
+            const icon = toggleSkidBtn.querySelector('i');
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        }
+    });
+
+    toggleSkidBtn.addEventListener('click', () => {
+        skidValue.classList.toggle('skid-blurred');
+        const icon = toggleSkidBtn.querySelector('i');
+        if (skidValue.classList.contains('skid-blurred')) {
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+            // Save blur state
+            chrome.storage.sync.set({ skidBlurred: true });
+        } else {
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+            // Save blur state
+            chrome.storage.sync.set({ skidBlurred: false });
+        }
+    });
+
+    copySkidBtn.addEventListener('click', () => {
+        const skid = skidValue.textContent;
+        if (skid && skid !== '-') {
+            navigator.clipboard.writeText(skid).then(() => {
+                // Show a temporary tooltip or feedback
+                const originalTitle = copySkidBtn.getAttribute('title');
+                copySkidBtn.setAttribute('title', 'Copied!');
+                // Add a visual indicator
+                const icon = copySkidBtn.querySelector('i');
+                icon.classList.remove('fa-copy');
+                icon.classList.add('fa-check');
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    copySkidBtn.setAttribute('title', originalTitle);
+                    icon.classList.remove('fa-check');
+                    icon.classList.add('fa-copy');
+                }, 2000);
+            });
+        }
+    });
+
     document.getElementById('normalModeBtn').addEventListener('click', () => {
         currentMode = 'normal';
         updateModeSelector();

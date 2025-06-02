@@ -93,7 +93,15 @@
             <div style="text-align: center; margin-bottom: 1px;">
                 <img src="kartCompanionMainLogo.png" alt="Kart Companion Logo" style="max-width: 150px; height: auto;">
             </div>
-            <div class="skid-display">SKID: <span id="skidValue">-</span></div>
+            <div class="skid-display">
+                SKID: <span id="skidValue">-</span>
+                <button id="toggleSkidBtn" class="icon-btn" title="Toggle SKID visibility">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button id="copySkidBtn" class="icon-btn" title="Copy SKID to clipboard">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
             <div class="section-selector">
                 <button id="statsBtn" class="section-btn selected">Stats</button>
                 <button id="hudBtn" class="section-btn">HUD</button>

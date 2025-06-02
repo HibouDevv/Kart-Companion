@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
 
 :root {
     --primary-color: #4a90e2;
@@ -64,6 +65,28 @@ h1 {
     font-family: var(--font-family);
     opacity: 0.85;
     word-break: break-all;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--secondary-color);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.icon-btn:hover {
+    opacity: 1;
+}
+
+.skid-blurred {
+    filter: blur(4px);
+    user-select: none;
 }
 
 .stats-section-label {
