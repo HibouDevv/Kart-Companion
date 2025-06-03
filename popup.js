@@ -890,7 +890,20 @@ chrome.runtime.onMessage.addListener(
                     });
                 });
             }
-            return true; // Keep the message channel open for async response
+            return true;
+        } else if (request.type === 'SKMT_DEATHS_UPDATE') {
+            // Update deaths display in real-time
+            document.getElementById('deaths').textContent = request.deaths;
+            // Recalculate and update KDR
+            const kills = parseInt(document.getElementById('kills').textContent) || 0;
+            document.getElementById('kdr').textContent = formatKDR(kills, request.deaths);
+            sendResponse({ success: true });
+            return true;
+        } else if (request.type === 'SKMT_KILLSTREAK_UPDATE') {
+            // Update kill streak display in real-time
+            document.getElementById('killStreak').textContent = request.killStreak;
+            sendResponse({ success: true });
+            return true;
         }
     }
 );
