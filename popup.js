@@ -826,7 +826,49 @@ async function forceStatsRefresh() {
     await loadStats();
 }
 
-// Modify the message listener to use the new robust update mechanism
+// Add this near the top with other constants
+const MESSAGE_PORT_TIMEOUT = 5000; // 5 seconds timeout for message port
+const MESSAGE_RETRY_DELAY = 1000; // 1 second between retries
+const MAX_MESSAGE_RETRIES = 3;
+
+// Add this function after other utility functions
+async function sendMessageWithRetry(message, retryCount = 0) {
+    return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+            if (retryCount < MAX_MESSAGE_RETRIES) {
+                console.log(`[SKMT][POPUP] Message port timeout, retrying (${retryCount + 1}/${MAX_MESSAGE_RETRIES})...`);
+                setTimeout(() => {
+                    sendMessageWithRetry(message, retryCount + 1)
+                        .then(resolve)
+                        .catch(reject);
+                }, MESSAGE_RETRY_DELAY);
+            } else {
+                reject(new Error('Message port timeout after all retries'));
+            }
+        }, MESSAGE_PORT_TIMEOUT);
+
+        chrome.runtime.sendMessage(message, (response) => {
+            clearTimeout(timeoutId);
+            if (chrome.runtime.lastError) {
+                console.error('[SKMT][POPUP] Message port error:', chrome.runtime.lastError);
+                if (retryCount < MAX_MESSAGE_RETRIES) {
+                    console.log(`[SKMT][POPUP] Retrying message (${retryCount + 1}/${MAX_MESSAGE_RETRIES})...`);
+                    setTimeout(() => {
+                        sendMessageWithRetry(message, retryCount + 1)
+                            .then(resolve)
+                            .catch(reject);
+                    }, MESSAGE_RETRY_DELAY);
+                } else {
+                    reject(chrome.runtime.lastError);
+                }
+            } else {
+                resolve(response);
+            }
+        });
+    });
+}
+
+// Modify the message listener to use the new retry mechanism
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         if (request.type === 'SKMT_SKID_UPDATED') {
@@ -882,7 +924,11 @@ chrome.runtime.onMessage.addListener(
                                 loadStats();
                             }
                             
-                            sendResponse({ success: true });
+                            try {
+                                await sendMessageWithRetry({ success: true });
+                            } catch (error) {
+                                console.error('[SKMT][POPUP] Error sending response:', error);
+                            }
                         } catch (error) {
                             console.error('[SKMT][POPUP] Error updating quit stats:', error);
                             if (retryCount < MAX_UPDATE_RETRIES) {
@@ -890,7 +936,11 @@ chrome.runtime.onMessage.addListener(
                                 setTimeout(updateQuitStats, UPDATE_RETRY_DELAY);
                             } else {
                                 await forceStatsRefresh();
-                                sendResponse({ success: false, error: error.message });
+                                try {
+                                    await sendMessageWithRetry({ success: false, error: error.message });
+                                } catch (sendError) {
+                                    console.error('[SKMT][POPUP] Error sending error response:', sendError);
+                                }
                             }
                         }
                     };
@@ -899,7 +949,11 @@ chrome.runtime.onMessage.addListener(
                 } else {
                     console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 10 seconds:`, timeSpent);
                     loadStats();
-                    sendResponse({ success: true });
+                    try {
+                        sendMessageWithRetry({ success: true });
+                    } catch (error) {
+                        console.error('[SKMT][POPUP] Error sending response:', error);
+                    }
                 }
             } else {
                 // For completed matches, update all stats with retry mechanism
@@ -959,7 +1013,11 @@ chrome.runtime.onMessage.addListener(
                             loadStats();
                         }
 
-                        sendResponse({ success: true });
+                        try {
+                            await sendMessageWithRetry({ success: true });
+                        } catch (error) {
+                            console.error('[SKMT][POPUP] Error sending response:', error);
+                        }
                     } catch (error) {
                         console.error('[SKMT][POPUP] Error updating match stats:', error);
                         if (retryCount < MAX_UPDATE_RETRIES) {
@@ -967,7 +1025,11 @@ chrome.runtime.onMessage.addListener(
                             setTimeout(updateMatchStats, UPDATE_RETRY_DELAY);
                         } else {
                             await forceStatsRefresh();
-                            sendResponse({ success: false, error: error.message });
+                            try {
+                                await sendMessageWithRetry({ success: false, error: error.message });
+                            } catch (sendError) {
+                                console.error('[SKMT][POPUP] Error sending error response:', sendError);
+                            }
                         }
                     }
                 };
