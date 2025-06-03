@@ -470,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Scale to kills per 3 minutes and calculate percentage
         const avgKillsPer3Minutes = avgKillsPerMinute * 3;
-        const atk = Math.round((avgKillsPer3Minutes / 18) * 100); // 18 kills per 3 minutes is 100
+        const atk = Math.round((avgKillsPer3Minutes / 20) * 100); // 20 kills per 3 minutes is 100
 
         return Math.min(100, Math.max(0, atk));
     }
