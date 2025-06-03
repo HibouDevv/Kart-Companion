@@ -29,6 +29,15 @@ hudBtn.addEventListener('click', () => {
     hudSection.style.display = 'block';
 });
 
+// Add event listeners for the new buttons
+document.getElementById('playerCardBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'player-card.html' });
+});
+
+document.getElementById('statsNumbersBtn').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'stats-numbers.html' });
+});
+
 const toggleDeathsHud = document.getElementById('toggleDeathsHud');
 const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
 const toggleKdrHud = document.getElementById('toggleKdrHud');
@@ -111,6 +120,39 @@ let openSections = {
     quickKills: false
 };
 
+// Get reference to the dynamic graphics button
+const modeGraphicsBtn = document.getElementById('modeGraphicsBtn');
+
+// Function to update the text and URL of the dynamic graphics button
+function updateModeGraphicsButton() {
+    let buttonText = '';
+    let targetUrl = '';
+    switch(currentMode) {
+        case 'normal':
+            buttonText = '3 Minute Mode Graphics';
+            targetUrl = '3min-mode.html';
+            break;
+        case 'special':
+            buttonText = 'Special Mode Graphics';
+            targetUrl = 'special-mode.html';
+            break;
+        case 'custom':
+            buttonText = 'Custom Match Graphics';
+            targetUrl = 'custom-mode.html';
+            break;
+        case 'all':
+            buttonText = 'All Stats Graphics';
+            targetUrl = 'visualizers.html';
+            break;
+        default:
+            buttonText = 'Graphics'; // Default text
+            targetUrl = '';
+    }
+    modeGraphicsBtn.textContent = buttonText;
+    // Store the target URL as a data attribute on the button
+    modeGraphicsBtn.dataset.targetUrl = targetUrl;
+}
+
 function getModeKey(base, skid, mode) {
     // Use provided mode or currentMode if mode is not specified
     const targetMode = mode || currentMode;
@@ -127,6 +169,9 @@ function updateModeSelector() {
     // Update header text
     document.getElementById('primaryStatsHeader').textContent = currentMode === 'all' ? 'All Modes Primary Stats' : 'Primary Stats';
     document.getElementById('secondaryStatsHeader').textContent = currentMode === 'all' ? 'All Modes Secondary Stats' : 'Secondary Stats';
+
+    // Update the dynamic graphics button
+    updateModeGraphicsButton();
 }
 
 function displayStats(data, mode) {
@@ -692,9 +737,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('allStatsBtn').addEventListener('click', () => {
         currentMode = 'all';
-        updateModeSelector();
+        updateModeSelector(); // This now calls updateModeGraphicsButton()
         loadStats();
     });
+
+    // Add event listener for the dynamic graphics button
+    if (modeGraphicsBtn) {
+        modeGraphicsBtn.addEventListener('click', () => {
+            const targetUrl = modeGraphicsBtn.dataset.targetUrl;
+            if (targetUrl) {
+                chrome.tabs.create({ url: targetUrl });
+            }
+        });
+    }
 
     // Add event listeners for section toggles
     document.querySelectorAll('.stats-details').forEach(section => {

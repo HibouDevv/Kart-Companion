@@ -93,6 +93,10 @@
             <div style="text-align: center; margin-bottom: 1px;">
                 <img src="kartCompanionMainLogo.png" alt="Kart Companion Logo" style="max-width: 150px; height: auto;">
             </div>
+            <!-- Version Text -->
+            <div style="text-align: center; font-size: 14px; font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; margin-top: 5px; margin-bottom: 5px; color: #333;">
+                v1.0.1
+            </div>
             <div class="skid-display">
                 SKID: <span id="skidValue">-</span>
                 <button id="toggleSkidBtn" class="icon-btn" title="Toggle SKID visibility">
@@ -106,6 +110,10 @@
                 <button id="statsBtn" class="section-btn selected">Stats</button>
                 <button id="hudBtn" class="section-btn">HUD</button>
             </div>
+            <div class="section-selector" style="margin-top: 10px;">
+                <button id="playerCardBtn" class="action-btn" style="background-color: #4CAF50; color: white; width: auto; flex: 1; text-align: center; font-size: 16px; padding: 10px;">Player Card</button>
+                <button id="statsNumbersBtn" class="action-btn" style="background-color: #4CAF50; color: white; width: auto; flex: 1; text-align: center; font-size: 16px; padding: 10px;">Stats In Numbers</button>
+            </div>
             <div id="statsSection" class="section-content">
                 <div id="modeSelector" class="mode-selector">
                     <button id="normalModeBtn" class="mode-btn selected">3 Minute Mode</button>
@@ -113,7 +121,12 @@
                     <button id="customModeBtn" class="mode-btn">Custom Match</button>
                     <button id="allStatsBtn" class="mode-btn">All Stats</button>
                 </div>
-                
+
+                <!-- Dynamic Graphics Button -->
+                <div class="stats-actions" style="margin-top: 10px;">
+                    <button id="modeGraphicsBtn" class="action-btn" style="background-color: #4CAF50; color: white;">Graphics</button>
+                </div>
+
                 <!-- Map Filter -->
                 <div class="map-filter">
                     <select id="mapFilter">
@@ -231,7 +244,7 @@
                     <input type="file" id="importStatsInput" accept=".skmt" style="display: none;">
                     <button id="importStatsBtn" class="action-btn">Import Stats</button>
                 </div>
-                <button id="visualizeStatsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">Export to Visualizers</button>
+                <button id="visualizeStatsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">Go To Web Page</button>
                 <button id="resetStatsBtn" class="reset-btn">Reset All Stats</button>
                 <div class="match-history">
                     <h2>Match History</h2>
