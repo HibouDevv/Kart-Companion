@@ -188,65 +188,112 @@ function formatTime(seconds) {
     return `${minutes}m ${remainingSeconds}s`;
 }
 
+// Function to animate counting from 0 to target value
+function animateValue(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const currentValue = Math.floor(progress * (end - start) + start);
+        element.textContent = currentValue;
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+// Function to animate decimal values
+function animateDecimal(element, start, end, duration, decimals = 2) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const currentValue = progress * (end - start) + start;
+        element.textContent = currentValue.toFixed(decimals);
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
+// Function to animate time values
+function animateTime(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+        if (!startTimestamp) startTimestamp = timestamp;
+        const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+        const currentValue = Math.floor(progress * (end - start) + start);
+        element.textContent = formatTime(currentValue);
+        if (progress < 1) {
+            window.requestAnimationFrame(step);
+        }
+    };
+    window.requestAnimationFrame(step);
+}
+
 // Function to update all stats on the page
 async function updateStats() {
     console.log('[SKMT][STATS-NUMBERS][updateStats] Starting stats update');
     const stats = await getStats();
     console.log('[SKMT][STATS-NUMBERS][updateStats] Stats received:', stats);
     
+    const animationDuration = 1000; // 1 second animation
+
     // Primary Stats
-    document.getElementById('kills').textContent = stats.totalKills;
-    document.getElementById('deaths').textContent = stats.totalDeaths;
-    document.getElementById('kdr').textContent = (stats.totalDeaths > 0 ? stats.totalKills / stats.totalDeaths : stats.totalKills).toFixed(2);
-    document.getElementById('timePlayed').textContent = formatTime(stats.totalTimePlayed);
-    document.getElementById('matchesCompleted').textContent = stats.matchesCompleted;
+    animateValue(document.getElementById('kills'), 0, stats.totalKills, animationDuration);
+    animateValue(document.getElementById('deaths'), 0, stats.totalDeaths, animationDuration);
+    animateDecimal(document.getElementById('kdr'), 0, (stats.totalDeaths > 0 ? stats.totalKills / stats.totalDeaths : stats.totalKills), animationDuration);
+    animateTime(document.getElementById('timePlayed'), 0, stats.totalTimePlayed, animationDuration);
+    animateValue(document.getElementById('matchesCompleted'), 0, stats.matchesCompleted, animationDuration);
 
     // Secondary Stats
-    document.getElementById('matchesJoined').textContent = stats.gamesJoined;
-    document.getElementById('matchesStarted').textContent = stats.gamesStarted;
-    document.getElementById('matchesQuit').textContent = stats.matchesQuit;
-    document.getElementById('totalMatches').textContent = stats.matchesCompleted + stats.matchesQuit;
+    animateValue(document.getElementById('matchesJoined'), 0, stats.gamesJoined, animationDuration);
+    animateValue(document.getElementById('matchesStarted'), 0, stats.gamesStarted, animationDuration);
+    animateValue(document.getElementById('matchesQuit'), 0, stats.matchesQuit, animationDuration);
+    animateValue(document.getElementById('totalMatches'), 0, stats.matchesCompleted + stats.matchesQuit, animationDuration);
     
     const totalMatches = stats.matchesCompleted + stats.matchesQuit;
     const completedRate = totalMatches > 0 ? (stats.matchesCompleted / totalMatches * 100) : 0;
     const quitRate = totalMatches > 0 ? (stats.matchesQuit / totalMatches * 100) : 0;
     
-    document.getElementById('matchesCompletedRate').textContent = `${completedRate.toFixed(2)}%`;
-    document.getElementById('matchesQuitRate').textContent = `${quitRate.toFixed(2)}%`;
+    animateDecimal(document.getElementById('matchesCompletedRate'), 0, completedRate, animationDuration);
+    animateDecimal(document.getElementById('matchesQuitRate'), 0, quitRate, animationDuration);
 
     // Average Stats
     const avgKills = stats.matchesCompleted > 0 ? stats.totalKills / stats.matchesCompleted : 0;
     const avgDeaths = stats.matchesCompleted > 0 ? stats.totalDeaths / stats.matchesCompleted : 0;
     const avgTime = stats.matchesCompleted > 0 ? stats.totalTimePlayed / stats.matchesCompleted : 0;
     
-    document.getElementById('avgKills').textContent = avgKills.toFixed(2);
-    document.getElementById('avgDeaths').textContent = avgDeaths.toFixed(2);
-    document.getElementById('avgTime').textContent = formatTime(avgTime);
+    animateDecimal(document.getElementById('avgKills'), 0, avgKills, animationDuration);
+    animateDecimal(document.getElementById('avgDeaths'), 0, avgDeaths, animationDuration);
+    animateTime(document.getElementById('avgTime'), 0, avgTime, animationDuration);
 
     // Records
-    document.getElementById('highestKills').textContent = stats.highestKills;
-    document.getElementById('highestDeaths').textContent = stats.highestDeaths;
-    document.getElementById('highestKillStreak').textContent = stats.highestKillStreak;
-    document.getElementById('highestKDR').textContent = stats.highestKDR.toFixed(2);
-    document.getElementById('longestTime').textContent = formatTime(stats.longestTimePlayed);
+    animateValue(document.getElementById('highestKills'), 0, stats.highestKills, animationDuration);
+    animateValue(document.getElementById('highestDeaths'), 0, stats.highestDeaths, animationDuration);
+    animateValue(document.getElementById('highestKillStreak'), 0, stats.highestKillStreak, animationDuration);
+    animateDecimal(document.getElementById('highestKDR'), 0, stats.highestKDR, animationDuration);
+    animateTime(document.getElementById('longestTime'), 0, stats.longestTimePlayed, animationDuration);
 
     // Streaks (Without Dying)
-    document.getElementById('smashStreak').textContent = stats.smashStreak;
-    document.getElementById('smashtacularStreak').textContent = stats.smashtacularStreak;
-    document.getElementById('smashosaurusStreak').textContent = stats.smashosaurusStreak;
-    document.getElementById('smashlvaniaStreak').textContent = stats.smashlvaniaStreak;
-    document.getElementById('monsterSmashStreak').textContent = stats.monsterSmashStreak;
-    document.getElementById('potatoStreak').textContent = stats.potatoStreak;
-    document.getElementById('smashSmashStreak').textContent = stats.smashSmashStreak;
-    document.getElementById('potoatachioStreak').textContent = stats.potoatachioStreak;
+    animateValue(document.getElementById('smashStreak'), 0, stats.smashStreak, animationDuration);
+    animateValue(document.getElementById('smashtacularStreak'), 0, stats.smashtacularStreak, animationDuration);
+    animateValue(document.getElementById('smashosaurusStreak'), 0, stats.smashosaurusStreak, animationDuration);
+    animateValue(document.getElementById('smashlvaniaStreak'), 0, stats.smashlvaniaStreak, animationDuration);
+    animateValue(document.getElementById('monsterSmashStreak'), 0, stats.monsterSmashStreak, animationDuration);
+    animateValue(document.getElementById('potatoStreak'), 0, stats.potatoStreak, animationDuration);
+    animateValue(document.getElementById('smashSmashStreak'), 0, stats.smashSmashStreak, animationDuration);
+    animateValue(document.getElementById('potoatachioStreak'), 0, stats.potoatachioStreak, animationDuration);
 
     // Quick Kills Streaks
-    document.getElementById('doubleSmash').textContent = stats.doubleSmash;
-    document.getElementById('multiSmash').textContent = stats.multiSmash;
-    document.getElementById('multiMegaSmash').textContent = stats.multiMegaSmash;
-    document.getElementById('multiMegaUltraSmash').textContent = stats.multiMegaUltraSmash;
-    document.getElementById('gooseySmash').textContent = stats.gooseySmash;
-    document.getElementById('crazyMultiMegaUltraSmash').textContent = stats.crazyMultiMegaUltraSmash;
+    animateValue(document.getElementById('doubleSmash'), 0, stats.doubleSmash, animationDuration);
+    animateValue(document.getElementById('multiSmash'), 0, stats.multiSmash, animationDuration);
+    animateValue(document.getElementById('multiMegaSmash'), 0, stats.multiMegaSmash, animationDuration);
+    animateValue(document.getElementById('multiMegaUltraSmash'), 0, stats.multiMegaUltraSmash, animationDuration);
+    animateValue(document.getElementById('gooseySmash'), 0, stats.gooseySmash, animationDuration);
+    animateValue(document.getElementById('crazyMultiMegaUltraSmash'), 0, stats.crazyMultiMegaUltraSmash, animationDuration);
 
     console.log('[SKMT][STATS-NUMBERS][updateStats] Stats update completed');
 }
