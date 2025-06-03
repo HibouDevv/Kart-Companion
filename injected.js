@@ -301,6 +301,10 @@ function interceptConsole(method, original) {
                     window.kartStats.killStreak++;
                     originalLog('[SKMT] HUD: Kill streak updated to', window.kartStats.killStreak);
                     window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: window.kartStats.killStreak }, '*');
+                    
+                    // Calculate and send KDR update
+                    const kdr = window.kartStats.deaths > 0 ? window.kartStats.kills / window.kartStats.deaths : window.kartStats.kills;
+                    window.postMessage({ type: 'SKMT_KDR_UPDATE', kdr: kdr }, '*');
                 }
                 if (msg.includes('destroyed_by_human') || msg.includes('destroyed_by_bot')) {
                     window.kartStats.deaths++;
@@ -309,6 +313,10 @@ function interceptConsole(method, original) {
                     originalLog('[SKMT] HUD: Deaths updated to', window.kartStats.deaths);
                     window.postMessage({ type: 'SKMT_DEATHS_UPDATE', deaths: window.kartStats.deaths }, '*');
                     window.postMessage({ type: 'SKMT_KILLSTREAK_UPDATE', killStreak: 0 }, '*');
+                    
+                    // Calculate and send KDR update
+                    const kdr = window.kartStats.deaths > 0 ? window.kartStats.kills / window.kartStats.deaths : window.kartStats.kills;
+                    window.postMessage({ type: 'SKMT_KDR_UPDATE', kdr: kdr }, '*');
                 }
             }
 

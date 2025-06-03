@@ -31,6 +31,7 @@ hudBtn.addEventListener('click', () => {
 
 const toggleDeathsHud = document.getElementById('toggleDeathsHud');
 const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
+const toggleKdrHud = document.getElementById('toggleKdrHud');
 
 toggleDeathsHud.addEventListener('change', function() {
     const enabled = this.checked;
@@ -48,15 +49,25 @@ toggleKillStreakHud.addEventListener('change', function() {
     });
 });
 
+toggleKdrHud.addEventListener('change', function() {
+    const enabled = this.checked;
+    chrome.storage.sync.set({ kdrHudEnabled: enabled });
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-kdr-hud', enabled});
+    });
+});
+
 // Restore toggle state on popup load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled'], (result) => {
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled'], (result) => {
     toggleDeathsHud.checked = result.deathsHudEnabled !== false; // default ON
     toggleKillStreakHud.checked = result.killStreakHudEnabled !== false; // default ON
+    toggleKdrHud.checked = result.kdrHudEnabled !== false; // default ON
 
     // Send the correct state to the content script
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-deaths-hud', enabled: toggleDeathsHud.checked});
         chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-killstreak-hud', enabled: toggleKillStreakHud.checked});
+        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-kdr-hud', enabled: toggleKdrHud.checked});
     });
 });
 
@@ -1636,6 +1647,11 @@ document.getElementById('killStreakHudSettings').addEventListener('click', () =>
     openHudSettings();
 });
 
+document.getElementById('kdrHudSettings').addEventListener('click', () => {
+    currentHudType = 'kdr';
+    openHudSettings();
+});
+
 // Close HUD settings modal
 document.getElementById('closeHudSettingsModal').addEventListener('click', () => {
     document.getElementById('hudSettingsModal').style.display = 'none';
@@ -1651,7 +1667,19 @@ document.getElementById('hudSettingsModal').addEventListener('click', (e) => {
 function openHudSettings() {
     const modal = document.getElementById('hudSettingsModal');
     const title = document.getElementById('hudSettingsTitle');
-    title.textContent = `${currentHudType === 'deaths' ? 'Deaths' : 'Kill Streak'} HUD Settings`;
+    let hudName = '';
+    switch(currentHudType) {
+        case 'deaths':
+            hudName = 'Deaths';
+            break;
+        case 'killstreak':
+            hudName = 'Kill Streak';
+            break;
+        case 'kdr':
+            hudName = 'KDR';
+            break;
+    }
+    title.textContent = `${hudName} HUD Settings`;
     
     // Load current settings
     const storageKey = `${currentHudType}HudSettings`;
@@ -1702,8 +1730,20 @@ function updateHudSettings() {
     
     // Send update to content script
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        let messageType;
+        switch(currentHudType) {
+            case 'deaths':
+                messageType = 'update-deaths-hud-style';
+                break;
+            case 'killstreak':
+                messageType = 'update-killstreak-hud-style';
+                break;
+            case 'kdr':
+                messageType = 'update-kdr-hud-style';
+                break;
+        }
         chrome.tabs.sendMessage(tabs[0].id, {
-            type: `update-${currentHudType}-hud-style`,
+            type: messageType,
             settings: settings
         });
     });

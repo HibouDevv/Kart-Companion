@@ -649,7 +649,7 @@ function collectPlayerLogLine(line) {
 // collectPlayerLogLine(logLine);
 
 // Load HUD settings on initialization
-chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings'], (result) => {
+chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings'], (result) => {
     // Apply Deaths HUD settings
     if (result.deathsHudSettings) {
         applyHudSettings(hud, result.deathsHudSettings);
@@ -677,6 +677,20 @@ chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings'], (result)
         chrome.storage.sync.set({ killStreakHudSettings: defaultKillStreakSettings });
         applyHudSettings(killStreakHud, defaultKillStreakSettings);
     }
+
+    // Apply KDR HUD settings
+    if (result.kdrHudSettings) {
+        applyHudSettings(kdrHud, result.kdrHudSettings);
+    } else {
+        // Set default settings for KDR HUD if none exist
+        const defaultKdrSettings = {
+            fontSize: 32,
+            fontColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        };
+        chrome.storage.sync.set({ kdrHudSettings: defaultKdrSettings });
+        applyHudSettings(kdrHud, defaultKdrSettings);
+    }
 });
 
 // Listen for HUD style updates
@@ -689,6 +703,10 @@ chrome.runtime.onMessage.addListener((msg) => {
         applyHudSettings(killStreakHud, msg.settings);
         // Save settings immediately
         chrome.storage.sync.set({ killStreakHudSettings: msg.settings });
+    } else if (msg.type === 'update-kdr-hud-style') {
+        applyHudSettings(kdrHud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ kdrHudSettings: msg.settings });
     }
 });
 
@@ -700,3 +718,144 @@ function applyHudSettings(hudElement, settings) {
     hudElement.style.fontFamily = settings.fontFamily;
     hudElement.style.backgroundColor = settings.backgroundColor || 'rgba(0, 0, 0, 0.5)';
 }
+
+// HUD overlay for KDR
+const kdrHud = document.createElement('div');
+kdrHud.id = 'kdr-hud-overlay';
+kdrHud.style.position = 'fixed';
+kdrHud.style.top = '220px';
+kdrHud.style.right = '40px';
+kdrHud.style.zIndex = '999999';
+kdrHud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+kdrHud.style.fontWeight = '700';
+kdrHud.style.fontSize = '32px';
+kdrHud.style.color = '#fff';
+kdrHud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
+kdrHud.style.cursor = 'move';
+kdrHud.style.userSelect = 'none';
+kdrHud.style.display = 'none';
+kdrHud.style.textRendering = 'optimizeLegibility';
+kdrHud.style.webkitFontSmoothing = 'antialiased';
+kdrHud.style.mozOsxFontSmoothing = 'grayscale';
+kdrHud.style.letterSpacing = '0.5px';
+kdrHud.textContent = 'KDR: 0.00';
+kdrHud.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+kdrHud.style.padding = '0.5em 1em';
+kdrHud.style.borderRadius = '0.5em';
+
+// Make KDR HUD draggable
+let isDraggingKDR = false;
+let currentXKDR;
+let currentYKDR;
+let initialXKDR;
+let initialYKDR;
+let xOffsetKDR = 0;
+let yOffsetKDR = 0;
+
+// Load saved position for KDR HUD
+chrome.storage.sync.get(['kdrHudPosition'], function(result) {
+    if (result.kdrHudPosition) {
+        xOffsetKDR = result.kdrHudPosition.x;
+        yOffsetKDR = result.kdrHudPosition.y;
+        setTranslateKDR(xOffsetKDR, yOffsetKDR, kdrHud);
+    }
+});
+
+// Add KDR HUD to document
+document.body.appendChild(kdrHud);
+
+// KDR HUD drag event listeners
+kdrHud.addEventListener('mousedown', dragStartKDR);
+document.addEventListener('mousemove', dragKDR);
+document.addEventListener('mouseup', dragEndKDR);
+
+function dragStartKDR(e) {
+    initialX = e.clientX - xOffsetKDR;
+    initialY = e.clientY - yOffsetKDR;
+
+    if (e.target === kdrHud) {
+        isDraggingKDR = true;
+    }
+}
+
+function dragKDR(e) {
+    if (isDraggingKDR) {
+        e.preventDefault();
+        currentX = e.clientX - initialX;
+        currentY = e.clientY - initialY;
+
+        xOffsetKDR = currentX;
+        yOffsetKDR = currentY;
+
+        setTranslateKDR(currentX, currentY, kdrHud);
+    }
+}
+
+function dragEndKDR(e) {
+    initialX = currentX;
+    initialY = currentY;
+    isDraggingKDR = false;
+
+    // Save position
+    chrome.storage.sync.set({
+        kdrHudPosition: {
+            x: xOffsetKDR,
+            y: yOffsetKDR
+        }
+    });
+}
+
+function setTranslateKDR(xPos, yPos, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+}
+
+// Initialize HUD states on page load
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled'], (result) => {
+    // Set display to block by default if not explicitly disabled
+    hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
+    killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
+    kdrHud.style.display = result.kdrHudEnabled !== false ? 'block' : 'none';
+    
+    // Log the current state for debugging
+    console.log('[SKMT] HUD states:', {
+        deathsHud: hud.style.display,
+        killStreakHud: killStreakHud.style.display,
+        kdrHud: kdrHud.style.display,
+        deathsHudEnabled: result.deathsHudEnabled,
+        killStreakHudEnabled: result.killStreakHudEnabled,
+        kdrHudEnabled: result.kdrHudEnabled
+    });
+});
+
+// Listen for toggle from popup
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'toggle-deaths-hud') {
+        hud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Deaths HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-killstreak-hud') {
+        killStreakHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Kill Streak HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-kdr-hud') {
+        kdrHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] KDR HUD toggled:', msg.enabled);
+    }
+});
+
+// Listen for messages from injected.js
+window.addEventListener('message', function(event) {
+    if (event.source !== window) return;
+    if (!event.data || !event.data.type || !event.data.type.startsWith('SKMT_')) {
+        return;
+    }
+    if (event.data.type === 'SKMT_DEATHS_UPDATE') {
+        hud.textContent = `Deaths: ${event.data.deaths}`;
+    } else if (event.data.type === 'SKMT_KILLSTREAK_UPDATE') {
+        killStreakHud.textContent = `Kill Streak: ${event.data.killStreak}`;
+    } else if (event.data.type === 'SKMT_KDR_UPDATE') {
+        kdrHud.textContent = `KDR: ${event.data.kdr.toFixed(2)}`;
+    } else if (event.data.type === 'SKMT_MATCH_COMPLETE') {
+        hud.textContent = 'Deaths: 0';
+        killStreakHud.textContent = 'Kill Streak: 0';
+        kdrHud.textContent = 'KDR: 0.00';
+    }
+});
