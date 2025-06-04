@@ -534,8 +534,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avgKdr = stats.totalDeaths === 0 ? stats.totalKills : (stats.totalKills / stats.totalDeaths);
         
-        // Simple linear scaling where KDR of 4 = 100 rating
-        const prf = Math.min(100, (avgKdr / 4) * 100);
+        // Simple linear scaling where KDR of 3.50 = 100 rating
+        const prf = Math.min(100, (avgKdr / 3.50) * 100);
         return Math.round(Math.min(100, Math.max(0, prf)));
     }
 

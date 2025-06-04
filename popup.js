@@ -945,164 +945,22 @@ chrome.runtime.onMessage.addListener(
             console.log('[SKMT][POPUP] Received MATCH_COMPLETE message:', request.data);
             const match = request.data;
             
-            // Determine the mode key based on the match data
-            const mode = match.isSpecialMode ? 'special' : (match.isCustomMode ? 'custom' : 'normal');
-            const skid = currentSkid || 'Default';
-            const gamesQuitKey = getModeKey('gamesQuit', skid, mode);
-
-            // For quit matches, only update gamesQuit if spent more than 10 seconds
-            if (match.quit) {
-                const timeSpent = match.matchEndTime - match.matchStartTime;
-                const shouldIncrementQuit = timeSpent >= 10000;
-
-                if (shouldIncrementQuit) {
-                    let retryCount = 0;
-                    const updateQuitStats = async () => {
-                        try {
-                            const data = await new Promise(resolve => {
-                                chrome.storage.sync.get([gamesQuitKey], resolve);
-                            });
-                            
-                            let gamesQuit = data[gamesQuitKey] || 0;
-                            gamesQuit++;
-                            
-                            const setObj = {};
-                            setObj[gamesQuitKey] = gamesQuit;
-                            
-                            await new Promise(resolve => {
-                                chrome.storage.sync.set(setObj, resolve);
-                            });
-                            
-                            // Verify the update
-                            const isUpdated = await verifyStatsUpdate(mode, match);
-                            if (!isUpdated && retryCount < MAX_UPDATE_RETRIES) {
-                                retryCount++;
-                                console.log(`[SKMT][POPUP] Retry ${retryCount} for quit stats update`);
-                                setTimeout(updateQuitStats, UPDATE_RETRY_DELAY);
-                                return;
-                            }
-                            
-                            // Force refresh if verification failed after all retries
-                            if (!isUpdated) {
-                                console.log('[SKMT][POPUP] Stats update verification failed, forcing refresh');
-                                await forceStatsRefresh();
-                            } else {
-                                loadStats();
-                            }
-                            
-                            try {
-                                await sendMessageWithRetry({ success: true });
-                            } catch (error) {
-                                console.error('[SKMT][POPUP] Error sending response:', error);
-                            }
-                        } catch (error) {
-                            console.error('[SKMT][POPUP] Error updating quit stats:', error);
-                            if (retryCount < MAX_UPDATE_RETRIES) {
-                                retryCount++;
-                                setTimeout(updateQuitStats, UPDATE_RETRY_DELAY);
-                            } else {
-                                await forceStatsRefresh();
-                                try {
-                                    await sendMessageWithRetry({ success: false, error: error.message });
-                                } catch (sendError) {
-                                    console.error('[SKMT][POPUP] Error sending error response:', sendError);
-                                }
-                            }
-                        }
-                    };
-                    
-                    updateQuitStats();
-                } else {
-                    console.log(`[SKMT][POPUP] Not incrementing gamesQuit - time spent less than 10 seconds:`, timeSpent);
-                    loadStats();
-                    try {
-                        sendMessageWithRetry({ success: true });
-                    } catch (error) {
-                        console.error('[SKMT][POPUP] Error sending response:', error);
-                    }
-                }
-            } else {
-                // For completed matches, update all stats with retry mechanism
-                let retryCount = 0;
-                const updateMatchStats = async () => {
-                    try {
-                        const matchHistoryKey = getModeKey('matchHistory', skid, mode);
-                        const gamesJoinedKey = getModeKey('gamesJoined', skid, mode);
-                        const gamesStartedKey = getModeKey('gamesStarted', skid, mode);
-                        const matchesCompletedKey = getModeKey('matchesCompleted', skid, mode);
-
-                        const data = await new Promise(resolve => {
-                            chrome.storage.sync.get([
-                                matchHistoryKey,
-                                gamesJoinedKey,
-                                gamesStartedKey,
-                                matchesCompletedKey
-                            ], resolve);
-                        });
-
-                        let history = data[matchHistoryKey] || [];
-                        history.push(match);
-                        
-                        let gamesJoined = data[gamesJoinedKey] || 0;
-                        let gamesStarted = data[gamesStartedKey] || 0;
-                        let matchesCompleted = data[matchesCompletedKey] || 0;
-
-                        if (match.joined) gamesJoined++;
-                        if (match.started) gamesStarted++;
-                        matchesCompleted++;
-
-                        const setObj = {
-                            [matchHistoryKey]: history,
-                            [gamesJoinedKey]: gamesJoined,
-                            [gamesStartedKey]: gamesStarted,
-                            [matchesCompletedKey]: matchesCompleted
-                        };
-
-                        await new Promise(resolve => {
-                            chrome.storage.sync.set(setObj, resolve);
-                        });
-
-                        // Verify the update
-                        const isUpdated = await verifyStatsUpdate(mode, match);
-                        if (!isUpdated && retryCount < MAX_UPDATE_RETRIES) {
-                            retryCount++;
-                            console.log(`[SKMT][POPUP] Retry ${retryCount} for match stats update`);
-                            setTimeout(updateMatchStats, UPDATE_RETRY_DELAY);
-                            return;
-                        }
-
-                        // Force refresh if verification failed after all retries
-                        if (!isUpdated) {
-                            console.log('[SKMT][POPUP] Stats update verification failed, forcing refresh');
-                            await forceStatsRefresh();
-                        } else {
-                            loadStats();
-                        }
-
-                        try {
-                            await sendMessageWithRetry({ success: true });
-                        } catch (error) {
-                            console.error('[SKMT][POPUP] Error sending response:', error);
-                        }
-                    } catch (error) {
-                        console.error('[SKMT][POPUP] Error updating match stats:', error);
-                        if (retryCount < MAX_UPDATE_RETRIES) {
-                            retryCount++;
-                            setTimeout(updateMatchStats, UPDATE_RETRY_DELAY);
-                        } else {
-                            await forceStatsRefresh();
-                            try {
-                                await sendMessageWithRetry({ success: false, error: error.message });
-                            } catch (sendError) {
-                                console.error('[SKMT][POPUP] Error sending error response:', sendError);
-                            }
-                        }
-                    }
-                };
-
-                updateMatchStats();
+            // Update the display immediately with the current stats
+            if (match.currentStats) {
+                document.getElementById('kills').textContent = match.currentStats.kills;
+                document.getElementById('deaths').textContent = match.currentStats.deaths;
+                document.getElementById('kdr').textContent = formatKDR(match.currentStats.kills, match.currentStats.deaths);
             }
-            return true; // Keep the message channel open for async response
+            
+            // Then load the full stats
+            loadStats();
+            
+            try {
+                sendResponse({ success: true });
+            } catch (error) {
+                console.error('[SKMT][POPUP] Error sending response:', error);
+            }
+            return true;
         } else if (request.type === 'SKMT_DEATHS_UPDATE') {
             // Update deaths display in real-time
             document.getElementById('deaths').textContent = request.deaths;
@@ -1954,3 +1812,9 @@ if (document.getElementById('matchSortSelect')) {
         loadStats();
     });
 } 
+
+// Add this to ensure stats are loaded when popup opens
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[SKMT][POPUP] Loading initial stats');
+    loadStats();
+});

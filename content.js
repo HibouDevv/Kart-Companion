@@ -331,24 +331,32 @@ window.addEventListener('message', function(event) {
                         timeSpent: match.matchEndTime - match.matchStartTime
                     });
 
-                    // Send message to popup with the updated data
-                    chrome.runtime.sendMessage({
-                        type: 'SKMT_MATCH_COMPLETE',
-                        data: {
-                            ...match,
-                            mode: mode, // Add mode to the data
-                            quit: match.quit // Ensure quit flag is included
-                        }
-                    }, () => {
-                        if (chrome.runtime.lastError) {
-                            console.error('[SKMT] Error sending message to popup:', chrome.runtime.lastError);
-                        } else {
-                            console.log('[SKMT] Successfully sent match data to popup:', {
-                                mode,
-                                quit: match.quit,
-                                isSpecialMode: match.isSpecialMode,
-                                isCustomMode: match.isCustomMode
+                    // First ensure the data is saved
+                    chrome.storage.sync.get([getModeKey('totalKills', skid, mode), getModeKey('totalDeaths', skid, mode)], (result) => {
+                        // Then try to notify the popup
+                        try {
+                            chrome.runtime.sendMessage({
+                                type: 'SKMT_MATCH_COMPLETE',
+                                data: {
+                                    ...match,
+                                    mode: mode,
+                                    quit: match.quit,
+                                    currentStats: {
+                                        kills: result[getModeKey('totalKills', skid, mode)] || 0,
+                                        deaths: result[getModeKey('totalDeaths', skid, mode)] || 0
+                                    }
+                                }
+                            }, (response) => {
+                                if (chrome.runtime.lastError) {
+                                    console.error('[SKMT] Error sending message to popup:', chrome.runtime.lastError);
+                                    // Stats are still saved in storage, so the popup can load them when opened
+                                } else {
+                                    console.log('[SKMT] Successfully sent match data to popup');
+                                }
                             });
+                        } catch (error) {
+                            console.error('[SKMT] Error in message sending:', error);
+                            // Stats are still saved in storage, so the popup can load them when opened
                         }
                     });
                 });
