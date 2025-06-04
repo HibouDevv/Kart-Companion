@@ -30,6 +30,7 @@ window.kartStats = {
     _pendingGameEnd: false,
     _successLogCount: 0,
     _gameEndTimeout: null,
+    _gameEndProcessed: false,
     skid: null,
     killTimestamps: [],
     deathTimestamps: [],
@@ -197,7 +198,8 @@ function interceptConsole(method, original) {
             // Handle game end
             if (msg.includes('bytebrew: sending custom event: game_end') || 
                 msg.includes('bytebrew: sending custom event: confirmexitgame')) {
-                if (window.kartStats.matchActive) {
+                if (window.kartStats.matchActive && !window.kartStats._gameEndProcessed) {
+                    window.kartStats._gameEndProcessed = true;
                     window.kartStats.matchEndTime = Date.now();
                     window.kartStats.matchActive = false;
                     
@@ -256,7 +258,8 @@ function interceptConsole(method, original) {
 
             // Handle actual game exit (loading_unity_awake)
             if (msg.includes('bytebrew: sending custom event: loading_unity_awake')) {
-                if (window.kartStats.matchActive) {
+                if (window.kartStats.matchActive && !window.kartStats._gameEndProcessed) {
+                    window.kartStats._gameEndProcessed = true;
                     // Set quit flag and preserve mode info for the current match
                     window.kartStats.quit = true;
                     window.kartStats.matchEndTime = Date.now();
@@ -344,6 +347,7 @@ function resetStats() {
     window.kartStats.quit = false;
     window.kartStats._pendingGameEnd = false;
     window.kartStats._successLogCount = 0;
+    window.kartStats._gameEndProcessed = false;
     window.kartStats.killTimestamps = [];
     window.kartStats.deathTimestamps = [];
     window.kartStats.sawJoinedRoom = false;
