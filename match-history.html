@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion - Match History</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #fff;
+            --header-bg: #f5f8fa;
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+            --card-background: #fff;
+            --card-text: #2c3e50;
+            --border-radius: 8px;
+            --spacing: 20px;
+            --font-family: 'Baloo 2', Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--header-bg);
+            background-image: url('websiteBG.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-size: cover;
+        }
+
+        .nav-container {
+            background: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e3eaf1;
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .nav-item {
+            padding: 15px 0;
+        }
+
+        .nav-link {
+            color: var(--primary-blue-dark);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+
+        .nav-link.active:hover {
+            background-color: var(--primary-blue-dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-title {
+            font-family: var(--font-family);
+            color: gold;
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .match-filters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing);
+            margin-bottom: var(--spacing);
+            background: var(--card-background);
+            padding: var(--spacing);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .match-filters select {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            background-color: white;
+            font-size: 1.1em;
+            font-family: var(--font-family);
+            cursor: pointer;
+        }
+
+        .match-filters select:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .matches-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .match-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: var(--spacing);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .match-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.15);
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .match-number {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary-blue-dark);
+        }
+
+        .match-info {
+            text-align: right;
+        }
+
+        .match-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        .create-link-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            color: #ccc;
+            transition: color 0.2s ease;
+            font-size: 1.8em;
+        }
+
+        .create-link-btn:hover {
+            color: var(--primary-blue);
+        }
+
+        .create-link-btn i {
+            font-size: 1em;
+        }
+
+        .match-date {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .match-map {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--primary-blue-dark);
+        }
+
+        .match-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .match-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .match-mode {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .match-status {
+            font-size: 1.1em;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background-color: #e3eaf1;
+            color: #2c3e50;
+        }
+
+        .match-status.completed {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .match-status.quit {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .match-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            position: relative;
+            z-index: 1;
+        }
+
+        .match-details.active {
+            display: block;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .detail-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .detail-section-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary-blue-dark);
+            margin-bottom: 15px;
+        }
+
+        .detail-section-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .match-indicators {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 1.1em;
+            color: #666;
+            text-align: center;
+        }
+
+        .no-matches {
+            text-align: center;
+            padding: 40px;
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            color: var(--card-text);
+            font-size: 1.4em;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            background: #fee;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            color: #c00;
+            font-size: 1.4em;
+        }
+
+        .favorite-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 8px 0 0 auto;
+            display: block;
+            color: #ccc;
+            transition: color 0.2s ease;
+            font-size: 1.8em;
+        }
+
+        .favorite-btn:hover {
+            color: #ffd700;
+        }
+
+        .favorite-btn i {
+            font-size: 1em;
+        }
+
+        .favorite-btn i.active {
+            color: #ffd700;
+        }
+
+        .favorite-btn i:not(.active) {
+            color: #ccc;
+        }
+
+        .match-name-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .match-name-text {
+            font-size: 1.6em;
+            color: #888;
+            flex-grow: 1;
+            font-style: italic;
+        }
+
+        .match-name-text.has-name {
+            font-size: 1.6em;
+            color: var(--card-text);
+            font-style: normal;
+            font-weight: 700;
+        }
+
+        .match-name-input {
+            font-size: 1.6em;
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--card-background);
+            color: var(--card-text);
+            width: 100%;
+            pointer-events: all;
+            position: relative;
+            z-index: 2;
+        }
+
+        .match-name-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .edit-name-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: var(--primary-blue);
+            transition: color 0.2s ease;
+            font-size: 1.2em;
+        }
+
+        .edit-name-btn:hover {
+            color: var(--accent-color);
+        }
+
+        .search-container {
+            margin-bottom: var(--spacing);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            background: var(--card-background);
+            padding: 0 var(--spacing);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 0;
+            font-size: 1.1em;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--card-background);
+            color: var(--card-text);
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+
+        .search-input:focus {
+            outline: none;
+        }
+
+        .search-icon {
+            color: #888;
+            font-size: 1.1em;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--primary-blue-dark);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-blue-dark);
+        }
+
+        .modal-content {
+            margin-bottom: 20px;
+        }
+
+        .link-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .link-input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: monospace;
+        }
+
+        .copy-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-blue-dark);
+        }
+
+        .copy-btn.copied {
+            background: #2ecc71;
+        }
+    </style>
+
+    <!-- Add Font Awesome for the star icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <!-- Add modal HTML -->
+    <div class="modal-overlay" id="linkModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Share Match Link</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-content">
+                <p>Share this link to let others view this match:</p>
+                <div class="link-container">
+                    <input type="text" class="link-input" id="shareLink" readonly>
+                    <button class="copy-btn" id="copyLink">Copy Link</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="logo-container" style="text-align: center; margin: 20px 0;">
+        <img src="kcCharts.png" alt="Kart Companion Logo" style="max-width: 200px; height: auto;">
+    </div>
+    <nav class="nav-container">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="visualizers.html" class="nav-link">All Stats</a></li>
+                <li class="nav-item"><a href="3min-mode.html" class="nav-link">3 Minute Mode</a></li>
+                <li class="nav-item"><a href="special-mode.html" class="nav-link">Special Mode</a></li>
+                <li class="nav-item"><a href="custom-mode.html" class="nav-link">Custom Mode</a></li>
+                <li class="nav-item"><a href="stats-numbers.html" class="nav-link">Stats In Numbers</a></li>
+                <li class="nav-item"><a href="match-history.html" class="nav-link active">Match History</a></li>
+                <li class="nav-item"><a href="player-card.html" class="nav-link">My Smash Kart Card</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-title">Match History</h1>
+        </div>
+
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="Search match names...">
+        </div>
+
+        <div class="match-filters">
+            <select id="modeFilter">
+                <option value="all">All Modes</option>
+                <option value="normal">Normal Mode</option>
+                <option value="special">Special Mode</option>
+                <option value="custom">Custom Mode</option>
+            </select>
+            <select id="sortFilter">
+                <option value="recent">Most Recent</option>
+                <option value="oldest">Oldest First</option>
+                <option value="kills">Highest Kills</option>
+                <option value="kdr">Highest KDR</option>
+                <option value="favorites">Favorites</option>
+                <option value="longest">Longest Played</option>
+                <option value="deaths">Highest Deaths</option>
+            </select>
+            <select id="mapFilter">
+                <option value="all">All Maps</option>
+                <!-- Map options will be dynamically added here -->
+            </select>
+        </div>
+
+        <div id="matches-list" class="matches-list">
+            <!-- Match cards will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script src="match-history.js"></script>
+</body>
+</html> 

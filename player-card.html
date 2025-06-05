@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smash Karts Player Card</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Existing Visualizer Styles (Copied from visualizers.html) */
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #f5f8fa; /* Using the header-bg as main background */
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+            /* Added for card colors */
+            --card-blue-dark: #2A52BE;
+            --card-blue-light: #3B6BBF;
+            --card-gold: #f1c40f;
+            --card-gold-light: rgba(255, 215, 0, 0.85);
+            --card-dark-text: #1a252f;
+            --card-grey-label: #bdc3c7;
+        }
+        body {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            margin: 0;
+            padding: 0;
+            background-color: var(--header-bg);
+            background-image: url('websiteBG.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-size: cover;
+        }
+        .nav-container {
+            background: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e3eaf1;
+        }
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .nav-item {
+            padding: 15px 0;
+        }
+        .nav-link {
+            color: var(--primary-blue-dark);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        .nav-link.active:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto; /* Add some margin to the container */
+            padding: 0 20px;
+            display: flex; /* Use flexbox to center card and controls vertically */
+            flex-direction: column;
+            align-items: center; /* Center items horizontally */
+        }
+         .section {
+            background: var(--container-bg);
+            padding: 24px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid #e3eaf1;
+            margin-bottom: 32px;
+            width: 100%; /* Make section take full width of container */
+            max-width: 600px; /* Limit the max width of the section */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+         .section-title {
+            font-size: 2em;
+            color: var(--primary-blue-dark);
+            margin-bottom: 18px;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
+         /* Styles for forms and controls */
+        .form-group {
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 300px; /* Limit width of form elements */
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #333; /* Darker color for labels */
+        }
+
+        .form-group input[type="file"],
+        .form-group select {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1em;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
+
+        .form-group input[type="file"]::file-selector-button {
+            padding: 8px 12px;
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            margin-right: 10px;
+        }
+
+        .form-group input[type="file"]::file-selector-button:hover {
+             background-color: var(--primary-blue-dark);
+        }
+
+
+        /* Card Styles (Adapted from user's provided CSS) */
+        .smash-karts-card {
+            width: 340px; /* Typical card width */
+            background: linear-gradient(145deg, var(--card-blue-light), var(--card-blue-dark)); /* Use CSS variables */
+            border-radius: 20px; /* Rounded corners */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); /* Prominent shadow for depth */
+            position: relative; /* For absolute positioning of children */
+            overflow: hidden; /* To clip any overflowing elements like shines */
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px; /* Add padding */
+            box-sizing: border-box;
+            margin-bottom: 30px; /* Space below the card */
+        }
+
+        .card-background-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/carbon-fibre.png') repeat; /* Subtle texture */
+            opacity: 0.05;
+            z-index: 0;
+        }
+
+        .player-ovr-container {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            z-index: 2;
+            background-color: var(--card-gold-light); /* Use CSS variable */
+            color: var(--card-dark-text); /* Use CSS variable */
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: 800;
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+            font-family: 'Baloo 2', Arial, sans-serif !important; /* Ensure Baloo 2 font */
+        }
+
+        .player-flag-container {
+            position: absolute;
+            top: 35px;
+            right: 25px;
+            z-index: 2;
+        }
+
+        .player-flag-container img {
+            width: 50px;
+            height: auto;
+            border-radius: 5px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .team-logo-container {
+            position: absolute;
+            top: 100px; /* Adjust as needed */
+            left: 30px;
+            z-index: 2;
+            width: 60px; /* Match original logo size */
+            height: 60px; /* Match original logo size */
+            border-radius: 50%; /* Make it circular */
+            border: 2px solid rgba(255,255,255,0.5); /* Add border */
+            overflow: hidden; /* Hide overflowing parts of the image */
+        }
+
+        .team-logo-container img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%; /* Circular logo */
+            border: 2px solid rgba(255,255,255,0.5);
+        }
+
+        .player-avatar-container {
+            margin-top: 20px; /* Adjusted margin */
+            z-index: 1;
+            position: relative; /* To ensure it's part of the flow before stats */
+            width: 160px; /* Match original image width */
+            height: 160px; /* Match original image height */
+            border-radius: 50%; /* Make it circular */
+            border: 5px solid #4a6fa5; /* Add border */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3); /* Add shadow */
+            overflow: hidden; /* Hide overflowing parts of the image */
+        }
+
+        .player-avatar-container img {
+            object-fit: cover; /* Ensures the image covers the area well */
+        }
+
+        .player-name-container {
+            margin-top: 15px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            z-index: 1;
+            letter-spacing: 0.5px;
+            color: var(--card-gold); /* Use CSS variable */
+            font-family: 'Baloo 2', Arial, sans-serif !important; /* Ensure Baloo 2 font */
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center the name and icon block */
+        }
+
+        .edit-icon {
+            margin-left: 10px;
+            font-size: 1em; /* Adjust size relative to text */
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7); /* Lighter color for icon */
+            transition: color 0.2s ease;
+        }
+
+        .edit-icon:hover {
+            color: #ffffff; /* White on hover */
+        }
+
+        .stats-block {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 25px;
+            padding: 0 10px; /* Padding inside the stats block */
+            z-index: 1;
+            box-sizing: border-box;
+        }
+
+        .stats-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px; /* Space between stat items */
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 120px; /* Fixed width for alignment */
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--card-grey-label); /* Use CSS variable */
+            margin-right: 10px;
+             font-family: 'Baloo 2', Arial, sans-serif !important; /* Ensure Baloo 2 font */
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff; /* Bright white for values */
+            min-width: 30px; /* Ensure space for two digits */
+            text-align: right;
+             font-family: 'Baloo 2', Arial, sans-serif !important; /* Ensure Baloo 2 font */
+        }
+
+        .game-logo-container {
+            position: absolute;
+            bottom: 15px;
+            right: 20px;
+            z-index: 2;
+        }
+
+        .game-logo-container img {
+            width: 80px; /* Increased size further */
+            height: auto;
+            opacity: 0.7;
+        }
+
+        .team-name-container {
+            margin-top: 5px; /* Reduced margin from player name */
+            font-size: 18px; /* Smaller font size */
+            font-weight: 600; /* Slightly less bold */
+            text-align: center;
+            z-index: 1;
+            letter-spacing: 0.3px;
+            color: rgba(255, 255, 255, 0.8); /* Slightly muted color */
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-name-container span {
+            /* Optional: Add specific styles for text within team name */
+        }
+
+        .logo-title {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            color: gold;
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+
+        /* Stats Info Button Styles */
+        .stats-info-button {
+            position: fixed;
+            top: 100px;
+            left: 200px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background-color: rgba(26, 42, 58, 0.9);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .stats-info-button:hover {
+            background-color: rgba(42, 58, 74, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-info-button i {
+            color: var(--card-gold);
+            font-size: 1.2em;
+        }
+
+        .stats-info-button span {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;  /* Increased from 1000 to 2000 to be above navbar */
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 100%);
+            margin: 5% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            z-index: 2001;  /* Added z-index to ensure content is above modal background */
+        }
+
+        .modal-content h2 {
+            color: var(--card-gold);
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .stats-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-info-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-info-item:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-info-item h3 {
+            color: var(--card-gold);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .stat-info-item p {
+            color: #ffffff;
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--card-gold);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #ffffff;
+        }
+
+        @media (max-width: 768px) {
+            .stats-info-button {
+                top: 80px;
+                left: 160px;
+                padding: 8px 12px;
+            }
+
+            .stats-info-button span {
+                font-size: 12px;
+            }
+
+            .modal-content {
+                width: 90%;
+                margin: 10% auto;
+                padding: 20px;
+            }
+
+            .stats-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container" style="text-align: center; margin: 20px 0;">
+        <img src="kcCharts.png" alt="Kart Companion Logo" style="max-width: 200px; height: auto;">
+    </div>
+
+    <div class="stats-info-button" id="statsInfoButton">
+        <i class="fas fa-question-circle"></i>
+        <span>How are the stats computed?</span>
+    </div>
+
+    <!-- Stats Info Modal -->
+    <div id="statsInfoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Stats Computation</h2>
+            <div class="stats-info-grid">
+                <div class="stat-info-item">
+                    <h3>ATK (Attack)</h3>
+                    <p>Based on your average kills per 3 minutes. 20 kills per 3 minutes = 100 ATK.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>DEF (Defense)</h3>
+                    <p>Based on your average deaths per 3 minutes. 0 deaths = 100 DEF, 16+ deaths = 0 DEF.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>CNS (Consistency)</h3>
+                    <p>Based on your match completion rate. Higher percentage of completed matches = higher CNS.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>EXP (Experience)</h3>
+                    <p>Based on your total playtime. Uses a logarithmic scale to reward both new and veteran players.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>PRF (Performance)</h3>
+                    <p>Based on your overall KDR (Kill/Death Ratio). KDR of 3.50 or higher = 100 PRF.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-container">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="visualizers.html" class="nav-link">All Stats</a></li>
+                <li class="nav-item"><a href="3min-mode.html" class="nav-link">3 Minute Mode</a></li>
+                <li class="nav-item"><a href="special-mode.html" class="nav-link">Special Mode</a></li>
+                <li class="nav-item"><a href="custom-mode.html" class="nav-link">Custom Mode</a></li>
+                <li class="nav-item"><a href="stats-numbers.html" class="nav-link">Stats In Numbers</a></li>
+                <li class="nav-item"><a href="match-history.html" class="nav-link">Match History</a></li>
+                <li class="nav-item"><a href="player-card.html" class="nav-link active">My Smash Kart Card</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="section">
+            <div class="section-title">My Player Card</div>
+
+            <!-- Smash Karts Player Card -->
+            <div class="smash-karts-card">
+                <div id="player-ovr" class="player-ovr-container">
+                    95
+                </div>
+
+                <div id="player-flag" class="player-flag-container">
+                    <img src="https://placehold.co/60x40/0033a0/ffffff?text=SWE" alt="Swedish Flag Placeholder" title="Sweden">
+                </div>
+
+                <div class="team-logo-container">
+                </div>
+
+                <div class="player-avatar-container">
+                </div>
+
+                <div id="player-name" class="player-name-container">
+                    <span id="player-name-text">KartRacerX</span>
+                    <span id="edit-name-icon" class="edit-icon">&#9998;</span> <!-- Pencil icon -->
+                </div>
+
+                <div id="team-name" class="team-name-container">
+                    <span id="team-name-text">Team Alpha</span>
+                    <span id="edit-team-icon" class="edit-icon">&#9998;</span> <!-- Team edit icon -->
+                </div>
+
+                <div class="stats-block">
+                    <div class="stats-column">
+                        <div class="stat-item">
+                            <span class="stat-label" id="label-atk">ATK</span>
+                            <span class="stat-value" id="stat-ofs">92</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" id="label-def">DEF</span>
+                            <span class="stat-value" id="stat-def">88</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" id="label-cns">CNS</span>
+                            <span class="stat-value" id="stat-cns">90</span>
+                        </div>
+                    </div>
+                    <div class="stats-column">
+                        <div class="stat-item">
+                            <span class="stat-label" id="label-exp">EXP</span>
+                            <span class="stat-value" id="stat-exp">95</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label" id="label-prf">PRF</span>
+                            <span class="stat-value" id="stat-prf">93</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-logo-container">
+                    <img id="game-logo" src="sklogo.png" alt="Smash Karts Logo" title="Smash Karts">
+                </div>
+
+                <div class="card-background-layer"></div>
+            </div>
+
+            <!-- Upload Controls and Flag Selector -->
+            <div class="form-group">
+                <label for="pfp-upload">Upload Profile Picture:</label>
+                <input type="file" id="pfp-upload" accept="image/*">
+            </div>
+
+             <div class="form-group">
+                <label for="team-avatar-upload">Upload Team Avatar:</label>
+                <input type="file" id="team-avatar-upload" accept="image/*">
+            </div>
+
+            <div class="form-group">
+                <label for="flag-select">Select Flag:</label>
+                <select id="flag-select">
+                    <option value="">--Select a Country--</option>
+                    <!-- Example options - a full list would be needed -->
+                    <option value="SWE">Sweden</option>
+                    <option value="USA">United States</option>
+                    <option value="CAN">Canada</option>
+                    <option value="GBR">United Kingdom</option>
+                    <!-- More options will go here -->
+                </select>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="player-card.js"></script>
+
+</body>
+</html> 

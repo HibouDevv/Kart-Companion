@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles/popup.css">
+    <style>
+        body { font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; }
+        .hud-toggle-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+        .hud-toggle-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            min-width: 120px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            border-radius: 26px;
+            transition: background 0.2s;
+        }
+        .slider:before {
+            position: absolute;
+            content: '';
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        input:checked + .slider {
+            background-color: #4caf50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        /* Add styles for a blue button */
+        .blue-button {
+            background-color: #3498db; /* Primary blue */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            width: 100%; /* Make it fill the container like the select did */
+            text-align: center;
+            display: block; /* Ensure it takes up its own line */
+        }
+
+        .blue-button:hover {
+            background-color: #2980b9; /* Darker blue on hover */
+        }
+
+        .action-btn {
+            display: block; /* Ensure action buttons take full width */
+            width: 100%;
+            margin-bottom: 10px; /* Add some space below action buttons */
+            padding: 10px; /* Adjust padding for consistency */
+            font-size: 1em; /* Adjust font size */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="text-align: center; margin-bottom: 1px;">
+                <img src="kartCompanionMainLogo.png" alt="Kart Companion Logo" style="max-width: 150px; height: auto;">
+            </div>
+            <!-- Version Text -->
+            <div style="text-align: center; font-size: 14px; font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; margin-top: 5px; margin-bottom: 5px; color: #333;">
+                v1.0.1
+            </div>
+            <div class="skid-display">
+                SKID: <span id="skidValue">-</span>
+                <button id="toggleSkidBtn" class="icon-btn" title="Toggle SKID visibility">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button id="copySkidBtn" class="icon-btn" title="Copy SKID to clipboard">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            <div class="section-selector">
+                <button id="statsBtn" class="section-btn selected">Stats</button>
+                <button id="hudBtn" class="section-btn">HUD</button>
+            </div>
+            <div class="section-selector" style="margin-top: 10px;">
+                <button id="playerCardBtn" class="action-btn" style="background-color: #4CAF50; color: white; width: auto; flex: 1; text-align: center; font-size: 16px; padding: 10px;">Player Card</button>
+                <button id="statsNumbersBtn" class="action-btn" style="background-color: #4CAF50; color: white; width: auto; flex: 1; text-align: center; font-size: 16px; padding: 10px;">Stats In Numbers</button>
+            </div>
+            <div id="statsSection" class="section-content">
+                <div id="modeSelector" class="mode-selector">
+                    <button id="normalModeBtn" class="mode-btn selected">3 Minute Mode</button>
+                    <button id="specialModeBtn" class="mode-btn">Special Mode</button>
+                    <button id="customModeBtn" class="mode-btn">Custom Match</button>
+                    <button id="allStatsBtn" class="mode-btn">All Stats</button>
+                </div>
+
+                <!-- Dynamic Graphics Button -->
+                <div class="stats-actions" style="margin-top: 10px;">
+                    <button id="modeGraphicsBtn" class="action-btn" style="background-color: #4CAF50; color: white;">Graphics</button>
+                </div>
+
+                <!-- Map Filter -->
+                <div class="map-filter">
+                    <select id="mapFilter">
+                        <option value="all">All Maps</option>
+                        <!-- Map options will be dynamically added here -->
+                    </select>
+                </div>
+
+                <!-- Primary Stats Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="primaryStatsHeader">Primary Stats</h2>
+                    </summary>
+                    <div class="primary-stats-list">
+                        <div class="stat-card"><span class="stat-label" id="killsLabel">Kills</span><span class="stat-value" id="kills">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="deathsLabel">Deaths</span><span class="stat-value" id="deaths">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="kdrLabel">KDR</span><span class="stat-value" id="kdr">0.00</span></div>
+                        <div class="stat-card"><span class="stat-label" id="totalTimeSpentLabel">Time Played</span><span class="stat-value" id="totalTimeSpent">0s</span></div>
+                        
+                        <!-- Moved from secondary stats -->
+                        <div class="stat-card"><span class="stat-label" id="matchesCompletedLabel">Matches Completed</span><span class="stat-value" id="matchesCompleted">0</span></div>
+                    </div>
+                </details>
+
+                <!-- Secondary Stats Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="secondaryStatsHeader">Secondary Stats</h2>
+                    </summary>
+                    <div class="secondary-stats-list">
+                        <div class="stat-card"><span class="stat-label" id="gamesJoinedLabel">Matches Joined</span><span class="stat-value" id="gamesJoined">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="gamesStartedLabel">Matches Started</span><span class="stat-value" id="gamesStarted">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="gamesQuitLabel">Matches Quit</span><span class="stat-value" id="gamesQuit">0</span></div>
+
+                        <!-- Moved from primary stats -->
+                        <div class="stat-card"><span class="stat-label" id="totalMatchesLabel">Total Matches (Completed + Quit)</span><span class="stat-value" id="totalMatches">0</span></div>
+
+                        <div class="stat-card"><span class="stat-label" id="matchesCompletedRateLabel">Matches Completed Rate</span><span class="stat-value" id="matchesCompletedRate">0.00%</span></div>
+                        <div class="stat-card"><span class="stat-label" id="matchesQuitRateLabel">Matches Quit Rate</span><span class="stat-value" id="matchesQuitRate">0.00%</span></div>
+                    </div>
+                </details>
+
+                <!-- Average Stats Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="averageStatsHeader">Average Stats</h2>
+                    </summary>
+                    <div class="average-stats-list">
+                        <div class="stat-card"><span class="stat-label" id="avgKillsLabel">Average Kills per Match</span><span class="stat-value" id="avgKills">0.00</span></div>
+                        <div class="stat-card"><span class="stat-label" id="avgDeathsLabel">Average Deaths per Match</span><span class="stat-value" id="avgDeaths">0.00</span></div>
+                        <div class="stat-card"><span class="stat-label" id="avgTimeSpentLabel">Average Time per Match</span><span class="stat-value" id="avgTimeSpent">0s</span></div>
+                    </div>
+                </details>
+
+                <!-- Records Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="recordsHeader">Records</h2>
+                    </summary>
+                    <div class="records-list">
+                        <div class="stat-card"><span class="stat-label">Highest Kills in a Match</span><span class="stat-value" id="highestKillsRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest Deaths in a Match</span><span class="stat-value" id="highestDeathsRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest Kill Streak in a Match</span><span class="stat-value" id="highestKillStreakRecord">0</span></div>
+                        <div class="stat-card"><span class="stat-label">Highest KDR in a Match</span><span class="stat-value" id="highestKDRRecord">0.00</span></div>
+                        <div class="stat-card"><span class="stat-label">Longest Time Played In A Match</span><span class="stat-value" id="longestTimePlayedRecord">0s</span></div>
+                    </div>
+                </details>
+
+                <!-- Streaks (Without Dying) Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="streaksHeader">Streaks (Without Dying)</h2>
+                    </summary>
+                    <div class="streaks-list">
+                        <div class="stat-card"><span class="stat-label" id="smashStreakLabel">Smash Streak (3)</span><span class="stat-value" id="smashStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="smashtacularStreakLabel">Smashtacular Streak (5)</span><span class="stat-value" id="smashtacularStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="smashosaurusStreakLabel">Smashosaurus Streak (7)</span><span class="stat-value" id="smashosaurusStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="smashlvaniaStreakLabel">Smashlvania Streak (10)</span><span class="stat-value" id="smashlvaniaStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="monsterSmashStreakLabel">Monster Smash Streak (15)</span><span class="stat-value" id="monsterSmashStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="potatoStreakLabel">Potato Streak (20)</span><span class="stat-value" id="potatoStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="smashSmashStreakLabel">Smash Smash Smash Smash Smash Smash Smash Smash Streak (25)</span><span class="stat-value" id="smashSmashStreak">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="potoatachioStreakLabel">Potoatachio Streak (30)</span><span class="stat-value" id="potoatachioStreak">0</span></div>
+                    </div>
+                </details>
+
+                <!-- Quick Kills Streaks Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="quickKillsHeader">Quick Kills Streaks</h2>
+                    </summary>
+                    <div class="quick-kills-list">
+                        <div class="stat-card"><span class="stat-label" id="doubleSmashLabel">Double Smash (2)</span><span class="stat-value" id="doubleSmash">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="multiSmashLabel">Multi Smash (3)</span><span class="stat-value" id="multiSmash">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="multiMegaSmashLabel">Multi Mega Smash (4)</span><span class="stat-value" id="multiMegaSmash">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="multiMegaUltraSmashLabel">Multi Mega Ultra Smash (5)</span><span class="stat-value" id="multiMegaUltraSmash">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="gooseySmashLabel">Goosey Smash (6)</span><span class="stat-value" id="gooseySmash">0</span></div>
+                        <div class="stat-card"><span class="stat-label" id="crazyMultiMegaUltraSmashLabel">Crazy Multi Mega Ultra Smash (7)</span><span class="stat-value" id="crazyMultiMegaUltraSmash">0</span></div>
+                    </div>
+                </details>
+
+                <!-- Maps Played Section -->
+                <details class="stats-details">
+                    <summary class="stats-summary">
+                        <h2 class="stats-section-label" id="mapsHeader">Maps Played</h2>
+                    </summary>
+                    <div class="maps-list" id="mapsList">
+                        <!-- Maps will be dynamically added here -->
+                    </div>
+                </details>
+
+                <!-- Actions Section -->
+                <h2 class="stats-section-label" id="actionsHeader">Actions</h2>
+                <div class="stats-actions">
+                    <button id="exportStatsBtn" class="action-btn">Export Stats</button>
+                    <input type="file" id="importStatsInput" accept=".skmt" style="display: none;">
+                    <button id="importStatsBtn" class="action-btn">Import Stats</button>
+                </div>
+                <button id="visualizeStatsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">Go To Web Page</button>
+                <button id="resetStatsBtn" class="reset-btn">Reset All Stats</button>
+                <div class="match-history">
+                    <h2>Match History</h2>
+                    <button id="moreDetailsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">More Details</button>
+                    <div id="matches-list" class="matches-list">
+                        <!-- Match cards will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div id="hudSection" class="section-content" style="display:none;">
+                <h2 class="stats-section-label">HUD Overlay</h2>
+                <p class="hud-tip">Tip: You can drag and drop the overlays wherever you want them to be!</p>
+                <div class="hud-toggle-row">
+                    <span class="hud-toggle-label">Deaths HUD</span>
+                    <button class="settings-btn" id="deathsHudSettings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleDeathsHud">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hud-toggle-row">
+                    <span class="hud-toggle-label">Kill Streak HUD</span>
+                    <button class="settings-btn" id="killStreakHudSettings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleKillStreakHud">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hud-toggle-row">
+                    <span class="hud-toggle-label">KDR HUD</span>
+                    <button class="settings-btn" id="kdrHudSettings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleKdrHud">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </header>
+    </div>
+    <!-- Match Info Modal -->
+    <div id="matchInfoModal" class="match-info-modal" style="display:none;">
+        <div class="match-info-modal-content">
+            <button id="closeMatchInfoModal" class="close-modal-btn">&times;</button>
+            <div id="match-info-modal-body"></div>
+        </div>
+    </div>
+    <!-- HUD Settings Modal -->
+    <div id="hudSettingsModal" class="match-info-modal" style="display:none;">
+        <div class="match-info-modal-content">
+            <button id="closeHudSettingsModal" class="close-modal-btn">&times;</button>
+            <h2 class="match-info-title" id="hudSettingsTitle">HUD Settings</h2>
+            <div class="hud-settings-form">
+                <div class="setting-group">
+                    <label for="hudFontSize">Font Size:</label>
+                    <input type="range" id="hudFontSize" min="16" max="48" value="32" step="1">
+                    <span id="fontSizeValue">32px</span>
+                </div>
+                <div class="setting-group">
+                    <label for="hudFontColor">Font Color:</label>
+                    <select id="hudFontColor">
+                        <option value="#ffffff">White</option>
+                        <option value="#ff0000">Red</option>
+                        <option value="#00ff00">Green</option>
+                        <option value="#0000ff">Blue</option>
+                        <option value="#ffff00">Yellow</option>
+                        <option value="#ff00ff">Magenta</option>
+                        <option value="#00ffff">Cyan</option>
+                        <option value="#ffa500">Orange</option>
+                        <option value="#800080">Purple</option>
+                        <option value="#008000">Dark Green</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="hudFontFamily">Font Family:</label>
+                    <select id="hudFontFamily">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Raleway', sans-serif">Raleway</option>
+                        <option value="'Ubuntu', sans-serif">Ubuntu</option>
+                        <option value="'Lato', sans-serif">Lato</option>
+                        <option value="'Nunito', sans-serif">Nunito</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="hudBackgroundColor">Background Color:</label>
+                    <input type="color" id="hudBackgroundColor" value="#000000">
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html> 
