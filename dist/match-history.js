@@ -208,9 +208,14 @@ function createMatchCard(match, index) {
             <div class="match-info">
                 <div class="match-date">${formatDateTime(match.matchStartTime || match.startTime)}</div>
                 <div class="match-map">${match.map || 'Unknown Map'}</div>
-                <button class="favorite-btn" data-match-id="${match.id}">
-                    <i class="fas fa-star ${favoriteMatches[match.matchStartTime] ? 'active' : ''}"></i>
-                </button>
+                <div class="match-actions">
+                    <button class="create-link-btn" title="Create shareable link">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="favorite-btn" data-match-id="${match.id}">
+                        <i class="fas fa-star ${favoriteMatches[match.matchStartTime] ? 'active' : ''}"></i>
+                    </button>
+                </div>
             </div>
         </div>
         <div class="match-stats">
@@ -405,6 +410,61 @@ function createMatchCard(match, index) {
         }, { once: true });
 
         console.log('[SKMT][MATCH_HISTORY] Swapped to input field and added listeners.');
+    });
+
+    // Add create link button click handler
+    const createLinkBtn = card.querySelector('.create-link-btn');
+    createLinkBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const matchData = {
+            id: match.id,
+            timestamp: match.matchStartTime,
+            map: match.map,
+            mode: match.isSpecialMode ? 'special' : 
+                  match.isCustomMode ? 'custom' : 'normal',
+            kills: match.kills,
+            deaths: match.deaths,
+            duration: match.duration,
+            players: match.players,
+            indicators: indicators
+        };
+        
+        // Create a base64 encoded string of the match data
+        const encodedData = btoa(JSON.stringify(matchData));
+        // Use GitHub Pages URL format
+        const shareUrl = `https://hans-kartlog.github.io/KartLog/match-viewer.html?data=${encodedData}`;
+        
+        // Show modal with the link
+        const modal = document.getElementById('linkModal');
+        const shareLinkInput = document.getElementById('shareLink');
+        const copyBtn = document.getElementById('copyLink');
+        
+        shareLinkInput.value = shareUrl;
+        modal.classList.add('active');
+        
+        // Handle copy button click
+        copyBtn.onclick = () => {
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                copyBtn.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copy Link';
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            });
+        };
+        
+        // Handle close button click
+        document.getElementById('closeModal').onclick = () => {
+            modal.classList.remove('active');
+        };
+        
+        // Close modal when clicking outside
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+            }
+        };
     });
 
     return card;

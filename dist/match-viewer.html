@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kart Companion - Match Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #fff;
+            --header-bg: #f5f8fa;
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+            --card-background: #fff;
+            --card-text: #2c3e50;
+            --border-radius: 8px;
+            --spacing: 20px;
+            --font-family: 'Baloo 2', Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            background-color: var(--header-bg);
+            background-image: url('websiteBG.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-size: cover;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .match-card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: var(--spacing);
+        }
+
+        .match-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-title {
+            font-family: var(--font-family);
+            color: gold;
+            font-size: 2.5em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .match-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 15px;
+            background: var(--header-bg);
+            border-radius: var(--border-radius);
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .stat-label {
+            font-size: 1.1em;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .match-details {
+            margin-top: 20px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            background: var(--header-bg);
+            border-radius: var(--border-radius);
+        }
+
+        .detail-label {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--card-text);
+        }
+
+        .match-mode {
+            text-align: center;
+            font-size: 1.2em;
+            color: var(--primary-blue-dark);
+            margin: 20px 0;
+            padding: 10px;
+            background: var(--header-bg);
+            border-radius: var(--border-radius);
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 40px;
+            background: #fee;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            color: #c00;
+            font-size: 1.4em;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--card-text);
+            font-size: 1.4em;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: var(--primary-blue);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: background 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: var(--primary-blue-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Kart Companion
+        </a>
+        <div class="match-header">
+            <h1 class="logo-title">Match Details</h1>
+        </div>
+        <div id="match-content">
+            <div class="loading">Loading match details...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const matchContent = document.getElementById('match-content');
+            
+            // Get match data from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const matchData = urlParams.get('data');
+            
+            if (!matchData) {
+                matchContent.innerHTML = `
+                    <div class="error-message">
+                        Invalid match link. Please make sure you're using a valid Kart Companion match URL.
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                // Decode and parse match data
+                const decodedData = JSON.parse(atob(matchData));
+                
+                // Format date
+                const matchDate = new Date(decodedData.timestamp).toLocaleString();
+                
+                // Format duration
+                const formatDuration = (duration) => {
+                    if (!duration) return 'N/A';
+                    const hours = Math.floor(duration / 3600000);
+                    const minutes = Math.floor((duration % 3600000) / 60000);
+                    const seconds = Math.floor((duration % 60000) / 1000);
+                    
+                    if (hours > 0) {
+                        return `${hours}h ${minutes}m ${seconds}s`;
+                    } else if (minutes > 0) {
+                        return `${minutes}m ${seconds}s`;
+                    } else {
+                        return `${seconds}s`;
+                    }
+                };
+
+                // Format KDR
+                const formatKDR = (kills, deaths) => {
+                    if (deaths === 0) return kills > 0 ? kills.toFixed(2) : '0.00';
+                    return (kills / deaths).toFixed(2);
+                };
+
+                // Create match card HTML
+                matchContent.innerHTML = `
+                    <div class="match-card">
+                        <div class="match-mode">${decodedData.mode.charAt(0).toUpperCase() + decodedData.mode.slice(1)} Mode</div>
+                        <div class="match-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">${decodedData.kills || 0}</div>
+                                <div class="stat-label">Kills</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${decodedData.deaths || 0}</div>
+                                <div class="stat-label">Deaths</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${formatKDR(decodedData.kills || 0, decodedData.deaths || 0)}</div>
+                                <div class="stat-label">KDR</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${formatDuration(decodedData.duration)}</div>
+                                <div class="stat-label">Duration</div>
+                            </div>
+                        </div>
+                        <div class="match-details">
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <div class="detail-label">Map</div>
+                                    <div class="detail-value">${decodedData.map || 'N/A'}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Date</div>
+                                    <div class="detail-value">${matchDate}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Mode</div>
+                                    <div class="detail-value">${decodedData.mode.charAt(0).toUpperCase() + decodedData.mode.slice(1)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Match ID</div>
+                                    <div class="detail-value">${decodedData.id}</div>
+                                </div>
+                            </div>
+                            ${decodedData.players && decodedData.players.length > 0 ? `
+                            <div class="detail-section">
+                                <h3>Players in Match</h3>
+                                <div class="details-grid">
+                                    ${decodedData.players.map(player => `
+                                        <div class="detail-item">
+                                            <div class="detail-value">${player}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error parsing match data:', error);
+                matchContent.innerHTML = `
+                    <div class="error-message">
+                        Error loading match details. The link may be invalid or corrupted.
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html> 
