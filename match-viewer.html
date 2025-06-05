@@ -120,6 +120,8 @@
             font-size: 1.3em;
             font-weight: 700;
             color: var(--card-text);
+            word-break: break-all;
+            overflow-wrap: break-word;
         }
 
         .match-mode {
@@ -163,6 +165,11 @@
         .back-button:hover {
             background: var(--primary-blue-dark);
         }
+
+        /* Make the status indicators take full width in the grid */
+        .details-grid .full-width {
+            grid-column: 1 / -1;
+        }
     </style>
 </head>
 <body>
@@ -199,6 +206,13 @@
                 // Decode and parse match data
                 const decodedData = JSON.parse(atob(matchData));
                 
+                // Function to format date and time (needed for viewer)
+                const formatDateTime = (timestamp) => {
+                    if (!timestamp) return 'N/A';
+                    const date = new Date(timestamp);
+                    return date.toLocaleString();
+                };
+
                 // Format date
                 const matchDate = new Date(decodedData.timestamp).toLocaleString();
                 
@@ -259,6 +273,18 @@
                                 <div class="detail-item">
                                     <div class="detail-label">Mode</div>
                                     <div class="detail-value">${decodedData.mode.charAt(0).toUpperCase() + decodedData.mode.slice(1)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Start Time</div>
+                                    <div class="detail-value">${formatDateTime(decodedData.startTime)}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">End Time</div>
+                                    <div class="detail-value">${formatDateTime(decodedData.endTime)}</div>
+                                </div>
+                                <div class="detail-item full-width">
+                                    <div class="detail-label">Status Indicators</div>
+                                    <div class="detail-value">${decodedData.statusIndicators ? decodedData.statusIndicators.join(' | ') : 'N/A'}</div>
                                 </div>
                                 <div class="detail-item">
                                     <div class="detail-label">Match ID</div>

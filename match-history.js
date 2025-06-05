@@ -430,7 +430,12 @@ function createMatchCard(match, index) {
             // Add streak data
             highestKillStreak: highestKillStreak,
             streaksWithoutDying: streaksWithoutDying,
-            quickKillsStreaks: quickKillsStreaks
+            quickKillsStreaks: quickKillsStreaks,
+            // Add start and end times
+            startTime: match.matchStartTime || match.startTime,
+            endTime: match.matchEndTime || match.endTime,
+            // Add status indicators again for clarity in viewer
+            statusIndicators: indicators
         };
         
         // Create a base64 encoded string of the match data
