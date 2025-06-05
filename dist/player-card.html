@@ -357,12 +357,188 @@
             margin-bottom: 0.2em;
             text-transform: uppercase;
         }
+
+        /* Stats Info Button Styles */
+        .stats-info-button {
+            position: fixed;
+            top: 100px;
+            left: 200px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background-color: rgba(26, 42, 58, 0.9);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1001;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+        }
+
+        .stats-info-button:hover {
+            background-color: rgba(42, 58, 74, 0.95);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .stats-info-button i {
+            color: var(--card-gold);
+            font-size: 1.2em;
+        }
+
+        .stats-info-button span {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 2000;  /* Increased from 1000 to 2000 to be above navbar */
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            position: relative;
+            background: linear-gradient(135deg, #1a2a3a 0%, #2a3a4a 100%);
+            margin: 5% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            z-index: 2001;  /* Added z-index to ensure content is above modal background */
+        }
+
+        .modal-content h2 {
+            color: var(--card-gold);
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .stats-info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-info-item {
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-info-item:hover {
+            transform: translateY(-5px);
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .stat-info-item h3 {
+            color: var(--card-gold);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .stat-info-item p {
+            color: #ffffff;
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--card-gold);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #ffffff;
+        }
+
+        @media (max-width: 768px) {
+            .stats-info-button {
+                top: 80px;
+                left: 160px;
+                padding: 8px 12px;
+            }
+
+            .stats-info-button span {
+                font-size: 12px;
+            }
+
+            .modal-content {
+                width: 90%;
+                margin: 10% auto;
+                padding: 20px;
+            }
+
+            .stats-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="logo-container" style="text-align: center; margin: 20px 0;">
         <img src="kcCharts.png" alt="Kart Companion Logo" style="max-width: 200px; height: auto;">
     </div>
+
+    <div class="stats-info-button" id="statsInfoButton">
+        <i class="fas fa-question-circle"></i>
+        <span>How are the stats computed?</span>
+    </div>
+
+    <!-- Stats Info Modal -->
+    <div id="statsInfoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Stats Computation</h2>
+            <div class="stats-info-grid">
+                <div class="stat-info-item">
+                    <h3>ATK (Attack)</h3>
+                    <p>Based on your average kills per 3 minutes. 20 kills per 3 minutes = 100 ATK.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>DEF (Defense)</h3>
+                    <p>Based on your average deaths per 3 minutes. 0 deaths = 100 DEF, 16+ deaths = 0 DEF.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>CNS (Consistency)</h3>
+                    <p>Based on your match completion rate. Higher percentage of completed matches = higher CNS.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>EXP (Experience)</h3>
+                    <p>Based on your total playtime. Uses a logarithmic scale to reward both new and veteran players.</p>
+                </div>
+                <div class="stat-info-item">
+                    <h3>PRF (Performance)</h3>
+                    <p>Based on your overall KDR (Kill/Death Ratio). KDR of 3.50 or higher = 100 PRF.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <nav class="nav-container">
         <div class="nav-content">
             <ul class="nav-list">
