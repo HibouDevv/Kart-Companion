@@ -426,7 +426,11 @@ function createMatchCard(match, index) {
             deaths: match.deaths,
             duration: match.duration,
             players: match.players,
-            indicators: indicators
+            indicators: indicators,
+            // Add streak data
+            highestKillStreak: highestKillStreak,
+            streaksWithoutDying: streaksWithoutDying,
+            quickKillsStreaks: quickKillsStreaks
         };
         
         // Create a base64 encoded string of the match data

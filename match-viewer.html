@@ -264,7 +264,43 @@
                                     <div class="detail-label">Match ID</div>
                                     <div class="detail-value">${decodedData.id}</div>
                                 </div>
+                                ${decodedData.highestKillStreak > 0 ? `
+                                <div class="detail-item">
+                                    <div class="detail-label">Highest Kill Streak</div>
+                                    <div class="detail-value">${decodedData.highestKillStreak}</div>
+                                </div>
+                                ` : ''}
                             </div>
+                            ${decodedData.streaksWithoutDying && Object.values(decodedData.streaksWithoutDying).some(v => v > 0) ? `
+                            <div class="detail-section">
+                                <div class="detail-section-title">Streaks (Without Dying)</div>
+                                <div class="detail-section-content">
+                                    ${decodedData.streaksWithoutDying.smashStreak > 0 ? `<div class="detail-item"><div class="detail-label">Smash Streak (3)</div><div class="detail-value">${decodedData.streaksWithoutDying.smashStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.smashtacularStreak > 0 ? `<div class="detail-item"><div class="detail-label">Smashtacular Streak (5)</div><div class="detail-value">${decodedData.streaksWithoutDying.smashtacularStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.smashosaurusStreak > 0 ? `<div class="detail-item"><div class="detail-label">Smashosaurus Streak (7)</div><div class="detail-value">${decodedData.streaksWithoutDying.smashosaurusStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.smashlvaniaStreak > 0 ? `<div class="detail-item"><div class="detail-label">Smashlvania Streak (10)</div><div class="detail-value">${decodedData.streaksWithoutDying.smashlvaniaStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.monsterSmashStreak > 0 ? `<div class="detail-item"><div class="detail-label">Monster Smash Streak (15)</div><div class="detail-value">${decodedData.streaksWithoutDying.monsterSmashStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.potatoStreak > 0 ? `<div class="detail-item"><div class="detail-label">Potato Streak (20)</div><div class="detail-value">${decodedData.streaksWithoutDying.potatoStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.smashSmashStreak > 0 ? `<div class="detail-item"><div class="detail-label">Smash Smash Streak (25)</div><div class="detail-value">${decodedData.streaksWithoutDying.smashSmashStreak}</div></div>` : ''}
+                                    ${decodedData.streaksWithoutDying.potoatachioStreak > 0 ? `<div class="detail-item"><div class="detail-label">Potoatachio Streak (30)</div><div class="detail-value">${decodedData.streaksWithoutDying.potoatachioStreak}</div></div>` : ''}
+                                </div>
+                            </div>
+                            ` : ''}
+
+                            ${decodedData.quickKillsStreaks && Object.values(decodedData.quickKillsStreaks).some(v => v > 0) ? `
+                            <div class="detail-section">
+                                <div class="detail-section-title">Streaks (Quick Kills)</div>
+                                <div class="detail-section-content">
+                                    ${decodedData.quickKillsStreaks.doubleSmash > 0 ? `<div class="detail-item"><div class="detail-label">Double Smash (2)</div><div class="detail-value">${decodedData.quickKillsStreaks.doubleSmash}</div></div>` : ''}
+                                    ${decodedData.quickKillsStreaks.multiSmash > 0 ? `<div class="detail-item"><div class="detail-label">Multi Smash (3)</div><div class="detail-value">${decodedData.quickKillsStreaks.multiSmash}</div></div>` : ''}
+                                    ${decodedData.quickKillsStreaks.multiMegaSmash > 0 ? `<div class="detail-item"><div class="detail-label">Multi Mega Smash (4)</div><div class="detail-value">${decodedData.quickKillsStreaks.multiMegaSmash}</div></div>` : ''}
+                                    ${decodedData.quickKillsStreaks.multiMegaUltraSmash > 0 ? `<div class="detail-item"><div class="detail-label">Multi Mega Ultra Smash (5)</div><div class="detail-value">${decodedData.quickKillsStreaks.multiMegaUltraSmash}</div></div>` : ''}
+                                    ${decodedData.quickKillsStreaks.gooseySmash > 0 ? `<div class="detail-item"><div class="detail-label">Goosey Smash (6)</div><div class="detail-value">${decodedData.quickKillsStreaks.gooseySmash}</div></div>` : ''}
+                                    ${decodedData.quickKillsStreaks.crazyMultiMegaUltraSmash > 0 ? `<div class="detail-item"><div class="detail-label">Crazy Multi Mega Ultra Smash (7)</div><div class="detail-value">${decodedData.quickKillsStreaks.crazyMultiMegaUltraSmash}</div></div>` : ''}
+                                </div>
+                            </div>
+                            ` : ''}
+
                             ${decodedData.players && decodedData.players.length > 0 ? `
                             <div class="detail-section">
                                 <h3>Players in Match</h3>
