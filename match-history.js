@@ -431,8 +431,8 @@ function createMatchCard(match, index) {
         
         // Create a base64 encoded string of the match data
         const encodedData = btoa(JSON.stringify(matchData));
-        // Use a simpler GitHub Pages URL format
-        const shareUrl = `https://hans-kartlog.github.io/KartLog/match-viewer.html?match=${encodedData}`;
+        // Use the correct GitHub Pages URL format
+        const shareUrl = `https://leafbolt8.github.io/Kart-Companion/match-viewer.html?match=${encodedData}`;
         
         // Show modal with the link
         const modal = document.getElementById('linkModal');
