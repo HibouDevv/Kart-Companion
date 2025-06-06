@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Kart Companion Match History Viewer",
   "scripts": {
-    "build": "echo 'No build step required'",
+    "build": "webpack --mode production",
     "test": "echo 'No tests specified'"
   },
   "repository": {
