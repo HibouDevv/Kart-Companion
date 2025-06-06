@@ -1934,6 +1934,100 @@ function renderMatches(matches, mode) {
             }
         };
 
+        // Share link button
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'share-btn';
+        shareBtn.title = 'Share match link';
+        shareBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        shareBtn.style.background = 'none';
+        shareBtn.style.border = 'none';
+        shareBtn.style.cursor = 'pointer';
+        shareBtn.style.marginRight = '4px';
+        shareBtn.onclick = () => {
+            // Get indicators for the match
+            const indicators = [];
+            if (m.joined) indicators.push('Joined');
+            if (m.started) indicators.push('Started');
+            if (m.quit) {
+                indicators.push('Quit');
+            } else {
+                indicators.push('Completed');
+            }
+            if (m.isSpecialMode) indicators.push('Special Mode');
+            if (m.isCustomMode) indicators.push('Custom Match');
+            if (m.mode) indicators.push(`${m.mode.charAt(0).toUpperCase() + m.mode.slice(1)} Mode`);
+
+            // Calculate streaks
+            const highestKillStreak = m.highestKillStreak || 0;
+            const streaksWithoutDying = {
+                smashStreak: m.smashStreak || 0,
+                smashtacularStreak: m.smashtacularStreak || 0,
+                smashosaurusStreak: m.smashosaurusStreak || 0,
+                smashlvaniaStreak: m.smashlvaniaStreak || 0,
+                monsterSmashStreak: m.monsterSmashStreak || 0,
+                potatoStreak: m.potatoStreak || 0,
+                smashSmashStreak: m.smashSmashStreak || 0,
+                potoatachioStreak: m.potoatachioStreak || 0
+            };
+            const quickKillsStreaks = {
+                quickKillStreak: m.quickKillStreak || 0,
+                quickKillStreak2: m.quickKillStreak2 || 0,
+                quickKillStreak3: m.quickKillStreak3 || 0,
+                quickKillStreak4: m.quickKillStreak4 || 0,
+                quickKillStreak5: m.quickKillStreak5 || 0
+            };
+
+            const matchData = {
+                id: m.id,
+                timestamp: m.matchStartTime,
+                map: m.map,
+                mode: m.isSpecialMode ? 'special' : 
+                      m.isCustomMode ? 'custom' : 'normal',
+                kills: m.kills,
+                deaths: m.deaths,
+                duration: m.duration,
+                players: m.players,
+                indicators: indicators,
+                // Add streak data
+                highestKillStreak: highestKillStreak,
+                streaksWithoutDying: streaksWithoutDying,
+                quickKillsStreaks: quickKillsStreaks,
+                // Add start and end times
+                startTime: m.matchStartTime || m.startTime,
+                endTime: m.matchEndTime || m.endTime,
+                // Add status indicators again for clarity in viewer
+                statusIndicators: indicators
+            };
+            
+            // Create a base64 encoded string of the match data
+            const encodedData = btoa(JSON.stringify(matchData));
+            // Use the correct GitHub Pages URL format
+            const shareUrl = `https://leafbolt8.github.io/Kart-Companion/match-viewer.html?match=${encodedData}`;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                // Show a temporary tooltip
+                const tooltip = document.createElement('div');
+                tooltip.textContent = 'Link copied!';
+                tooltip.style.position = 'fixed';
+                tooltip.style.backgroundColor = '#4a90e2';
+                tooltip.style.color = 'white';
+                tooltip.style.padding = '8px 12px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.fontSize = '14px';
+                tooltip.style.zIndex = '10000';
+                tooltip.style.top = '10px';
+                tooltip.style.left = '50%';
+                tooltip.style.transform = 'translateX(-50%)';
+                document.body.appendChild(tooltip);
+                
+                // Remove tooltip after 2 seconds
+                setTimeout(() => {
+                    document.body.removeChild(tooltip);
+                }, 2000);
+            });
+        };
+
         // Info icon button
         const infoBtn = document.createElement('button');
         infoBtn.className = 'info-btn';
@@ -1943,6 +2037,7 @@ function renderMatches(matches, mode) {
 
         card.appendChild(content);
         card.appendChild(starBtn);
+        card.appendChild(shareBtn);
         card.appendChild(infoBtn);
         matchesList.appendChild(card);
     });
