@@ -38,45 +38,99 @@ document.getElementById('statsNumbersBtn').addEventListener('click', () => {
     chrome.tabs.create({ url: 'stats-numbers.html' });
 });
 
+// Add event listeners for HUD toggles
 const toggleDeathsHud = document.getElementById('toggleDeathsHud');
 const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
 const toggleKdrHud = document.getElementById('toggleKdrHud');
+const toggleMatchCodeHud = document.getElementById('toggleMatchCodeHud');
 
-toggleDeathsHud.addEventListener('change', function() {
-    const enabled = this.checked;
-    chrome.storage.sync.set({ deathsHudEnabled: enabled });
+// Load initial HUD states
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
+    toggleDeathsHud.checked = result.deathsHudEnabled !== false;
+    toggleKillStreakHud.checked = result.killStreakHudEnabled !== false;
+    toggleKdrHud.checked = result.kdrHudEnabled !== false;
+    toggleMatchCodeHud.checked = result.matchCodeHudEnabled !== false;
+});
+
+// Add event listeners for HUD toggles
+toggleDeathsHud.addEventListener('change', () => {
+    chrome.storage.sync.set({ deathsHudEnabled: toggleDeathsHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-deaths-hud', enabled});
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'toggle-deaths-hud',
+                enabled: toggleDeathsHud.checked
+            }).catch(() => {
+                // Ignore errors from closed message ports
+                console.log('[SKMT] Popup: Message port closed, ignoring error');
+            });
+        }
     });
 });
 
-toggleKillStreakHud.addEventListener('change', function() {
-    const enabled = this.checked;
-    chrome.storage.sync.set({ killStreakHudEnabled: enabled });
+toggleKillStreakHud.addEventListener('change', () => {
+    chrome.storage.sync.set({ killStreakHudEnabled: toggleKillStreakHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-killstreak-hud', enabled});
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'toggle-killstreak-hud',
+                enabled: toggleKillStreakHud.checked
+            }).catch(() => {
+                console.log('[SKMT] Popup: Message port closed, ignoring error');
+            });
+        }
     });
 });
 
-toggleKdrHud.addEventListener('change', function() {
-    const enabled = this.checked;
-    chrome.storage.sync.set({ kdrHudEnabled: enabled });
+toggleKdrHud.addEventListener('change', () => {
+    chrome.storage.sync.set({ kdrHudEnabled: toggleKdrHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-kdr-hud', enabled});
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'toggle-kdr-hud',
+                enabled: toggleKdrHud.checked
+            }).catch(() => {
+                console.log('[SKMT] Popup: Message port closed, ignoring error');
+            });
+        }
+    });
+});
+
+toggleMatchCodeHud.addEventListener('change', () => {
+    chrome.storage.sync.set({ matchCodeHudEnabled: toggleMatchCodeHud.checked });
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: 'toggle-matchcode-hud',
+                enabled: toggleMatchCodeHud.checked
+            }).catch(() => {
+                console.log('[SKMT] Popup: Message port closed, ignoring error');
+            });
+        }
     });
 });
 
 // Restore toggle state on popup load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled'], (result) => {
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
     toggleDeathsHud.checked = result.deathsHudEnabled !== false; // default ON
     toggleKillStreakHud.checked = result.killStreakHudEnabled !== false; // default ON
     toggleKdrHud.checked = result.kdrHudEnabled !== false; // default ON
+    toggleMatchCodeHud.checked = result.matchCodeHudEnabled !== false; // default ON
 
     // Send the correct state to the content script
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-deaths-hud', enabled: toggleDeathsHud.checked});
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-killstreak-hud', enabled: toggleKillStreakHud.checked});
-        chrome.tabs.sendMessage(tabs[0].id, {type: 'toggle-kdr-hud', enabled: toggleKdrHud.checked});
+        if (tabs[0]) {
+            const sendMessage = (message) => {
+                chrome.tabs.sendMessage(tabs[0].id, message).catch(() => {
+                    console.log('[SKMT] Popup: Message port closed, ignoring error');
+                });
+            };
+            
+            sendMessage({type: 'toggle-deaths-hud', enabled: toggleDeathsHud.checked});
+            sendMessage({type: 'toggle-killstreak-hud', enabled: toggleKillStreakHud.checked});
+            sendMessage({type: 'toggle-kdr-hud', enabled: toggleKdrHud.checked});
+            sendMessage({type: 'toggle-matchcode-hud', enabled: toggleMatchCodeHud.checked});
+        }
     });
 });
 
@@ -1707,6 +1761,11 @@ document.getElementById('kdrHudSettings').addEventListener('click', () => {
     openHudSettings();
 });
 
+document.getElementById('matchCodeHudSettings').addEventListener('click', () => {
+    currentHudType = 'matchcode';
+    openHudSettings();
+});
+
 // Close HUD settings modal
 document.getElementById('closeHudSettingsModal').addEventListener('click', () => {
     document.getElementById('hudSettingsModal').style.display = 'none';
@@ -1732,6 +1791,9 @@ function openHudSettings() {
             break;
         case 'kdr':
             hudName = 'KDR';
+            break;
+        case 'matchcode':
+            hudName = 'Custom Match Code';
             break;
     }
     title.textContent = `${hudName} HUD Settings`;
@@ -1795,6 +1857,9 @@ function updateHudSettings() {
                 break;
             case 'kdr':
                 messageType = 'update-kdr-hud-style';
+                break;
+            case 'matchcode':
+                messageType = 'update-matchcode-hud-style';
                 break;
         }
         chrome.tabs.sendMessage(tabs[0].id, {

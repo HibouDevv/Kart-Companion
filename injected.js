@@ -39,7 +39,8 @@ window.kartStats = {
     killStreak: 0,
     joinedFirst: null,
     players: [],
-    currentMap: null
+    currentMap: null,
+    matchCode: null
 };
 
 let collectingPlayerLogs = false;
@@ -69,6 +70,17 @@ function interceptConsole(method, original) {
         if (args[0] && typeof args[0] === 'string') {
             isIntercepting = true;
             const msg = args[0].toLowerCase();
+
+            // Clear match code on game exit
+            if (msg.includes('bytebrew: sending custom event: loading_unity_awake') ||
+                msg.includes('bytebrew: sending custom event: confirmexitgame')) {
+                if (window.kartStats.matchCode) {
+                    window.kartStats.matchCode = null;
+                    // Send empty match code update to content script
+                    window.postMessage({ type: 'SKMT_MATCH_CODE_UPDATE', code: '' }, '*');
+                    originalLog('[SKMT] Match code cleared on exit');
+                }
+            }
 
             // Detect SKID from AuthStateChanged log
             if (msg.includes('authstatechanged, uid:')) {
@@ -323,6 +335,17 @@ function interceptConsole(method, original) {
                 }
             }
 
+            // Detect match code from JoinOrCreateGame or OnJoinedRoom logs
+            if (msg.includes('joinorcreategame') || msg.includes('onjoinedroom')) {
+                const match = args[0].match(/(?:joinorcreategame|onjoinedroom)\s+(\w+)/i);
+                if (match && match[1]) {
+                    window.kartStats.matchCode = match[1].trim();
+                    // Send match code update to content script
+                    window.postMessage({ type: 'SKMT_MATCH_CODE_UPDATE', code: window.kartStats.matchCode }, '*');
+                    originalLog('[SKMT] Match code detected:', window.kartStats.matchCode);
+                }
+            }
+
             isIntercepting = false;
         }
         return original.apply(console, args);
@@ -356,6 +379,7 @@ function resetStats() {
     window.kartStats.players = [];
     window.kartStats.isSpecialMode = false;
     window.kartStats.isCustomMode = false;
+    window.kartStats.matchCode = null;
     if (window.kartStats._gameEndTimeout) clearTimeout(window.kartStats._gameEndTimeout);
     window.kartStats._gameEndTimeout = null;
 } 

@@ -132,6 +132,8 @@ function handleGameEnd(data) {
     chrome.runtime.sendMessage({
         type: 'matchComplete',
         data: matchData
+    }).catch(() => {
+        console.log('[SKMT] Content: Message port closed, ignoring error');
     });
 }
 
@@ -500,6 +502,12 @@ chrome.runtime.onMessage.addListener((msg) => {
     } else if (msg.type === 'toggle-killstreak-hud') {
         killStreakHud.style.display = msg.enabled ? 'block' : 'none';
         console.log('[SKMT] Kill Streak HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-kdr-hud') {
+        kdrHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] KDR HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-matchcode-hud') {
+        matchCodeHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Match Code HUD toggled:', msg.enabled);
     }
 });
 
@@ -838,6 +846,9 @@ chrome.runtime.onMessage.addListener((msg) => {
     } else if (msg.type === 'toggle-kdr-hud') {
         kdrHud.style.display = msg.enabled ? 'block' : 'none';
         console.log('[SKMT] KDR HUD toggled:', msg.enabled);
+    } else if (msg.type === 'toggle-matchcode-hud') {
+        matchCodeHud.style.display = msg.enabled ? 'block' : 'none';
+        console.log('[SKMT] Match Code HUD toggled:', msg.enabled);
     }
 });
 
@@ -857,5 +868,199 @@ window.addEventListener('message', function(event) {
         hud.textContent = 'Deaths: 0';
         killStreakHud.textContent = 'Kill Streak: 0';
         kdrHud.textContent = 'KDR: 0.00';
+    }
+});
+
+// HUD overlay for Custom Match Code
+const matchCodeHud = document.createElement('div');
+matchCodeHud.id = 'match-code-hud-overlay';
+matchCodeHud.style.position = 'fixed';
+matchCodeHud.style.top = '280px';
+matchCodeHud.style.right = '40px';
+matchCodeHud.style.zIndex = '999999';
+matchCodeHud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+matchCodeHud.style.fontWeight = '700';
+matchCodeHud.style.fontSize = '32px';
+matchCodeHud.style.color = '#fff';
+matchCodeHud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
+matchCodeHud.style.cursor = 'move';
+matchCodeHud.style.userSelect = 'none';
+matchCodeHud.style.display = 'none';
+matchCodeHud.style.textRendering = 'optimizeLegibility';
+matchCodeHud.style.webkitFontSmoothing = 'antialiased';
+matchCodeHud.style.mozOsxFontSmoothing = 'grayscale';
+matchCodeHud.style.letterSpacing = '0.5px';
+matchCodeHud.textContent = 'Code: ';
+matchCodeHud.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+matchCodeHud.style.padding = '0.5em 1em';
+matchCodeHud.style.borderRadius = '0.5em';
+
+// Make Match Code HUD draggable
+let isDraggingMC = false;
+let currentXMC;
+let currentYMC;
+let initialXMC;
+let initialYMC;
+let xOffsetMC = 0;
+let yOffsetMC = 0;
+
+// Load saved position for Match Code HUD
+chrome.storage.sync.get(['matchCodeHudPosition'], function(result) {
+    if (result.matchCodeHudPosition) {
+        xOffsetMC = result.matchCodeHudPosition.x;
+        yOffsetMC = result.matchCodeHudPosition.y;
+        setTranslateMC(xOffsetMC, yOffsetMC, matchCodeHud);
+    }
+});
+
+// Add Match Code HUD to document
+document.body.appendChild(matchCodeHud);
+
+// Match Code HUD drag functions
+function dragStartMC(e) {
+    if (e.type === "touchstart") {
+        initialX = e.touches[0].clientX - xOffsetMC;
+        initialY = e.touches[0].clientY - yOffsetMC;
+    } else {
+        initialX = e.clientX - xOffsetMC;
+        initialY = e.clientY - yOffsetMC;
+    }
+
+    if (e.target === matchCodeHud) {
+        isDraggingMC = true;
+    }
+}
+
+function dragMC(e) {
+    if (isDraggingMC) {
+        e.preventDefault();
+
+        if (e.type === "touchmove") {
+            currentX = e.touches[0].clientX - initialX;
+            currentY = e.touches[0].clientY - initialY;
+        } else {
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+        }
+
+        xOffsetMC = currentX;
+        yOffsetMC = currentY;
+
+        setTranslateMC(currentX, currentY, matchCodeHud);
+    }
+}
+
+function setTranslateMC(xPos, yPos, el) {
+    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+}
+
+function dragEndMC(e) {
+    initialX = currentX;
+    initialY = currentY;
+    isDraggingMC = false;
+
+    // Save position
+    chrome.storage.sync.set({
+        matchCodeHudPosition: {
+            x: xOffsetMC,
+            y: yOffsetMC
+        }
+    });
+}
+
+// Add event listeners for Match Code HUD
+matchCodeHud.addEventListener("touchstart", dragStartMC, false);
+matchCodeHud.addEventListener("touchend", dragEndMC, false);
+matchCodeHud.addEventListener("touchmove", dragMC, false);
+matchCodeHud.addEventListener("mousedown", dragStartMC, false);
+matchCodeHud.addEventListener("mouseup", dragEndMC, false);
+matchCodeHud.addEventListener("mousemove", dragMC, false);
+
+// Initialize HUD states on page load
+chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
+    // Set display to block by default if not explicitly disabled
+    hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
+    killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
+    kdrHud.style.display = result.kdrHudEnabled !== false ? 'block' : 'none';
+    matchCodeHud.style.display = result.matchCodeHudEnabled !== false ? 'block' : 'none';
+    
+    // Log the current state for debugging
+    console.log('[SKMT] HUD states:', {
+        deathsHud: hud.style.display,
+        killStreakHud: killStreakHud.style.display,
+        kdrHud: kdrHud.style.display,
+        matchCodeHud: matchCodeHud.style.display,
+        deathsHudEnabled: result.deathsHudEnabled,
+        killStreakHudEnabled: result.killStreakHudEnabled,
+        kdrHudEnabled: result.kdrHudEnabled,
+        matchCodeHudEnabled: result.matchCodeHudEnabled
+    });
+});
+
+// Load HUD settings on initialization
+chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings'], (result) => {
+    // ... existing settings code ...
+
+    // Apply Match Code HUD settings
+    if (result.matchCodeHudSettings) {
+        applyHudSettings(matchCodeHud, result.matchCodeHudSettings);
+    } else {
+        // Set default settings for Match Code HUD if none exist
+        const defaultMatchCodeSettings = {
+            fontSize: 32,
+            fontColor: '#ffffff',
+            fontFamily: 'Arial, sans-serif'
+        };
+        chrome.storage.sync.set({ matchCodeHudSettings: defaultMatchCodeSettings });
+        applyHudSettings(matchCodeHud, defaultMatchCodeSettings);
+    }
+});
+
+// Listen for HUD style updates
+chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'update-deaths-hud-style') {
+        applyHudSettings(hud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ deathsHudSettings: msg.settings });
+    } else if (msg.type === 'update-killstreak-hud-style') {
+        applyHudSettings(killStreakHud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ killStreakHudSettings: msg.settings });
+    } else if (msg.type === 'update-kdr-hud-style') {
+        applyHudSettings(kdrHud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ kdrHudSettings: msg.settings });
+    } else if (msg.type === 'update-matchcode-hud-style') {
+        applyHudSettings(matchCodeHud, msg.settings);
+        // Save settings immediately
+        chrome.storage.sync.set({ matchCodeHudSettings: msg.settings });
+    }
+});
+
+// Listen for messages from the injected script
+window.addEventListener('message', function(event) {
+    if (event.data && typeof event.data === 'object') {
+        switch (event.data.type) {
+            case 'SKMT_KILLSTREAK_UPDATE':
+                if (killStreakHud) {
+                    killStreakHud.textContent = `Kill Streak: ${event.data.killStreak}`;
+                }
+                break;
+            case 'SKMT_DEATHS_UPDATE':
+                if (hud) {
+                    hud.textContent = `Deaths: ${event.data.deaths}`;
+                }
+                break;
+            case 'SKMT_KDR_UPDATE':
+                if (kdrHud) {
+                    kdrHud.textContent = `KDR: ${event.data.kdr.toFixed(2)}`;
+                }
+                break;
+            case 'SKMT_MATCH_CODE_UPDATE':
+                if (matchCodeHud) {
+                    matchCodeHud.textContent = event.data.code ? `Code: ${event.data.code}` : 'Code: ';
+                }
+                break;
+        }
     }
 });
