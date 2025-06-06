@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;">
+    <title>Kart Companion - FAQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #3498db;
+            --primary-blue-dark: #217dbb;
+            --background: #fff;
+            --header-bg: #f5f8fa;
+            --container-bg: #fff;
+            --shadow: 0 2px 4px rgba(52, 152, 219, 0.08);
+        }
+        body {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            margin: 0;
+            padding: 0;
+            background-color: var(--header-bg);
+            background-image: url('websiteBG.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-position: center;
+            background-size: cover;
+        }
+        .nav-container {
+            background: var(--container-bg);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            border-bottom: 1px solid #e3eaf1;
+        }
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .nav-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .nav-item {
+            padding: 15px 0;
+        }
+        .nav-link {
+            color: var(--primary-blue-dark);
+            text-decoration: none;
+            font-size: 1.2em;
+            font-weight: 700;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        .nav-link.active:hover {
+            background-color: var(--primary-blue-dark);
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo-title {
+            font-family: 'Baloo 2', Arial, sans-serif !important;
+            color: gold;
+            font-size: 3.2em;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 0.2em;
+            text-transform: uppercase;
+        }
+        .faq-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+        }
+        .faq-title {
+            color: var(--primary-blue-dark);
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            border-bottom: 3px solid var(--primary-blue);
+            padding-bottom: 15px;
+        }
+        .faq-item {
+            margin-bottom: 25px;
+        }
+        .faq-question {
+            color: var(--primary-blue-dark);
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        .faq-question:hover {
+            color: var(--primary-blue);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        .faq-answer {
+            color: #2c3e50;
+            font-size: 1.8em;
+            line-height: 1.6;
+            padding: 25px 30px;
+            display: none;
+            background-color: rgba(52, 152, 219, 0.05);
+            border-radius: 12px;
+            margin: 15px 0;
+            border-left: 6px solid var(--primary-blue);
+        }
+        .faq-toggle {
+            color: var(--primary-blue);
+            font-size: 1.5em;
+            transition: transform 0.3s ease;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container" style="text-align: center; margin: 20px 0;">
+        <img src="kcCharts.png" alt="Kart Companion Logo" style="max-width: 200px; height: auto;">
+    </div>
+    <nav class="nav-container">
+        <div class="nav-content">
+            <ul class="nav-list">
+                <li class="nav-item"><a href="visualizers.html" class="nav-link">All Stats</a></li>
+                <li class="nav-item"><a href="3min-mode.html" class="nav-link">3 Minute Mode</a></li>
+                <li class="nav-item"><a href="special-mode.html" class="nav-link">Special Mode</a></li>
+                <li class="nav-item"><a href="custom-mode.html" class="nav-link">Custom Mode</a></li>
+                <li class="nav-item"><a href="stats-numbers.html" class="nav-link">Stats In Numbers</a></li>
+                <li class="nav-item"><a href="match-history.html" class="nav-link">Match History</a></li>
+                <li class="nav-item"><a href="player-card.html" class="nav-link">My Smash Kart Card</a></li>
+                <li class="nav-item"><a href="faq.html" class="nav-link active">FAQ</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="logo-title">FAQ</h1>
+        </div>
+
+        <div class="faq-section">
+            <h2 class="faq-title">General Questions</h2>
+            <div class="faq-item">
+                <div class="faq-question">
+                    What is Kart Companion?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Kart Companion is a comprehensive statistics tracking and visualization tool for Smash Karts players. It helps you analyze your gameplay, track your progress, and compare your performance across different game modes.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I get started with Kart Companion?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Getting started is easy! Simply visit any of our stat tracking pages and enter your Smash Karts username. The system will automatically start tracking your matches and displaying your statistics.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    What are the different game modes available?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    We track statistics for three main game modes: 3 Minute Mode, Special Mode, and Custom Mode. Each mode has its own dedicated page with specific statistics and visualizations.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2 class="faq-title">Stats and Data</h2>
+            <div class="faq-item">
+                <div class="faq-question">
+                    How are my stats calculated?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Our system automatically tracks your in-game performance, including kills, deaths, wins, and other key metrics. These are then processed and displayed in various formats, from detailed numbers to interactive charts.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    What do the different statistics mean?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Each statistic represents a different aspect of your gameplay. For example, K/D ratio shows your kill-to-death ratio, while win rate indicates your success in matches. Hover over any statistic for a detailed explanation.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    How often is my data updated?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Your statistics are updated in real-time as you play. Each match is automatically recorded and reflected in your stats immediately after completion.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2 class="faq-title">Player Card</h2>
+            <div class="faq-item">
+                <div class="faq-question">
+                    What is a Smash Kart Card?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Your Smash Kart Card is a personalized profile that showcases your key statistics and achievements. It's like a digital trading card that represents your gaming prowess!
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I customize my player card?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Visit the "My Smash Kart Card" page to customize your card. You can choose which statistics to display, select different themes, and arrange elements to create your unique card.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    Can I share my player card with others?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Yes! Your player card can be shared with friends and on social media. Simply use the share button on your card to generate a link or image.
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h2 class="faq-title">Technical Questions</h2>
+            <div class="faq-item">
+                <div class="faq-question">
+                    What browsers are supported?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    Kart Companion works best on modern browsers like Chrome, Firefox, Safari, and Edge. We recommend keeping your browser updated for the best experience.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    Do I need to create an account?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    No account is required! Simply enter your Smash Karts username to start tracking your statistics.
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">
+                    How do I report bugs or issues?
+                    <span class="faq-toggle">▼</span>
+                </div>
+                <div class="faq-answer">
+                    If you encounter any issues, please visit our About page and use the contact form to report the problem. Our team will investigate and respond as soon as possible.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="faq.js"></script>
+</body>
+</html> 
