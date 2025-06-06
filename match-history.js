@@ -212,9 +212,9 @@ function createMatchCard(match, index) {
                     <button class="create-link-btn" title="Create shareable link">
                         <i class="fas fa-link"></i>
                     </button>
-                    <button class="favorite-btn" data-match-id="${match.id}">
-                        <i class="fas fa-star ${favoriteMatches[match.matchStartTime] ? 'active' : ''}"></i>
-                    </button>
+                <button class="favorite-btn" data-match-id="${match.id}">
+                    <i class="fas fa-star ${favoriteMatches[match.matchStartTime] ? 'active' : ''}"></i>
+                </button>
                 </div>
             </div>
         </div>
