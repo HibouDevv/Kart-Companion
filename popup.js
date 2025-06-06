@@ -901,6 +901,25 @@ document.addEventListener('DOMContentLoaded', () => {
             chrome.tabs.create({ url: 'match-history.html' });
         });
     }
+
+    // Add this after the existing initialization code
+    // Handle any pending matches when popup opens
+    chrome.storage.local.get(['pendingMatches'], (result) => {
+        const pendingMatches = result.pendingMatches || [];
+        if (pendingMatches.length > 0) {
+            console.log(`[SKMT] Processing ${pendingMatches.length} pending matches`);
+            pendingMatches.forEach(matchData => {
+                chrome.runtime.sendMessage({
+                    type: 'matchComplete',
+                    data: matchData
+                }).catch(() => {
+                    console.log('[SKMT] Popup: Failed to process pending match');
+                });
+            });
+            // Clear pending matches after processing
+            chrome.storage.local.set({ pendingMatches: [] });
+        }
+    });
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {

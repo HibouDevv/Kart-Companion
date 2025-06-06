@@ -128,13 +128,28 @@ function handleGameEnd(data) {
         logs: currentMatchLogs
     };
 
-    // Send match data to background script
-    chrome.runtime.sendMessage({
-        type: 'matchComplete',
-        data: matchData
-    }).catch(() => {
-        console.log('[SKMT] Content: Message port closed, ignoring error');
-    });
+    // Send match data to background script with retry mechanism
+    const sendMatchData = (retryCount = 0) => {
+        chrome.runtime.sendMessage({
+            type: 'matchComplete',
+            data: matchData
+        }).catch((error) => {
+            if (retryCount < 3) {
+                console.log(`[SKMT] Retrying match data send (attempt ${retryCount + 1})`);
+                setTimeout(() => sendMatchData(retryCount + 1), 1000);
+            } else {
+                console.log('[SKMT] Content: Message port closed after retries, storing match data locally');
+                // Store match data locally for later sync
+                chrome.storage.local.get(['pendingMatches'], (result) => {
+                    const pendingMatches = result.pendingMatches || [];
+                    pendingMatches.push(matchData);
+                    chrome.storage.local.set({ pendingMatches });
+                });
+            }
+        });
+    };
+
+    sendMatchData();
 }
 
 function handlePlayerKill(data) {
