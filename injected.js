@@ -113,6 +113,13 @@ function interceptConsole(method, original) {
                 originalLog('[SKMT] Mode: Custom mode detected');
             }
 
+            // Normal mode: Reset both flags when joining a normal match
+            if (msg.includes('bytebrew: sending custom event: play_3min_mode')) {
+                window.kartStats.isSpecialMode = false;
+                window.kartStats.isCustomMode = false;
+                originalLog('[SKMT] Mode: Normal mode detected');
+            }
+
             // Track players
             if (msg.includes('Vehicle Setup: VehicleCharacter - setting new head position -') ||
                 msg.includes('Vehicle Setup: VehicleCharacter - setting original head position -')) {
@@ -299,12 +306,11 @@ function interceptConsole(method, original) {
                         data: matchObj
                     }, '*');
 
-                    // Reset modes immediately after sending match data
-                    window.kartStats.isSpecialMode = false;
-                    window.kartStats.isCustomMode = false;
-                    resetStats();
-                    detectedPlayersSet.clear();
-                    originalLog('[SKMT] Game exit detected - modes reset');
+                    // Only reset modes if this is an explicit game exit
+                    if (msg.includes('confirmexitgame')) {
+                        window.kartStats.isSpecialMode = false;
+                        window.kartStats.isCustomMode = false;
+                    }
                 }
             }
 
@@ -377,8 +383,6 @@ function resetStats() {
     window.kartStats.sawStartGame = false;
     window.kartStats.awaitingStartType = true;
     window.kartStats.players = [];
-    window.kartStats.isSpecialMode = false;
-    window.kartStats.isCustomMode = false;
     window.kartStats.matchCode = null;
     if (window.kartStats._gameEndTimeout) clearTimeout(window.kartStats._gameEndTimeout);
     window.kartStats._gameEndTimeout = null;
