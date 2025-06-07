@@ -38,6 +38,11 @@ document.getElementById('statsNumbersBtn').addEventListener('click', () => {
     chrome.tabs.create({ url: 'stats-numbers.html' });
 });
 
+// Add click handler for logo
+document.getElementById('logoImage').addEventListener('click', () => {
+    chrome.tabs.create({ url: 'about.html' });
+});
+
 // Add event listeners for HUD toggles
 const toggleDeathsHud = document.getElementById('toggleDeathsHud');
 const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
