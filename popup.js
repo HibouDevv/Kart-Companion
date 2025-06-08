@@ -48,6 +48,18 @@ const toggleDeathsHud = document.getElementById('toggleDeathsHud');
 const toggleKillStreakHud = document.getElementById('toggleKillStreakHud');
 const toggleKdrHud = document.getElementById('toggleKdrHud');
 const toggleMatchCodeHud = document.getElementById('toggleMatchCodeHud');
+const resetHudPositions = document.getElementById('resetHudPositions');
+
+// Reset HUD positions button click handler
+resetHudPositions.addEventListener('click', () => {
+    // Clear saved positions from storage
+    chrome.storage.local.remove(['hudPosition', 'killStreakHudPosition', 'kdrHudPosition', 'matchCodeHudPosition'], () => {
+        // Send message to content script to reset positions
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'resetHudPositions' });
+        });
+    });
+});
 
 // Load initial HUD states
 chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {

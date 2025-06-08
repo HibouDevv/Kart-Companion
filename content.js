@@ -1079,3 +1079,27 @@ window.addEventListener('message', function(event) {
         }
     }
 });
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'resetHudPositions') {
+        // Reset all HUD positions to default
+        xOffset = 0;
+        yOffset = 0;
+        xOffsetKS = 0;
+        yOffsetKS = 0;
+        xOffsetKDR = 0;
+        yOffsetKDR = 0;
+        xOffsetMC = 0;
+        yOffsetMC = 0;
+
+        // Reset positions in DOM
+        setTranslate(0, 0, hud);
+        setTranslateKS(0, 0, killStreakHud);
+        setTranslateKDR(0, 0, kdrHud);
+        setTranslateMC(0, 0, matchCodeHud);
+
+        // Clear saved positions
+        chrome.storage.local.remove(['hudPosition', 'killStreakHudPosition', 'kdrHudPosition', 'matchCodeHudPosition']);
+    }
+});
