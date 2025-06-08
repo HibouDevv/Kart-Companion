@@ -831,39 +831,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add event listener for visualize stats button
     document.getElementById('visualizeStatsBtn').addEventListener('click', () => {
-        console.log('[SKMT] Visualize Stats button clicked');
-        const button = document.getElementById('visualizeStatsBtn');
-        button.disabled = true; // Disable button while processing
-        
-        try {
-            chrome.runtime.sendMessage({ type: 'OPEN_VISUALIZERS' }, (response) => {
-                button.disabled = false; // Re-enable button
-                
-                if (chrome.runtime.lastError) {
-                    console.error('[SKMT] Error opening visualizers:', chrome.runtime.lastError);
-                    alert('Failed to open visualizers: ' + chrome.runtime.lastError.message);
-                    return;
-                }
-                
-                if (!response) {
-                    console.error('[SKMT] No response received from background script');
-                    alert('Failed to open visualizers: No response received');
-                    return;
-                }
-                
-                if (!response.success) {
-                    console.error('[SKMT] Failed to open visualizers:', response.error);
-                    alert('Failed to open visualizers: ' + (response.error || 'Unknown error'));
-                    return;
-                }
-                
-                console.log('[SKMT] Successfully opened visualizers in tab:', response.tabId);
-            });
-        } catch (error) {
-            button.disabled = false; // Re-enable button on error
-            console.error('[SKMT] Error sending message:', error);
-            alert('Failed to open visualizers: ' + error.message);
-        }
+        chrome.tabs.create({ url: 'visualizers.html' });
+    });
+
+    document.getElementById('faqBtn').addEventListener('click', () => {
+        chrome.tabs.create({ url: 'faq.html' });
     });
 
     // Add event listener for reset stats button
@@ -1678,12 +1650,12 @@ function openMatchInfo(match) {
                     if (timeSinceLastKill <= 4000) {
                         // Kill within 4 seconds of last kill - INCREASE STREAK
                         quickKillStreak++;
-                        if (quickKillStreak === 2) quickKillsStreaks.doubleSmash++;
-                        if (quickKillStreak === 3) quickKillsStreaks.multiSmash++;
-                        if (quickKillStreak === 4) quickKillsStreaks.multiMegaSmash++;
-                        if (quickKillStreak === 5) quickKillsStreaks.multiMegaUltraSmash++;
-                        if (quickKillStreak === 6) quickKillsStreaks.gooseySmash++;
-                        if (quickKillStreak === 7) quickKillsStreaks.crazyMultiMegaUltraSmash++;
+                        if (quickKillStreak === 2) doubleSmash++;
+                        if (quickKillStreak === 3) multiSmash++;
+                        if (quickKillStreak === 4) multiMegaSmash++;
+                        if (quickKillStreak === 5) multiMegaUltraSmash++;
+                        if (quickKillStreak === 6) gooseySmash++;
+                        if (quickKillStreak === 7) crazyMultiMegaUltraSmash++;
                     } else {
                         // Kill after more than 4 seconds - RESET STREAK
                         quickKillStreak = 1;
