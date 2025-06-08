@@ -1,7 +1,7 @@
 // Function to get stats from storage
 async function getStats() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['currentSkid'], (skidData) => {
+        chrome.storage.local.get(['currentSkid'], (skidData) => {
             const currentSkid = skidData.currentSkid || 'Default';
             const modes = ['normal', 'special', 'custom'];
             const keysToFetch = ['currentSkid'];
@@ -15,7 +15,7 @@ async function getStats() {
                 keysToFetch.push(`matchesCompleted_${currentSkid}_${mode}`);
             });
 
-            chrome.storage.sync.get(keysToFetch, (data) => {
+            chrome.storage.local.get(keysToFetch, (data) => {
                 // Combine data from all modes
                 const combinedData = {
                     matchHistory: [],

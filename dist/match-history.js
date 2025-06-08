@@ -55,7 +55,7 @@ function generateMatchId(match, mode) {
 // Declare currentSkid globally
 let currentSkid = 'Default';
 
-// Add favorites storage (using chrome.storage.sync)
+// Add favorites storage (using chrome.storage.local)
 let favoriteMatches = {}; // Initialize as empty, load from storage
 
 async function saveFavoriteMatches() {
@@ -63,7 +63,7 @@ async function saveFavoriteMatches() {
     // Use the global currentSkid
     const skid = currentSkid || 'Default';
     const key = `favoriteMatches_${skid}`;
-    await new Promise(resolve => chrome.storage.sync.set({ [key]: favoriteMatches }, resolve));
+    await new Promise(resolve => chrome.storage.local.set({ [key]: favoriteMatches }, resolve));
     console.log('[SKMT][MATCH_HISTORY] Saved favorite matches to storage.', favoriteMatches);
 }
 
@@ -482,7 +482,7 @@ function createMatchCard(match, index) {
 // Function to get stats from storage
 function getStats() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['currentSkid'], (skidData) => {
+        chrome.storage.local.get(['currentSkid'], (skidData) => {
             const currentSkid = skidData.currentSkid || 'Default';
             const currentPage = window.location.pathname.split('/').pop();
             let mode = 'all';
@@ -519,7 +519,7 @@ function getStats() {
 
             console.log('[SKMT][MATCH_HISTORY][getStats] Keys to Fetch:', keysToFetch);
 
-            chrome.storage.sync.get(keysToFetch, (data) => {
+            chrome.storage.local.get(keysToFetch, (data) => {
                 console.log('[SKMT][MATCH_HISTORY][getStats] Data received:', data);
                 let matchHistory = [];
                 let gamesJoined = 0;
@@ -634,7 +634,7 @@ async function loadMatches() {
 
         // Load favorite matches into the global object after currentSkid is set
         const favoriteKey = `favoriteMatches_${currentSkid || 'Default'}`;
-        const favoriteData = await new Promise(resolve => chrome.storage.sync.get([favoriteKey], resolve));
+        const favoriteData = await new Promise(resolve => chrome.storage.local.get([favoriteKey], resolve));
         favoriteMatches = favoriteData[favoriteKey] || {};
         console.log('[SKMT][MATCH_HISTORY] Loaded favorite matches after setting skid:', favoriteMatches);
 
@@ -743,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Add chrome.storage.onChanged listener to react to changes from popup
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync') {
+    if (area === 'local') {
         // Use the global currentSkid, but fetch it again as a fallback if not set
         const skid = currentSkid || 'Default';
         const favoriteKey = `favoriteMatches_${skid}`;

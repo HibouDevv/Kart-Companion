@@ -255,8 +255,8 @@ window.addEventListener('message', function(event) {
     if (event.data.type === 'SKMT_SKID_UPDATED') {
         const skid = event.data.skid;
         if (skid && typeof skid === 'string' && skid.length > 5) {
-            if (window.chrome && chrome.storage && chrome.storage.sync) {
-                chrome.storage.sync.set({ currentSkid: skid }, () => {
+            if (window.chrome && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.set({ currentSkid: skid }, () => {
                     console.log('[SKMT] SKID saved:', skid);
                     chrome.runtime.sendMessage(event.data);
                 });
@@ -267,7 +267,7 @@ window.addEventListener('message', function(event) {
         console.log('[SKMT] Saving match data:', { kills: match.kills, deaths: match.deaths, quit: match.quit });
         
         // Determine the mode key based on the match data
-        chrome.storage.sync.get(['currentSkid'], (data) => {
+        chrome.storage.local.get(['currentSkid'], (data) => {
             const skid = data.currentSkid || 'default';
             let mode = 'normal';
             
@@ -300,7 +300,7 @@ window.addEventListener('message', function(event) {
                 );
             }
             
-            chrome.storage.sync.get(keys, (result) => {
+            chrome.storage.local.get(keys, (result) => {
                 const setObj = {};
 
                 if (match.quit) {
@@ -337,7 +337,7 @@ window.addEventListener('message', function(event) {
                 }
 
                 // Save the stats
-                chrome.storage.sync.set(setObj, () => {
+                chrome.storage.local.set(setObj, () => {
                     console.log('[SKMT] Match data saved:', {
                         mode,
                         quit: match.quit,
@@ -426,7 +426,7 @@ let xOffset = 0;
 let yOffset = 0;
 
 // Load saved position
-chrome.storage.sync.get(['hudPosition'], function(result) {
+chrome.storage.local.get(['hudPosition'], function(result) {
     if (result.hudPosition) {
         xOffset = result.hudPosition.x;
         yOffset = result.hudPosition.y;
@@ -457,7 +457,7 @@ function dragEnd(e) {
     isDragging = false;
 
     // Save position
-    chrome.storage.sync.set({
+    chrome.storage.local.set({
         hudPosition: {
             x: xOffset,
             y: yOffset
@@ -495,7 +495,7 @@ hud.addEventListener("mousemove", drag, false);
 document.body.appendChild(hud);
 
 // Initialize HUD states on page load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled'], (result) => {
+chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled'], (result) => {
     // Set display to block by default if not explicitly disabled
     hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
     killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
@@ -560,7 +560,7 @@ let xOffsetKS = 0;
 let yOffsetKS = 0;
 
 // Load saved position for Kill Streak HUD
-chrome.storage.sync.get(['killStreakHudPosition'], function(result) {
+chrome.storage.local.get(['killStreakHudPosition'], function(result) {
     if (result.killStreakHudPosition) {
         xOffsetKS = result.killStreakHudPosition.x;
         yOffsetKS = result.killStreakHudPosition.y;
@@ -591,7 +591,7 @@ function dragEndKS(e) {
     isDraggingKS = false;
 
     // Save position
-    chrome.storage.sync.set({
+    chrome.storage.local.set({
         killStreakHudPosition: {
             x: xOffsetKS,
             y: yOffsetKS
@@ -672,7 +672,7 @@ function collectPlayerLogLine(line) {
 // collectPlayerLogLine(logLine);
 
 // Load HUD settings on initialization
-chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings'], (result) => {
+chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings'], (result) => {
     // Apply Deaths HUD settings
     if (result.deathsHudSettings) {
         applyHudSettings(hud, result.deathsHudSettings);
@@ -683,7 +683,7 @@ chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSe
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
-        chrome.storage.sync.set({ deathsHudSettings: defaultDeathsSettings });
+        chrome.storage.local.set({ deathsHudSettings: defaultDeathsSettings });
         applyHudSettings(hud, defaultDeathsSettings);
     }
 
@@ -697,7 +697,7 @@ chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSe
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
-        chrome.storage.sync.set({ killStreakHudSettings: defaultKillStreakSettings });
+        chrome.storage.local.set({ killStreakHudSettings: defaultKillStreakSettings });
         applyHudSettings(killStreakHud, defaultKillStreakSettings);
     }
 
@@ -711,7 +711,7 @@ chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSe
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
-        chrome.storage.sync.set({ kdrHudSettings: defaultKdrSettings });
+        chrome.storage.local.set({ kdrHudSettings: defaultKdrSettings });
         applyHudSettings(kdrHud, defaultKdrSettings);
     }
 });
@@ -721,15 +721,15 @@ chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'update-deaths-hud-style') {
         applyHudSettings(hud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ deathsHudSettings: msg.settings });
+        chrome.storage.local.set({ deathsHudSettings: msg.settings });
     } else if (msg.type === 'update-killstreak-hud-style') {
         applyHudSettings(killStreakHud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ killStreakHudSettings: msg.settings });
+        chrome.storage.local.set({ killStreakHudSettings: msg.settings });
     } else if (msg.type === 'update-kdr-hud-style') {
         applyHudSettings(kdrHud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ kdrHudSettings: msg.settings });
+        chrome.storage.local.set({ kdrHudSettings: msg.settings });
     }
 });
 
@@ -776,7 +776,7 @@ let xOffsetKDR = 0;
 let yOffsetKDR = 0;
 
 // Load saved position for KDR HUD
-chrome.storage.sync.get(['kdrHudPosition'], function(result) {
+chrome.storage.local.get(['kdrHudPosition'], function(result) {
     if (result.kdrHudPosition) {
         xOffsetKDR = result.kdrHudPosition.x;
         yOffsetKDR = result.kdrHudPosition.y;
@@ -820,7 +820,7 @@ function dragEndKDR(e) {
     isDraggingKDR = false;
 
     // Save position
-    chrome.storage.sync.set({
+    chrome.storage.local.set({
         kdrHudPosition: {
             x: xOffsetKDR,
             y: yOffsetKDR
@@ -833,7 +833,7 @@ function setTranslateKDR(xPos, yPos, el) {
 }
 
 // Initialize HUD states on page load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled'], (result) => {
+chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled'], (result) => {
     // Set display to block by default if not explicitly disabled
     hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
     killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
@@ -920,7 +920,7 @@ let xOffsetMC = 0;
 let yOffsetMC = 0;
 
 // Load saved position for Match Code HUD
-chrome.storage.sync.get(['matchCodeHudPosition'], function(result) {
+chrome.storage.local.get(['matchCodeHudPosition'], function(result) {
     if (result.matchCodeHudPosition) {
         xOffsetMC = result.matchCodeHudPosition.x;
         yOffsetMC = result.matchCodeHudPosition.y;
@@ -975,7 +975,7 @@ function dragEndMC(e) {
     isDraggingMC = false;
 
     // Save position
-    chrome.storage.sync.set({
+    chrome.storage.local.set({
         matchCodeHudPosition: {
             x: xOffsetMC,
             y: yOffsetMC
@@ -992,7 +992,7 @@ matchCodeHud.addEventListener("mouseup", dragEndMC, false);
 matchCodeHud.addEventListener("mousemove", dragMC, false);
 
 // Initialize HUD states on page load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
+chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
     // Set display to block by default if not explicitly disabled
     hud.style.display = result.deathsHudEnabled !== false ? 'block' : 'none';
     killStreakHud.style.display = result.killStreakHudEnabled !== false ? 'block' : 'none';
@@ -1013,7 +1013,7 @@ chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnab
 });
 
 // Load HUD settings on initialization
-chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings'], (result) => {
+chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings'], (result) => {
     // ... existing settings code ...
 
     // Apply Match Code HUD settings
@@ -1026,7 +1026,7 @@ chrome.storage.sync.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudSe
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
-        chrome.storage.sync.set({ matchCodeHudSettings: defaultMatchCodeSettings });
+        chrome.storage.local.set({ matchCodeHudSettings: defaultMatchCodeSettings });
         applyHudSettings(matchCodeHud, defaultMatchCodeSettings);
     }
 });
@@ -1036,19 +1036,19 @@ chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'update-deaths-hud-style') {
         applyHudSettings(hud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ deathsHudSettings: msg.settings });
+        chrome.storage.local.set({ deathsHudSettings: msg.settings });
     } else if (msg.type === 'update-killstreak-hud-style') {
         applyHudSettings(killStreakHud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ killStreakHudSettings: msg.settings });
+        chrome.storage.local.set({ killStreakHudSettings: msg.settings });
     } else if (msg.type === 'update-kdr-hud-style') {
         applyHudSettings(kdrHud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ kdrHudSettings: msg.settings });
+        chrome.storage.local.set({ kdrHudSettings: msg.settings });
     } else if (msg.type === 'update-matchcode-hud-style') {
         applyHudSettings(matchCodeHud, msg.settings);
         // Save settings immediately
-        chrome.storage.sync.set({ matchCodeHudSettings: msg.settings });
+        chrome.storage.local.set({ matchCodeHudSettings: msg.settings });
     }
 });
 

@@ -1,37 +1,49 @@
 // Function to get stats from storage
 async function getStats() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['currentSkid'], (skidData) => {
+        chrome.storage.local.get(['currentSkid'], (skidData) => {
             const currentSkid = skidData.currentSkid || 'Default';
             console.log('[SKMT][STATS-NUMBERS][getStats] Current SKID:', currentSkid);
             
-            const modes = ['normal', 'special', 'custom'];
-            const keysToFetch = ['currentSkid'];
-            
-            // Fetch data for all modes
-            modes.forEach(mode => {
-                keysToFetch.push(`matchHistory_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesJoined_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesStarted_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesQuit_${currentSkid}_${mode}`);
-                keysToFetch.push(`matchesCompleted_${currentSkid}_${mode}`);
-            });
+            const keysToFetch = [
+                `matchHistory_${currentSkid}_normal`,
+                `matchHistory_${currentSkid}_special`,
+                `matchHistory_${currentSkid}_custom`,
+                `gamesJoined_${currentSkid}_normal`,
+                `gamesJoined_${currentSkid}_special`,
+                `gamesJoined_${currentSkid}_custom`,
+                `gamesStarted_${currentSkid}_normal`,
+                `gamesStarted_${currentSkid}_special`,
+                `gamesStarted_${currentSkid}_custom`,
+                `gamesQuit_${currentSkid}_normal`,
+                `gamesQuit_${currentSkid}_special`,
+                `gamesQuit_${currentSkid}_custom`,
+                `matchesCompleted_${currentSkid}_normal`,
+                `matchesCompleted_${currentSkid}_special`,
+                `matchesCompleted_${currentSkid}_custom`
+            ];
 
             console.log('[SKMT][STATS-NUMBERS][getStats] Keys to fetch:', keysToFetch);
 
-            chrome.storage.sync.get(keysToFetch, (data) => {
+            chrome.storage.local.get(keysToFetch, (data) => {
                 console.log('[SKMT][STATS-NUMBERS][getStats] Raw data received:', data);
                 
-                // Combine data from all modes
+                let matchHistory = [];
+                let gamesJoined = 0;
+                let gamesStarted = 0;
+                let gamesQuit = 0;
+                let matchesCompleted = 0;
+
+                // Initialize combinedData object
                 const combinedData = {
-                    matchHistory: [],
-                    matchesCompleted: 0,
-                    matchesQuit: 0,
-                    gamesJoined: 0,
-                    gamesStarted: 0,
                     totalKills: 0,
                     totalDeaths: 0,
                     totalTimePlayed: 0,
+                    highestKills: 0,
+                    highestDeaths: 0,
+                    highestKillStreak: 0,
+                    highestKDR: 0,
+                    longestTimePlayed: 0,
                     smashStreak: 0,
                     smashtacularStreak: 0,
                     smashosaurusStreak: 0,
@@ -45,28 +57,31 @@ async function getStats() {
                     multiMegaSmash: 0,
                     multiMegaUltraSmash: 0,
                     gooseySmash: 0,
-                    crazyMultiMegaUltraSmash: 0,
-                    highestKills: 0,
-                    highestDeaths: 0,
-                    highestKillStreak: 0,
-                    highestKDR: 0,
-                    longestTimePlayed: 0
+                    crazyMultiMegaUltraSmash: 0
                 };
 
-                modes.forEach(mode => {
-                    const history = data[`matchHistory_${currentSkid}_${mode}`] || [];
-                    console.log(`[SKMT][STATS-NUMBERS][getStats] History for ${mode}:`, history);
-                    combinedData.matchHistory = combinedData.matchHistory.concat(history);
-                    combinedData.matchesCompleted += data[`matchesCompleted_${currentSkid}_${mode}`] || 0;
-                    combinedData.matchesQuit += data[`gamesQuit_${currentSkid}_${mode}`] || 0;
-                    combinedData.gamesJoined += data[`gamesJoined_${currentSkid}_${mode}`] || 0;
-                    combinedData.gamesStarted += data[`gamesStarted_${currentSkid}_${mode}`] || 0;
+                // Combine data from all modes
+                ['normal', 'special', 'custom'].forEach(mode => {
+                    const modeHistory = data[`matchHistory_${currentSkid}_${mode}`] || [];
+                    console.log(`[SKMT][STATS-NUMBERS][getStats] History for ${mode}:`, modeHistory);
+                    matchHistory = matchHistory.concat(modeHistory);
+                    gamesJoined += data[`gamesJoined_${currentSkid}_${mode}`] || 0;
+                    gamesStarted += data[`gamesStarted_${currentSkid}_${mode}`] || 0;
+                    gamesQuit += data[`gamesQuit_${currentSkid}_${mode}`] || 0;
+                    matchesCompleted += data[`matchesCompleted_${currentSkid}_${mode}`] || 0;
                 });
 
-                console.log('[SKMT][STATS-NUMBERS][getStats] Combined match history:', combinedData.matchHistory);
+                console.log('[SKMT][STATS-NUMBERS][getStats] Combined match history:', matchHistory);
+
+                // Sort match history by start time
+                matchHistory.sort((a, b) => {
+                    const timeA = a.matchStartTime || a.startTime || 0;
+                    const timeB = b.matchStartTime || b.startTime || 0;
+                    return timeA - timeB;
+                });
 
                 // Calculate totals and records from match history
-                combinedData.matchHistory.forEach((match, index) => {
+                matchHistory.forEach((match, index) => {
                     console.log(`[SKMT][STATS-NUMBERS][getStats] Processing match ${index}:`, JSON.stringify(match, null, 2));
                     
                     // Basic stats
@@ -168,10 +183,14 @@ async function getStats() {
                     }
                 });
 
-                console.log('[SKMT][STATS-NUMBERS][getStats] Final combined data:', combinedData);
-
-                // Add currentSkid to the returned object
+                // Add game stats to combinedData
+                combinedData.gamesJoined = gamesJoined;
+                combinedData.gamesStarted = gamesStarted;
+                combinedData.gamesQuit = gamesQuit;
+                combinedData.matchesCompleted = matchesCompleted;
                 combinedData.currentSkid = currentSkid;
+
+                console.log('[SKMT][STATS-NUMBERS][getStats] Final combined data:', combinedData);
                 resolve(combinedData);
             });
         });
@@ -278,12 +297,12 @@ async function updateStats(shouldAnimate = false) {
     // Secondary Stats
     updateValue(document.getElementById('matchesJoined'), stats.gamesJoined);
     updateValue(document.getElementById('matchesStarted'), stats.gamesStarted);
-    updateValue(document.getElementById('matchesQuit'), stats.matchesQuit);
-    updateValue(document.getElementById('totalMatches'), stats.matchesCompleted + stats.matchesQuit);
+    updateValue(document.getElementById('matchesQuit'), stats.gamesQuit);
+    updateValue(document.getElementById('totalMatches'), stats.matchesCompleted + stats.gamesQuit);
     
-    const totalMatches = stats.matchesCompleted + stats.matchesQuit;
+    const totalMatches = stats.matchesCompleted + stats.gamesQuit;
     const completedRate = totalMatches > 0 ? (stats.matchesCompleted / totalMatches * 100) : 0;
-    const quitRate = totalMatches > 0 ? (stats.matchesQuit / totalMatches * 100) : 0;
+    const quitRate = totalMatches > 0 ? (stats.gamesQuit / totalMatches * 100) : 0;
     
     updateValue(document.getElementById('matchesCompletedRate'), completedRate, 'decimal');
     updateValue(document.getElementById('matchesQuitRate'), quitRate, 'decimal');

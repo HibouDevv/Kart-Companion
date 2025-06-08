@@ -50,7 +50,7 @@ const toggleKdrHud = document.getElementById('toggleKdrHud');
 const toggleMatchCodeHud = document.getElementById('toggleMatchCodeHud');
 
 // Load initial HUD states
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
+chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
     toggleDeathsHud.checked = result.deathsHudEnabled !== false;
     toggleKillStreakHud.checked = result.killStreakHudEnabled !== false;
     toggleKdrHud.checked = result.kdrHudEnabled !== false;
@@ -59,7 +59,7 @@ chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnab
 
 // Add event listeners for HUD toggles
 toggleDeathsHud.addEventListener('change', () => {
-    chrome.storage.sync.set({ deathsHudEnabled: toggleDeathsHud.checked });
+    chrome.storage.local.set({ deathsHudEnabled: toggleDeathsHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
@@ -74,7 +74,7 @@ toggleDeathsHud.addEventListener('change', () => {
 });
 
 toggleKillStreakHud.addEventListener('change', () => {
-    chrome.storage.sync.set({ killStreakHudEnabled: toggleKillStreakHud.checked });
+    chrome.storage.local.set({ killStreakHudEnabled: toggleKillStreakHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
@@ -88,7 +88,7 @@ toggleKillStreakHud.addEventListener('change', () => {
 });
 
 toggleKdrHud.addEventListener('change', () => {
-    chrome.storage.sync.set({ kdrHudEnabled: toggleKdrHud.checked });
+    chrome.storage.local.set({ kdrHudEnabled: toggleKdrHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
@@ -102,7 +102,7 @@ toggleKdrHud.addEventListener('change', () => {
 });
 
 toggleMatchCodeHud.addEventListener('change', () => {
-    chrome.storage.sync.set({ matchCodeHudEnabled: toggleMatchCodeHud.checked });
+    chrome.storage.local.set({ matchCodeHudEnabled: toggleMatchCodeHud.checked });
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
@@ -116,7 +116,7 @@ toggleMatchCodeHud.addEventListener('change', () => {
 });
 
 // Restore toggle state on popup load
-chrome.storage.sync.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
+chrome.storage.local.get(['deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled'], (result) => {
     toggleDeathsHud.checked = result.deathsHudEnabled !== false; // default ON
     toggleKillStreakHud.checked = result.killStreakHudEnabled !== false; // default ON
     toggleKdrHud.checked = result.kdrHudEnabled !== false; // default ON
@@ -624,7 +624,7 @@ function displayStats(data, mode) {
 }
 
 function loadStats() {
-    chrome.storage.sync.get(['currentSkid'], (skidData) => {
+    chrome.storage.local.get(['currentSkid'], (skidData) => {
         currentSkid = skidData.currentSkid || 'Default';
         document.getElementById('skidValue').textContent = currentSkid;
 
@@ -654,8 +654,8 @@ function loadStats() {
 
         console.log('[SKMT][LOAD] Loading stats for SKID:', currentSkid, 'Mode:', currentMode, 'Keys:', keysToFetch);
 
-        chrome.storage.sync.get(keysToFetch, (data) => {
-            console.log('[SKMT][LOAD] Data returned from chrome.storage.sync:', data);
+        chrome.storage.local.get(keysToFetch, (data) => {
+            console.log('[SKMT][LOAD] Data returned from chrome.storage.local:', data);
 
             // Load favorite matches into the global object
             favoriteMatches = data[`favoriteMatches_${currentSkid}`] || {};
@@ -689,7 +689,7 @@ function deleteMatch(index, mode) {
     }
     
     // Remove the match at the given index from the current mode's history
-    chrome.storage.sync.get(['currentSkid'], (skidData) => {
+    chrome.storage.local.get(['currentSkid'], (skidData) => {
         const skid = skidData.currentSkid || 'Default';
         // If mode is provided, use it; otherwise use currentMode
         const targetMode = mode || currentMode;
@@ -699,7 +699,7 @@ function deleteMatch(index, mode) {
             return;
         }
         const key = getModeKey('matchHistory', skid, targetMode);
-        chrome.storage.sync.get([key], (data) => {
+        chrome.storage.local.get([key], (data) => {
             let history = data[key] || [];
             if (index < 0 || index >= history.length) return;
             const removed = history.splice(index, 1)[0];
@@ -721,7 +721,7 @@ function deleteMatch(index, mode) {
             setObj[getModeKey('gamesStarted', skid, targetMode)] = gamesStarted;
             setObj[getModeKey('gamesQuit', skid, targetMode)] = gamesQuit;
             setObj[getModeKey('matchesCompleted', skid, targetMode)] = matchesCompleted;
-            chrome.storage.sync.set(setObj, loadStats); // Reload stats for the current mode
+            chrome.storage.local.set(setObj, loadStats); // Reload stats for the current mode
         });
     });
 }
@@ -733,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const copySkidBtn = document.getElementById('copySkidBtn');
 
     // Load saved blur state
-    chrome.storage.sync.get(['skidBlurred'], (result) => {
+    chrome.storage.local.get(['skidBlurred'], (result) => {
         if (result.skidBlurred) {
             skidValue.classList.add('skid-blurred');
             const icon = toggleSkidBtn.querySelector('i');
@@ -749,12 +749,12 @@ document.addEventListener('DOMContentLoaded', () => {
             icon.classList.remove('fa-eye');
             icon.classList.add('fa-eye-slash');
             // Save blur state
-            chrome.storage.sync.set({ skidBlurred: true });
+            chrome.storage.local.set({ skidBlurred: true });
         } else {
             icon.classList.remove('fa-eye-slash');
             icon.classList.add('fa-eye');
             // Save blur state
-            chrome.storage.sync.set({ skidBlurred: false });
+            chrome.storage.local.set({ skidBlurred: false });
         }
     });
 
@@ -858,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const setObj = {};
             keysToReset.forEach(key => setObj[key] = key.includes('matchHistory') ? [] : 0);
 
-            chrome.storage.sync.set(setObj, () => {
+            chrome.storage.local.set(setObj, () => {
                 console.log('[SKMT][RESET] Stats reset for', modes, 'mode(s).');
                 loadStats(); // Reload stats after reset
             });
@@ -900,7 +900,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'sync') {
+    if (area === 'local') {
         const favoriteKey = `favoriteMatches_${currentSkid || 'Default'}`;
         if (changes[favoriteKey]) {
             console.log('[SKMT][POPUP] Favorite matches changed in storage, reloading stats.');
@@ -922,7 +922,7 @@ const UPDATE_RETRY_DELAY = 1000; // 1 second
 // Add this function after the existing functions
 async function verifyStatsUpdate(mode, expectedMatch) {
     return new Promise((resolve) => {
-        chrome.storage.sync.get([getModeKey('matchHistory', currentSkid, mode)], (data) => {
+        chrome.storage.local.get([getModeKey('matchHistory', currentSkid, mode)], (data) => {
             const history = data[getModeKey('matchHistory', currentSkid, mode)] || [];
             const lastMatch = history[history.length - 1];
             
@@ -1010,7 +1010,7 @@ chrome.runtime.onMessage.addListener(
                     const updateQuitStats = async () => {
                         try {
                             const data = await new Promise(resolve => {
-                                chrome.storage.sync.get([gamesQuitKey], resolve);
+                                chrome.storage.local.get([gamesQuitKey], resolve);
                             });
                             
                             let gamesQuit = data[gamesQuitKey] || 0;
@@ -1020,7 +1020,7 @@ chrome.runtime.onMessage.addListener(
                             setObj[gamesQuitKey] = gamesQuit;
                             
                             await new Promise(resolve => {
-                                chrome.storage.sync.set(setObj, resolve);
+                                chrome.storage.local.set(setObj, resolve);
                             });
                             
                             // Verify the update
@@ -1082,7 +1082,7 @@ chrome.runtime.onMessage.addListener(
                         const matchesCompletedKey = getModeKey('matchesCompleted', skid, mode);
 
                         const data = await new Promise(resolve => {
-                            chrome.storage.sync.get([
+                            chrome.storage.local.get([
                                 matchHistoryKey,
                                 gamesJoinedKey,
                                 gamesStartedKey,
@@ -1109,7 +1109,7 @@ chrome.runtime.onMessage.addListener(
                         };
 
                         await new Promise(resolve => {
-                            chrome.storage.sync.set(setObj, resolve);
+                            chrome.storage.local.set(setObj, resolve);
                         });
 
                         // Verify the update
@@ -1293,7 +1293,7 @@ async function exportStats() {
         });
 
         const data = await new Promise(resolve => {
-            chrome.storage.sync.get(keysToFetch, resolve);
+            chrome.storage.local.get(keysToFetch, resolve);
         });
 
         // Get section states
@@ -1491,7 +1491,7 @@ async function importStats(file) {
 
                 // Import the data
                 await new Promise(resolve => {
-                    chrome.storage.sync.set(importData.data, resolve);
+                    chrome.storage.local.set(importData.data, resolve);
                 });
 
                 // Import UI state if available
@@ -1796,7 +1796,7 @@ function openHudSettings() {
     
     // Load current settings
     const storageKey = `${currentHudType}HudSettings`;
-    chrome.storage.sync.get([storageKey], (result) => {
+    chrome.storage.local.get([storageKey], (result) => {
         const settings = result[storageKey] || {
             fontSize: 32,
             fontColor: '#ffffff',
@@ -1839,7 +1839,7 @@ function updateHudSettings() {
     };
     
     const storageKey = `${currentHudType}HudSettings`;
-    chrome.storage.sync.set({ [storageKey]: settings });
+    chrome.storage.local.set({ [storageKey]: settings });
     
     // Send update to content script
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
@@ -1883,7 +1883,7 @@ function rgbaToHex(rgba) {
     return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
 }
 
-// Add favorites storage (using chrome.storage.sync)
+// Add favorites storage (using chrome.storage.local)
 let favoriteMatches = {}; // Initialize as empty, load from storage
 
 async function saveFavoriteMatches() {
@@ -1891,7 +1891,7 @@ async function saveFavoriteMatches() {
     // Let's use a key that includes the current SKID for segregation
     const skid = currentSkid || 'Default';
     const key = `favoriteMatches_${skid}`;
-    await new Promise(resolve => chrome.storage.sync.set({ [key]: favoriteMatches }, resolve));
+    await new Promise(resolve => chrome.storage.local.set({ [key]: favoriteMatches }, resolve));
     console.log('[SKMT][POPUP] Saved favorite matches to storage.', favoriteMatches);
 }
 
@@ -1962,7 +1962,7 @@ function renderMatches(matches, mode) {
         const starBtn = document.createElement('button');
         starBtn.className = 'star-btn';
         starBtn.title = 'Favorite this match';
-        // Use the favorite state from the match object (loaded from chrome.storage.sync)
+        // Use the favorite state from the match object (loaded from chrome.storage.local)
         starBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.09 10,15.27 4.82,18.09 6,12.26 1.49,8.09 7.41,7.36" stroke="#FFD700" stroke-width="1.5" fill="' + (m.favorite ? '#FFD700' : 'white') + '"/></svg>';
         starBtn.style.background = 'none';
         starBtn.style.border = 'none';
