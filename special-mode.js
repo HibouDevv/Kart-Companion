@@ -2,17 +2,15 @@
 
 // Initialize charts when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    // Get the current SKID and update the display
-    const stats = await getStats();
-    document.getElementById('skidDisplay').textContent = `SKID: ${stats.currentSkid}`;
-
-    // Log the match history to inspect its content
-    console.log('Match history for special mode:', stats.matchHistory);
-
-    // Initialize all charts
-    initializeCharts();
-
-    // Set up event listeners for chart controls
-    // These listeners were already present in visualizers.js and handle filtering
-    // based on the stats object which now contains mode-specific data
+    try {
+        const stats = await getStats();
+        if (stats.matchHistory && stats.matchHistory.length > 0) {
+            initializeCharts(stats);
+        } else {
+            document.getElementById('noDataMessage').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+        document.getElementById('noDataMessage').style.display = 'block';
+    }
 }); 

@@ -1,7 +1,7 @@
 // Helper: Get stats from storage
 async function getStats() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['currentSkid'], (skidData) => {
+        chrome.storage.local.get(['currentSkid'], (skidData) => {
             const currentSkid = skidData.currentSkid || 'Default';
             const currentPage = window.location.pathname.split('/').pop();
             let mode = 'all';
@@ -38,7 +38,7 @@ async function getStats() {
 
             console.log('[SKMT][VISUALIZER][getStats] Keys to Fetch:', keysToFetch);
 
-            chrome.storage.sync.get(keysToFetch, (data) => {
+            chrome.storage.local.get(keysToFetch, (data) => {
                 console.log('[SKMT][VISUALIZER][getStats] Data received:', data);
                 let matchHistory = [];
                 let gamesJoined = 0;

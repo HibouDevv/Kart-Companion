@@ -367,92 +367,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Stat Calculation and Display Logic --- //
 
-    // Helper: Get stats from storage (copied from visualizers.js)
-    async function getStats() {
+    // Get player stats from storage
+    async function getPlayerStats() {
         return new Promise((resolve) => {
-            chrome.storage.sync.get(['currentSkid'], (skidData) => {
+            chrome.storage.local.get(['currentSkid'], (skidData) => {
                 const currentSkid = skidData.currentSkid || 'Default';
-                const keysToFetch = ['currentSkid'];
+                const keysToFetch = [
+                    `matchHistory_${currentSkid}_normal`,
+                    `matchHistory_${currentSkid}_special`,
+                    `matchHistory_${currentSkid}_custom`,
+                    `gamesJoined_${currentSkid}_normal`,
+                    `gamesJoined_${currentSkid}_special`,
+                    `gamesJoined_${currentSkid}_custom`,
+                    `gamesStarted_${currentSkid}_normal`,
+                    `gamesStarted_${currentSkid}_special`,
+                    `gamesStarted_${currentSkid}_custom`,
+                    `gamesQuit_${currentSkid}_normal`,
+                    `gamesQuit_${currentSkid}_special`,
+                    `gamesQuit_${currentSkid}_custom`,
+                    `matchesCompleted_${currentSkid}_normal`,
+                    `matchesCompleted_${currentSkid}_special`,
+                    `matchesCompleted_${currentSkid}_custom`
+                ];
 
-                // Fetch data for all modes to get comprehensive stats
-                ['normal', 'special', 'custom'].forEach(mode => {
-                    keysToFetch.push(`matchHistory_${currentSkid}_${mode}`);
-                    keysToFetch.push(`gamesJoined_${currentSkid}_${mode}`);
-                    keysToFetch.push(`gamesStarted_${currentSkid}_${mode}`);
-                    keysToFetch.push(`gamesQuit_${currentSkid}_${mode}`);
-                    keysToFetch.push(`matchesCompleted_${currentSkid}_${mode}`);
-                    // Include streak keys
-                    keysToFetch.push(`smashStreak_${currentSkid}_${mode}`);
-                    keysToFetch.push(`smashtacularStreak_${currentSkid}_${mode}`);
-                    keysToFetch.push(`smashosaurusStreak_${currentSkid}_${mode}`);
-                    keysToFetch.push(`smashlvaniaStreak_${currentSkid}_${mode}`);
-                    keysToFetch.push(`monsterSmashStreak_${currentSkid}_${mode}`);
-                    keysToFetch.push(`potatoStreak_${currentSkid}_${mode}`);
-                });
-
-                chrome.storage.sync.get(keysToFetch, (data) => {
-                    console.log('[SKMT][PLAYER_CARD][getStats] Data received:', data);
-                    let combinedMatchHistory = [];
-                    let totalGamesJoined = 0;
-                    let totalGamesStarted = 0;
-                    let totalGamesQuit = 0;
-                    let totalMatchesCompleted = 0;
+                chrome.storage.local.get(keysToFetch, (data) => {
+                    let matchHistory = [];
+                    let gamesJoined = 0;
+                    let gamesStarted = 0;
+                    let gamesQuit = 0;
+                    let matchesCompleted = 0;
                     let totalKills = 0;
                     let totalDeaths = 0;
-                    let totalTimePlayed = 0; // in milliseconds initially
-                    let totalSmashStreaks = 0;
-                    let totalSmashtacularStreaks = 0;
-                    let totalSmashosaurusStreaks = 0;
-                    let totalSmashlvaniaStreaks = 0;
-                    let totalMonsterSmashStreaks = 0;
-                    let totalPotatoStreaks = 0;
+                    let totalTimePlayed = 0;
 
+                    // Combine data from all modes
                     ['normal', 'special', 'custom'].forEach(mode => {
-                        const history = data[`matchHistory_${currentSkid}_${mode}`] || [];
-                        combinedMatchHistory = combinedMatchHistory.concat(history);
-                        totalGamesJoined += data[`gamesJoined_${currentSkid}_${mode}`] || 0;
-                        totalGamesStarted += data[`gamesStarted_${currentSkid}_${mode}`] || 0;
-                        totalGamesQuit += data[`gamesQuit_${currentSkid}_${mode}`] || 0;
-                        totalMatchesCompleted += data[`matchesCompleted_${currentSkid}_${mode}`] || 0;
-                        totalSmashStreaks += data[`smashStreak_${currentSkid}_${mode}`] || 0;
-                        totalSmashtacularStreaks += data[`smashtacularStreak_${currentSkid}_${mode}`] || 0;
-                        totalSmashosaurusStreaks += data[`smashosaurusStreak_${currentSkid}_${mode}`] || 0;
-                        totalSmashlvaniaStreaks += data[`smashlvaniaStreak_${currentSkid}_${mode}`] || 0;
-                        totalMonsterSmashStreaks += data[`monsterSmashStreak_${currentSkid}_${mode}`] || 0;
-                        totalPotatoStreaks += data[`potatoStreak_${currentSkid}_${mode}`] || 0;
+                        const modeHistory = data[`matchHistory_${currentSkid}_${mode}`] || [];
+                        matchHistory = matchHistory.concat(modeHistory);
+                        gamesJoined += data[`gamesJoined_${currentSkid}_${mode}`] || 0;
+                        gamesStarted += data[`gamesStarted_${currentSkid}_${mode}`] || 0;
+                        gamesQuit += data[`gamesQuit_${currentSkid}_${mode}`] || 0;
+                        matchesCompleted += data[`matchesCompleted_${currentSkid}_${mode}`] || 0;
 
-
-                        history.forEach(match => {
+                        // Calculate kills, deaths, and time played from match history
+                        modeHistory.forEach(match => {
                             totalKills += match.kills || 0;
                             totalDeaths += match.deaths || 0;
-                            let time = match.duration || match.playerStats?.timeSpent || (match.endTime && match.startTime ? match.endTime - match.startTime : 0) || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0) || 0;
-                            totalTimePlayed += time;
+                            const matchDuration = match.duration || 
+                                (match.endTime && match.startTime ? match.endTime - match.startTime : 0) || 
+                                (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0) || 0;
+                            totalTimePlayed += matchDuration;
                         });
                     });
 
                     // Sort match history by start time
-                    combinedMatchHistory.sort((a, b) => {
+                    matchHistory.sort((a, b) => {
                         const timeA = a.matchStartTime || a.startTime || 0;
                         const timeB = b.matchStartTime || b.startTime || 0;
                         return timeA - timeB;
                     });
 
+                    // Convert totalTimePlayed from milliseconds to minutes
+                    totalTimePlayed = totalTimePlayed / 1000 / 60;
+
                     resolve({
+                        matchHistory,
+                        gamesJoined,
+                        gamesStarted,
+                        gamesQuit,
+                        matchesCompleted,
                         currentSkid,
-                        matchHistory: combinedMatchHistory,
-                        gamesJoined: totalGamesJoined,
-                        gamesStarted: totalGamesStarted,
-                        gamesQuit: totalGamesQuit,
-                        matchesCompleted: totalMatchesCompleted,
-                        totalKills: totalKills,
-                        totalDeaths: totalDeaths,
-                        totalTimePlayed: totalTimePlayed / 1000 / 60, // Convert to minutes
-                        totalSmashStreaks: totalSmashStreaks,
-                        totalSmashtacularStreaks: totalSmashtacularStreaks,
-                        totalSmashosaurusStreaks: totalSmashosaurusStreaks,
-                        totalSmashlvaniaStreaks: totalSmashlvaniaStreaks,
-                        totalMonsterSmashStreaks: totalMonsterSmashStreaks,
-                        totalPotatoStreaks: totalPotatoStreaks
+                        totalKills,
+                        totalDeaths,
+                        totalTimePlayed
                     });
                 });
             });
@@ -555,7 +542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Main function to fetch, calculate, and display stats
     async function updatePlayerCard() {
         console.log('[SKMT][PLAYER_CARD] Starting updatePlayerCard, customNameLoaded:', customNameLoaded);
-        const stats = await getStats();
+        const stats = await getPlayerStats();
         console.log('[SKMT][PLAYER_CARD] Fetched Stats:', stats);
 
         // Only update stats, don't touch the name here
