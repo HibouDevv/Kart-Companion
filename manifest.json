@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Kart Companion",
+  "name": "Kart Companion for Smash Karts",
   "version": "1.0.0",
-  "description": "Your ultimate companion for tracking and analyzing Smash Karts gameplay",
+  "description": "Track your Smash Karts gameplay with detailed statistics, match history, and performance analytics. Features include kill/death tracking, match history, and customizable HUD displays.",
   "permissions": [
     "storage",
     "scripting",
