@@ -41,7 +41,7 @@ module.exports = {
         { from: 'manifest.json', to: 'manifest.json' },
         { from: 'popup.html', to: 'popup.html' },
         { from: 'styles', to: 'styles' },
-        { from: 'icons', to: 'icons' },
+        { from: 'images', to: 'images' },
         { from: 'injected.js', to: 'injected.js' }
       ]
     })
