@@ -397,11 +397,11 @@ const hud = document.createElement('div');
 hud.id = 'death-hud-overlay';
 hud.style.position = 'fixed';
 hud.style.top = '100px';
-hud.style.right = '40px';
+hud.style.left = '300px';
 hud.style.zIndex = '999999';
 hud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 hud.style.fontWeight = '700';
-hud.style.fontSize = '32px';
+hud.style.fontSize = '24px';
 hud.style.color = '#fff';
 hud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
 hud.style.cursor = 'move';
@@ -531,11 +531,11 @@ const killStreakHud = document.createElement('div');
 killStreakHud.id = 'kill-streak-hud-overlay';
 killStreakHud.style.position = 'fixed';
 killStreakHud.style.top = '160px';
-killStreakHud.style.right = '40px';
+killStreakHud.style.left = '300px';
 killStreakHud.style.zIndex = '999999';
 killStreakHud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 killStreakHud.style.fontWeight = '700';
-killStreakHud.style.fontSize = '32px';
+killStreakHud.style.fontSize = '24px';
 killStreakHud.style.color = '#fff';
 killStreakHud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
 killStreakHud.style.cursor = 'move';
@@ -679,7 +679,7 @@ chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudS
     } else {
         // Set default settings for Deaths HUD if none exist
         const defaultDeathsSettings = {
-            fontSize: 32,
+            fontSize: 24,
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
@@ -693,7 +693,7 @@ chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudS
     } else {
         // Set default settings for Kill Streak HUD if none exist
         const defaultKillStreakSettings = {
-            fontSize: 32,
+            fontSize: 24,
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
@@ -707,7 +707,7 @@ chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudS
     } else {
         // Set default settings for KDR HUD if none exist
         const defaultKdrSettings = {
-            fontSize: 32,
+            fontSize: 24,
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
@@ -747,11 +747,11 @@ const kdrHud = document.createElement('div');
 kdrHud.id = 'kdr-hud-overlay';
 kdrHud.style.position = 'fixed';
 kdrHud.style.top = '220px';
-kdrHud.style.right = '40px';
+kdrHud.style.left = '300px';
 kdrHud.style.zIndex = '999999';
 kdrHud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 kdrHud.style.fontWeight = '700';
-kdrHud.style.fontSize = '32px';
+kdrHud.style.fontSize = '24px';
 kdrHud.style.color = '#fff';
 kdrHud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
 kdrHud.style.cursor = 'move';
@@ -891,11 +891,11 @@ const matchCodeHud = document.createElement('div');
 matchCodeHud.id = 'match-code-hud-overlay';
 matchCodeHud.style.position = 'fixed';
 matchCodeHud.style.top = '280px';
-matchCodeHud.style.right = '40px';
+matchCodeHud.style.left = '300px';
 matchCodeHud.style.zIndex = '999999';
 matchCodeHud.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 matchCodeHud.style.fontWeight = '700';
-matchCodeHud.style.fontSize = '32px';
+matchCodeHud.style.fontSize = '24px';
 matchCodeHud.style.color = '#fff';
 matchCodeHud.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.3)';
 matchCodeHud.style.cursor = 'move';
@@ -1022,7 +1022,7 @@ chrome.storage.local.get(['deathsHudSettings', 'killStreakHudSettings', 'kdrHudS
     } else {
         // Set default settings for Match Code HUD if none exist
         const defaultMatchCodeSettings = {
-            fontSize: 32,
+            fontSize: 24,
             fontColor: '#ffffff',
             fontFamily: 'Arial, sans-serif'
         };
