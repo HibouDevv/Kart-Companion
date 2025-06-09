@@ -1,0 +1,22 @@
+{
+  "name": "kartlog",
+  "version": "1.0.0",
+  "description": "Kart Companion Match History Viewer",
+  "scripts": {
+    "build": "webpack --mode production",
+    "test": "echo 'No tests specified'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hans-kartlog/KartLog.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hans-kartlog/KartLog/issues"
+  },
+  "homepage": "https://hans-kartlog.github.io/KartLog/",
+  "devDependencies": {
+    "terser-webpack-plugin": "^5.3.10"
+  }
+}
