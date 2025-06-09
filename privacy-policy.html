@@ -106,10 +106,10 @@
             gap: 25px;
         }
         .footer-social-icons .social-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
+            width: 56px; /* Increased width */
+            height: 40px; /* Increased height, maintaining aspect ratio */
+            border-radius: 0; /* Removed circular styling */
+            object-fit: contain; /* Ensure image fits */
             transition: transform 0.3s ease;
         }
         .footer-social-icons .social-icon:hover {
