@@ -1,6 +1,6 @@
 # Privacy Policy for Kart Companion
 
-Last updated: [Current Date]
+Last updated: June 9, 2025
 
 ## Introduction
 
