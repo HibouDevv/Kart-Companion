@@ -142,6 +142,47 @@
             font-size: 1.1em;
             font-family: 'Baloo 2', Arial, sans-serif !important;
         }
+        /* Footer styles */
+        .footer {
+            background-color: rgba(255, 255, 255, 0.95); /* White background with slight transparency */
+            color: var(--secondary-color); /* Dark blue/grey for text */
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+        .footer-social-icons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+        .footer-social-icons .social-icon {
+            width: 56px; /* Increased width */
+            height: 40px; /* Increased height, maintaining aspect ratio */
+            border-radius: 0; /* Removed circular styling */
+            object-fit: contain; /* Ensure image fits */
+            transition: transform 0.3s ease;
+        }
+        .footer-social-icons .social-icon:hover {
+            transform: translateY(-5px);
+        }
+        .footer-links {
+            margin-bottom: 20px;
+        }
+        .footer-links a {
+            color: var(--secondary-color); /* Dark blue/grey */
+            text-decoration: none;
+            font-size: 1.3em; /* Increased from 1.2em */
+            margin: 0 15px;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover {
+            color: var(--primary-blue); /* Primary blue on hover */
+        }
+        .footer-copyright {
+            font-size: 1.0em; /* Increased from 0.9em */
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -250,10 +291,20 @@
             <canvas id="mapDistributionChart" class="chart-canvas"></canvas>
         </div>
     </div>
-
-    
-
-    <script src="visualizers.js"></script>
     <script src="3min-mode.js"></script>
+    <script src="charts.js"></script>
+    <footer class="footer">
+        <div class="footer-social-icons">
+            <a href="https://discord.gg/XgYvDEgB8n" target="_blank"><img src="discord_logo.png" alt="Discord" class="social-icon" style="background-color: transparent;"></a>
+            <a href="https://www.youtube.com/@yourdogsk" target="_blank"><img src="youtube_logo.webp" alt="YouTube" class="social-icon" style="background-color: transparent;"></a>
+        </div>
+        <div class="footer-links">
+            <a href="/Kart-Companion/">About</a>
+            <a href="https://leafbolt8.github.io/Kart-Companion/privacy-policy.html">Privacy Policy</a>
+        </div>
+        <div class="footer-copyright">
+            &copy; 2025 Kart Companion Created By: yourdog
+        </div>
+    </footer>
 </body>
 </html> 
