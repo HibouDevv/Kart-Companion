@@ -91,6 +91,47 @@
             font-size: 1.2em;
             margin-bottom: 30px;
         }
+        /* Footer styles */
+        .footer {
+            background-color: var(--secondary-color); /* Dark blue/grey */
+            color: var(--card-text); /* White */
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+        .footer-social-icons {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+        .footer-social-icons .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .footer-social-icons .social-icon:hover {
+            transform: translateY(-5px);
+        }
+        .footer-links {
+            margin-bottom: 20px;
+        }
+        .footer-links a {
+            color: var(--card-text); /* White */
+            text-decoration: none;
+            font-size: 1.2em;
+            margin: 0 15px;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover {
+            color: var(--primary-blue); /* Primary blue on hover */
+        }
+        .footer-copyright {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -167,5 +208,18 @@
             </div>
         </div>
     </div>
+    <footer class="footer">
+        <div class="footer-social-icons">
+            <a href="https://discord.gg/XgYvDEgB8n" target="_blank"><img src="discord_logo.jpg" alt="Discord" class="social-icon"></a>
+            <a href="https://www.youtube.com/@yourdogsk" target="_blank"><img src="youtube_footer.png" alt="YouTube" class="social-icon"></a>
+        </div>
+        <div class="footer-links">
+            <a href="/Kart-Companion/about.html">About</a>
+            <a href="/Kart-Companion/privacy-policy.html">Privacy Policy</a>
+        </div>
+        <div class="footer-copyright">
+            &copy; 2025 Kart Companion Created By: yourdog
+        </div>
+    </footer>
 </body>
 </html> 
