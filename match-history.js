@@ -315,7 +315,7 @@ function createMatchCard(match, index) {
                 <div class="detail-section-content">
                     ${detectedPlayers.length > 0 ? 
                         detectedPlayers.map(p => `<div class="detail-item"><div class="detail-value">${p}</div></div>`).join('') : 
-                        '<div class="detail-item"><div class="detail-value" style="color:#aaa;">No players detected</div></div>'
+                        '<div class="detail-item"><div class="detail-value" style="color:#aaa;">Currently unable to fetch player names, awaiting for devs patch to hopefully restore this feature</div></div>'
                     }
                 </div>
             </div>
