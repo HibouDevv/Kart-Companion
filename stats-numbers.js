@@ -57,7 +57,8 @@ async function getStats() {
                     multiMegaSmash: 0,
                     multiMegaUltraSmash: 0,
                     gooseySmash: 0,
-                    crazyMultiMegaUltraSmash: 0
+                    crazyMultiMegaUltraSmash: 0,
+                    mapFrequencies: {} // Add map frequency tracking
                 };
 
                 // Combine data from all modes
@@ -90,6 +91,10 @@ async function getStats() {
                     // Convert duration from milliseconds to seconds
                     const durationInSeconds = Math.floor((match.duration || 0) / 1000);
                     combinedData.totalTimePlayed += durationInSeconds;
+
+                    // Track map frequency
+                    const mapName = match.map || 'Unknown Map';
+                    combinedData.mapFrequencies[mapName] = (combinedData.mapFrequencies[mapName] || 0) + 1;
 
                     // Update records
                     if (match.kills > combinedData.highestKills) {
@@ -322,6 +327,26 @@ async function updateStats(shouldAnimate = false) {
     updateValue(document.getElementById('highestKillStreak'), stats.highestKillStreak);
     updateValue(document.getElementById('highestKDR'), stats.highestKDR, 'decimal');
     updateValue(document.getElementById('longestTime'), stats.longestTimePlayed, 'time');
+
+    // Favorite Maps
+    const topMaps = Object.entries(stats.mapFrequencies || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    for (let i = 1; i <= 5; i++) {
+        const mapNameElement = document.getElementById(`topMap${i}Name`);
+        const mapCountElement = document.getElementById(`topMap${i}Count`);
+        if (mapNameElement && mapCountElement) {
+            const mapData = topMaps[i - 1];
+            if (mapData) {
+                mapNameElement.textContent = mapData[0];
+                mapCountElement.textContent = mapData[1];
+            } else {
+                mapNameElement.textContent = '-';
+                mapCountElement.textContent = '-';
+            }
+        }
+    }
 
     // Streaks (Without Dying)
     updateValue(document.getElementById('smashStreak'), stats.smashStreak);
