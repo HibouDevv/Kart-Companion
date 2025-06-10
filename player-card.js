@@ -476,8 +476,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Simple linear scaling for deaths (adjust based on expected high death rate)
         // Higher deaths per 3 minutes result in a lower DEF score
-        // 16 deaths per 3 minutes is a low DEF (0)
-        const scaledDeaths = Math.max(0, 100 - (avgDeathsPer3Minutes / 16) * 100); // 16 deaths per 3 minutes is 0
+        // 10 deaths per 3 minutes is a low DEF (0)
+        const scaledDeaths = Math.max(0, 100 - (avgDeathsPer3Minutes / 10) * 100); // 10 deaths per 3 minutes is 0
 
         return Math.round(Math.min(100, Math.max(0, scaledDeaths)));
     }
