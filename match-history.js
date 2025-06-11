@@ -416,21 +416,26 @@ function createMatchCard(match, index) {
     const createLinkBtn = card.querySelector('.create-link-btn');
     createLinkBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Create a minimal match data object with only essential information
         const matchData = {
-            t: match.matchStartTime, // timestamp
-            m: match.map, // map
-            md: match.isSpecialMode ? 's' : match.isCustomMode ? 'c' : 'n', // mode (s=special, c=custom, n=normal)
-            k: match.kills, // kills
-            d: match.deaths, // deaths
-            dr: match.duration, // duration
-            p: match.players, // players
-            i: indicators, // indicators
-            hk: highestKillStreak, // highest kill streak
-            sw: streaksWithoutDying, // streaks without dying
-            qk: quickKillsStreaks, // quick kills streaks
-            st: match.matchStartTime || match.startTime, // start time
-            et: match.matchEndTime || match.endTime // end time
+            id: match.id,
+            timestamp: match.matchStartTime,
+            map: match.map,
+            mode: match.isSpecialMode ? 'special' : 
+                  match.isCustomMode ? 'custom' : 'normal',
+            kills: match.kills,
+            deaths: match.deaths,
+            duration: match.duration,
+            players: match.players,
+            indicators: indicators,
+            // Add streak data
+            highestKillStreak: highestKillStreak,
+            streaksWithoutDying: streaksWithoutDying,
+            quickKillsStreaks: quickKillsStreaks,
+            // Add start and end times
+            startTime: match.matchStartTime || match.startTime,
+            endTime: match.matchEndTime || match.endTime,
+            // Add status indicators again for clarity in viewer
+            statusIndicators: indicators
         };
         
         // Create a base64 encoded string of the match data
