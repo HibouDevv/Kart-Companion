@@ -761,6 +761,34 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('sortFilter').addEventListener('change', loadMatches);
     document.getElementById('mapFilter').addEventListener('change', loadMatches);
     document.getElementById('searchInput').addEventListener('input', loadMatches);
+
+    // Check for showCopyModal parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const matchId = urlParams.get('match');
+    const showCopyModal = urlParams.get('showCopyModal');
+
+    if (matchId && showCopyModal === 'true') {
+        // Wait for matches to load before showing the modal
+        const checkMatchesLoaded = setInterval(async () => {
+            const matches = await getStats();
+            const targetMatch = matches.matchHistory.find(m => m.matchStartTime === parseInt(matchId));
+            
+            if (targetMatch) {
+                clearInterval(checkMatchesLoaded);
+                // Find the match card and trigger the create link button click
+                const matchCard = document.querySelector(`[data-index="${matches.matchHistory.indexOf(targetMatch)}"]`);
+                if (matchCard) {
+                    const createLinkBtn = matchCard.querySelector('.create-link-btn');
+                    if (createLinkBtn) {
+                        createLinkBtn.click();
+                    }
+                }
+            }
+        }, 100); // Check every 100ms
+
+        // Clear interval after 5 seconds if match is not found
+        setTimeout(() => clearInterval(checkMatchesLoaded), 5000);
+    }
 });
 
 // Add chrome.storage.onChanged listener to react to changes from popup
