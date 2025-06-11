@@ -414,7 +414,7 @@ function createMatchCard(match, index) {
 
     // Add create link button click handler
     const createLinkBtn = card.querySelector('.create-link-btn');
-    createLinkBtn.addEventListener('click', (e) => {
+    createLinkBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const matchData = {
             id: match.id,
@@ -441,27 +441,49 @@ function createMatchCard(match, index) {
         // Create a base64 encoded string of the match data
         const encodedData = btoa(JSON.stringify(matchData));
         // Use the correct GitHub Pages URL format
-        const shareUrl = `https://leafbolt8.github.io/Kart-Companion/match-viewer.html?match=${encodedData}`;
+        const fullUrl = `https://leafbolt8.github.io/Kart-Companion/match-viewer.html?match=${encodedData}`;
         
-        // Show modal with the link
+        // Show modal with loading state
         const modal = document.getElementById('linkModal');
         const shareLinkInput = document.getElementById('shareLink');
         const copyBtn = document.getElementById('copyLink');
         
-        shareLinkInput.value = shareUrl;
+        shareLinkInput.value = 'Generating short link...';
         modal.classList.add('active');
         
-        // Handle copy button click
-        copyBtn.onclick = () => {
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                copyBtn.textContent = 'Copied!';
-                copyBtn.classList.add('copied');
-                setTimeout(() => {
-                    copyBtn.textContent = 'Copy Link';
-                    copyBtn.classList.remove('copied');
-                }, 2000);
-            });
-        };
+        try {
+            // Get shortened URL
+            const shortUrl = await shortenUrl(fullUrl);
+            shareLinkInput.value = shortUrl;
+            
+            // Handle copy button click
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(shortUrl).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy Link';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            };
+        } catch (error) {
+            console.error('Error generating short link:', error);
+            // Fallback to original URL if shortening fails
+            shareLinkInput.value = fullUrl;
+            
+            // Handle copy button click for original URL
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyBtn.textContent = 'Copy Link';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            };
+        }
         
         // Handle close button click
         document.getElementById('closeModal').onclick = () => {
@@ -762,4 +784,26 @@ chrome.storage.onChanged.addListener((changes, area) => {
              }
         }
     }
-}); 
+});
+
+// Add this function at the top of the file, after any existing functions
+async function shortenUrl(longUrl) {
+    try {
+        const response = await fetch('https://tinyurl.com/api-create.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `url=${encodeURIComponent(longUrl)}`
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to shorten URL');
+        }
+        
+        return await response.text();
+    } catch (error) {
+        console.error('Error shortening URL:', error);
+        return longUrl; // Return original URL if shortening fails
+    }
+} 
