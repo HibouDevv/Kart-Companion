@@ -1,7 +1,12 @@
 // Function to get stats from localStorage
 async function getStats() {
     try {
-        const currentSkid = localStorage.getItem('currentSkid') || 'Default';
+        const currentSkid = await new Promise(resolve => {
+            chrome.storage.local.get(['currentSkid'], result => {
+                resolve(result.currentSkid || 'Default');
+            });
+        });
+
         const mode = window.location.pathname.includes('custom-mode') ? 'custom' :
                     window.location.pathname.includes('special-mode') ? 'special' :
                     window.location.pathname.includes('3min-mode') ? 'normal' : 'all';
@@ -23,16 +28,10 @@ async function getStats() {
             keys.push(`matchesCompleted_${currentSkid}_${mode}`);
         }
 
-        const data = {};
-        keys.forEach(key => {
-            const value = localStorage.getItem(key);
-            if (value) {
-                try {
-                    data[key] = JSON.parse(value);
-                } catch (e) {
-                    data[key] = value;
-                }
-            }
+        const data = await new Promise(resolve => {
+            chrome.storage.local.get(keys, result => {
+                resolve(result);
+            });
         });
 
         if (!data[`matchHistory_${currentSkid}_${mode}`]) {
