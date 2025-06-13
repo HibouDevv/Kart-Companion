@@ -11,6 +11,21 @@ async function getStats() {
     });
 }
 
+// Function to determine current mode based on page
+function getCurrentMode() {
+    const currentPage = window.location.pathname.split('/').pop();
+    switch (currentPage) {
+        case '3min-mode.html':
+            return 'normal';
+        case 'special-mode.html':
+            return 'special';
+        case 'custom-mode.html':
+            return 'custom';
+        default:
+            return 'all';
+    }
+}
+
 // Function to initialize visualizers
 async function initializeVisualizers(data) {
     try {
@@ -19,7 +34,28 @@ async function initializeVisualizers(data) {
             return;
         }
 
-        // Initialize your charts here using the data
+        const mode = getCurrentMode();
+        const currentSkid = data.currentSkid || 'Default';
+        
+        // Get the appropriate data based on mode
+        let matchHistory = [];
+        if (mode === 'all') {
+            ['normal', 'special', 'custom'].forEach(m => {
+                const modeHistory = data.matchHistory?.[m] || [];
+                matchHistory = matchHistory.concat(modeHistory);
+            });
+        } else {
+            matchHistory = data.matchHistory?.[mode] || [];
+        }
+
+        // Sort match history by start time
+        matchHistory.sort((a, b) => {
+            const timeA = a.matchStartTime || a.startTime || 0;
+            const timeB = b.matchStartTime || b.startTime || 0;
+            return timeA - timeB;
+        });
+
+        // Initialize your charts here using the processed data
         // ... rest of your visualization code ...
 
     } catch (error) {
@@ -36,6 +72,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error initializing charts:', error);
     }
 });
+
+// Export functions for use in other files
+export { getStats, initializeVisualizers, getCurrentMode };
 
 // Calculate streaks (without dying and quick kills)
 function calculateStreaks(matchHistory) {
