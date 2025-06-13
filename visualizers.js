@@ -1,93 +1,41 @@
-// Helper: Get stats from storage
+// Function to get stats from localStorage
 async function getStats() {
     return new Promise((resolve) => {
-        chrome.storage.local.get(['currentSkid'], (skidData) => {
-            const currentSkid = skidData.currentSkid || 'Default';
-            const currentPage = window.location.pathname.split('/').pop();
-            let mode = 'all';
-            
-            // Determine mode based on current page
-            if (currentPage === '3min-mode.html') {
-                mode = 'normal';
-            } else if (currentPage === 'special-mode.html') {
-                mode = 'special';
-            } else if (currentPage === 'custom-mode.html') {
-                mode = 'custom';
-            }
-
-            console.log('[SKMT][VISUALIZER][getStats] Current Page:', currentPage, 'Determined Mode:', mode, 'Current SKID:', currentSkid);
-
-            const keysToFetch = ['currentSkid'];
-            
-            // Add keys based on mode
-            if (mode === 'all') {
-                ['normal', 'special', 'custom'].forEach(m => {
-                    keysToFetch.push(`matchHistory_${currentSkid}_${m}`);
-                    keysToFetch.push(`gamesJoined_${currentSkid}_${m}`);
-                    keysToFetch.push(`gamesStarted_${currentSkid}_${m}`);
-                    keysToFetch.push(`gamesQuit_${currentSkid}_${m}`);
-                    keysToFetch.push(`matchesCompleted_${currentSkid}_${m}`);
-                });
-            } else {
-                keysToFetch.push(`matchHistory_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesJoined_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesStarted_${currentSkid}_${mode}`);
-                keysToFetch.push(`gamesQuit_${currentSkid}_${mode}`);
-                keysToFetch.push(`matchesCompleted_${currentSkid}_${mode}`);
-            }
-
-            console.log('[SKMT][VISUALIZER][getStats] Keys to Fetch:', keysToFetch);
-
-            chrome.storage.local.get(keysToFetch, (data) => {
-                console.log('[SKMT][VISUALIZER][getStats] Data received:', data);
-                let matchHistory = [];
-                let gamesJoined = 0;
-                let gamesStarted = 0;
-                let gamesQuit = 0;
-                let matchesCompleted = 0;
-
-                if (mode === 'all') {
-                    // Combine data from all modes
-                    ['normal', 'special', 'custom'].forEach(m => {
-                        const modeHistory = data[`matchHistory_${currentSkid}_${m}`] || [];
-                        matchHistory = matchHistory.concat(modeHistory);
-                        gamesJoined += data[`gamesJoined_${currentSkid}_${m}`] || 0;
-                        gamesStarted += data[`gamesStarted_${currentSkid}_${m}`] || 0;
-                        gamesQuit += data[`gamesQuit_${currentSkid}_${m}`] || 0;
-                        matchesCompleted += data[`matchesCompleted_${currentSkid}_${m}`] || 0;
-                    });
-                } else {
-                    // Get data for specific mode
-                    matchHistory = data[`matchHistory_${currentSkid}_${mode}`] || [];
-                    gamesJoined = data[`gamesJoined_${currentSkid}_${mode}`] || 0;
-                    gamesStarted = data[`gamesStarted_${currentSkid}_${mode}`] || 0;
-                    gamesQuit = data[`gamesQuit_${currentSkid}_${mode}`] || 0;
-                    matchesCompleted = data[`matchesCompleted_${currentSkid}_${mode}`] || 0;
-                }
-
-                // Sort match history by start time
-                matchHistory.sort((a, b) => {
-                    const timeA = a.matchStartTime || a.startTime || 0;
-                    const timeB = b.matchStartTime || b.startTime || 0;
-                    return timeA - timeB;
-                });
-
-                resolve({
-                    matchHistory,
-                    gamesJoined,
-                    gamesStarted,
-                    gamesQuit,
-                    matchesCompleted,
-                    currentSkid,
-                    // Add mode-specific completed games data
-                    [`matchesCompleted_${currentSkid}_normal`]: mode === 'all' ? (data[`matchesCompleted_${currentSkid}_normal`] || 0) : (mode === 'normal' ? matchesCompleted : 0),
-                    [`matchesCompleted_${currentSkid}_special`]: mode === 'all' ? (data[`matchesCompleted_${currentSkid}_special`] || 0) : (mode === 'special' ? matchesCompleted : 0),
-                    [`matchesCompleted_${currentSkid}_custom`]: mode === 'all' ? (data[`matchesCompleted_${currentSkid}_custom`] || 0) : (mode === 'custom' ? matchesCompleted : 0)
-                });
-            });
-        });
+        try {
+            const data = JSON.parse(localStorage.getItem('kartCompanionData') || '{}');
+            resolve(data);
+        } catch (error) {
+            console.error('Error getting stats:', error);
+            resolve({});
+        }
     });
 }
+
+// Function to initialize visualizers
+async function initializeVisualizers(data) {
+    try {
+        if (!data || !data.stats) {
+            console.warn('No stats data available');
+            return;
+        }
+
+        // Initialize your charts here using the data
+        // ... rest of your visualization code ...
+
+    } catch (error) {
+        console.error('Error initializing visualizers:', error);
+    }
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const data = await getStats();
+        await initializeVisualizers(data);
+    } catch (error) {
+        console.error('Error initializing charts:', error);
+    }
+});
 
 // Calculate streaks (without dying and quick kills)
 function calculateStreaks(matchHistory) {
