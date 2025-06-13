@@ -4,9 +4,7 @@
   "version": "1.0.0",
   "description": "Track Smash Karts gameplay: stats, match history, and performance analytics. Includes kill/death, match history, and HUD.",
   "permissions": [
-    "storage",
-    "scripting",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
     "*://*.smashkarts.io/*"
