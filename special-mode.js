@@ -1,16 +1,13 @@
 // This script contains the logic for the Special Mode visualizer page.
 
-// Initialize charts when the page loads
+import { getStats, initializeVisualizers } from './visualizers.js';
+
+// Initialize when document is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const stats = await getStats();
-        if (stats.matchHistory && stats.matchHistory.length > 0) {
-            initializeCharts(stats);
-        } else {
-            document.getElementById('noDataMessage').style.display = 'block';
-        }
+        const data = await getStats();
+        await initializeVisualizers(data);
     } catch (error) {
         console.error('Error initializing charts:', error);
-        document.getElementById('noDataMessage').style.display = 'block';
     }
 }); 
