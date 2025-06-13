@@ -5,9 +5,8 @@ import { getStats, initializeVisualizers } from './visualizers.js';
 // Initialize when document is ready
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const data = await getStats();
-        await initializeVisualizers(data);
+        await initializeVisualizers();
     } catch (error) {
-        console.error('Error initializing charts:', error);
+        console.error('Error initializing special mode:', error);
     }
 }); 
