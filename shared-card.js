@@ -1,19 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
     const cardDataContainer = document.getElementById('shared-player-card');
-    // Get card data from URL
+    // Get card id from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const cardDataParam = urlParams.get('card');
+    const cardId = urlParams.get('id');
 
-    if (!cardDataParam) {
+    if (!cardId) {
         cardDataContainer.innerHTML = '<div style="color:red;text-align:center;padding:30px;">Invalid card link. Please make sure you are using a valid Kart Companion card URL.</div>';
         return;
     }
 
     let cardData;
     try {
-        cardData = JSON.parse(atob(cardDataParam));
+        cardData = JSON.parse(localStorage.getItem(cardId));
+        if (!cardData) throw new Error('No data found');
     } catch (e) {
-        cardDataContainer.innerHTML = '<div style="color:red;text-align:center;padding:30px;">Could not load card data. The link may be corrupted.</div>';
+        cardDataContainer.innerHTML = '<div style="color:red;text-align:center;padding:30px;">Could not load card data. The link may be corrupted or expired.</div>';
         return;
     }
 
