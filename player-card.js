@@ -655,44 +655,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 prf: document.getElementById('stat-prf').textContent
             };
 
-            console.log('[SKMT][PLAYER_CARD] Card data:', cardData);
+            // Generate a unique ID for this share (timestamp-based)
+            const cardId = 'playerCard_' + Date.now();
+            localStorage.setItem(cardId, JSON.stringify(cardData));
+            const fullUrl = `${window.location.origin}/shared-card.html?id=${cardId}`;
 
-            // Create base64 encoded string of the card data
-            const encodedData = btoa(JSON.stringify(cardData));
-            const fullUrl = `https://leafbolt8.github.io/Kart-Companion/shared-card.html?card=${encodedData}`;
-            
-            // Show modal with loading state
-            shareLinkInput.value = 'Generating short link...';
+            // Show modal with the share link
+            shareLinkInput.value = fullUrl;
             shareModal.classList.add('active');
-            
-            try {
-                // Get shortened URL
-                const shortUrl = await shortenUrl(fullUrl);
-                shareLinkInput.value = shortUrl;
-                
-                // Handle copy button click
-                copyLinkBtn.onclick = () => {
-                    navigator.clipboard.writeText(shortUrl).then(() => {
-                        copyLinkBtn.textContent = 'Copied!';
-                        copyLinkBtn.classList.add('copied');
-                        setTimeout(() => {
-                            copyLinkBtn.textContent = 'Copy Link';
-                            copyLinkBtn.classList.remove('copied');
-                        }, 2000);
-                    });
-                };
-            } catch (error) {
-                shareLinkInput.value = 'Failed to generate short link.';
-                copyLinkBtn.disabled = true;
-                copyLinkBtn.textContent = 'Unavailable';
-                copyLinkBtn.classList.remove('copied');
-            }
-            
+            copyLinkBtn.disabled = false;
+            copyLinkBtn.textContent = 'Copy Link';
+            copyLinkBtn.classList.remove('copied');
+            copyLinkBtn.onclick = () => {
+                navigator.clipboard.writeText(fullUrl).then(() => {
+                    copyLinkBtn.textContent = 'Copied!';
+                    copyLinkBtn.classList.add('copied');
+                    setTimeout(() => {
+                        copyLinkBtn.textContent = 'Copy Link';
+                        copyLinkBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            };
             // Handle close button click
             closeShareModal.onclick = () => {
                 shareModal.classList.remove('active');
             };
-            
             // Close modal when clicking outside
             shareModal.onclick = (e) => {
                 if (e.target === shareModal) {
@@ -700,32 +687,5 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
         });
-    }
-
-    // Function to shorten URL using TinyURL API
-    async function shortenUrl(url) {
-        try {
-            const response = await fetch('https://api.tinyurl.com/create', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer 8f1b2e7e2c8e4e1e8b2e7e2c8e4e1e8b', // Replace with your TinyURL API token
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    url: url,
-                    domain: 'tinyurl.com'
-                })
-            });
-            const data = await response.json();
-            console.log('[SKMT][PLAYER_CARD] TinyURL API response:', data);
-            if (data.data && data.data.tiny_url) {
-                return data.data.tiny_url;
-            } else {
-                throw new Error('TinyURL API error: ' + JSON.stringify(data));
-            }
-        } catch (error) {
-            console.error('[SKMT][PLAYER_CARD] TinyURL API error:', error);
-            throw error; // propagate error to show error in modal
-        }
     }
 });
