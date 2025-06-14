@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Generate a unique ID for this share (timestamp-based)
             const cardId = 'playerCard_' + Date.now();
             localStorage.setItem(cardId, JSON.stringify(cardData));
-            const fullUrl = `${window.location.origin}/shared-card.html?id=${cardId}`;
+            const fullUrl = `https://leafbolt8.github.io/Kart-Companion/shared-card.html?id=${cardId}`;
 
             // Show modal with the share link
             shareLinkInput.value = fullUrl;
