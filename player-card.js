@@ -613,4 +613,110 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.style.display = "none";
         }
     }
+
+    // Download Card as Image functionality
+    const downloadBtn = document.getElementById('download-card-btn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            const card = document.querySelector('.smash-karts-card');
+            if (!card) return;
+            html2canvas(card, {backgroundColor: null, useCORS: true}).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = 'player-card.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+    }
+
+    // Share Card functionality
+    const shareBtn = document.getElementById('share-card-btn');
+    const shareModal = document.getElementById('shareModal');
+    const closeShareModal = document.getElementById('closeShareModal');
+    const shareLinkInput = document.getElementById('shareLink');
+    const copyLinkBtn = document.getElementById('copyLink');
+
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async function() {
+            // Get current card data
+            const cardData = {
+                ovr: document.getElementById('player-ovr').textContent,
+                flag: document.querySelector('.player-flag-container img').alt.split(' ')[0],
+                teamLogo: document.querySelector('.team-logo-container img')?.src || '',
+                avatar: document.querySelector('.player-avatar-container img')?.src || '',
+                playerName: document.getElementById('player-name-text').textContent,
+                teamName: document.getElementById('team-name-text').textContent,
+                atk: document.getElementById('stat-ofs').textContent,
+                def: document.getElementById('stat-def').textContent,
+                cns: document.getElementById('stat-cns').textContent,
+                exp: document.getElementById('stat-exp').textContent,
+                prf: document.getElementById('stat-prf').textContent
+            };
+
+            // Create base64 encoded string of the card data
+            const encodedData = btoa(JSON.stringify(cardData));
+            const fullUrl = `https://leafbolt8.github.io/Kart-Companion/shared-card.html?card=${encodedData}`;
+
+            // Show modal with loading state
+            shareLinkInput.value = 'Generating short link...';
+            shareModal.classList.add('active');
+
+            try {
+                // Get shortened URL
+                const shortUrl = await shortenUrl(fullUrl);
+                shareLinkInput.value = shortUrl;
+
+                // Handle copy button click
+                copyLinkBtn.onclick = () => {
+                    navigator.clipboard.writeText(shortUrl).then(() => {
+                        copyLinkBtn.textContent = 'Copied!';
+                        copyLinkBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyLinkBtn.textContent = 'Copy Link';
+                            copyLinkBtn.classList.remove('copied');
+                        }, 2000);
+                    });
+                };
+            } catch (error) {
+                console.error('Error generating short link:', error);
+                // Fallback to original URL if shortening fails
+                shareLinkInput.value = fullUrl;
+
+                // Handle copy button click for original URL
+                copyLinkBtn.onclick = () => {
+                    navigator.clipboard.writeText(fullUrl).then(() => {
+                        copyLinkBtn.textContent = 'Copied!';
+                        copyLinkBtn.classList.add('copied');
+                        setTimeout(() => {
+                            copyLinkBtn.textContent = 'Copy Link';
+                            copyLinkBtn.classList.remove('copied');
+                        }, 2000);
+                    });
+                };
+            }
+        });
+    }
+
+    // Close modal when clicking the close button
+    if (closeShareModal) {
+        closeShareModal.addEventListener('click', () => {
+            shareModal.classList.remove('active');
+        });
+    }
+
+    // Close modal when clicking outside
+    if (shareModal) {
+        shareModal.addEventListener('click', (e) => {
+            if (e.target === shareModal) {
+                shareModal.classList.remove('active');
+            }
+        });
+    }
+
+    // Function to shorten URL (you can implement your preferred URL shortening service)
+    async function shortenUrl(url) {
+        // For now, just return the original URL
+        // You can implement a URL shortening service here
+        return url;
+    }
 });
