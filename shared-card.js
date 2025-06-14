@@ -1,90 +1,61 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const sharedCard = document.getElementById('shared-card');
-    
+    const cardDataContainer = document.getElementById('shared-player-card');
     // Get card data from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const cardData = urlParams.get('card');
-    
-    if (!cardData) {
-        sharedCard.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: #fff;">
-                <h2>Invalid Card Link</h2>
-                <p>Please make sure you're using a valid Kart Companion player card URL.</p>
-            </div>
-        `;
+    const cardDataParam = urlParams.get('card');
+
+    if (!cardDataParam) {
+        cardDataContainer.innerHTML = '<div style="color:red;text-align:center;padding:30px;">Invalid card link. Please make sure you are using a valid Kart Companion card URL.</div>';
         return;
     }
 
+    let cardData;
     try {
-        // Decode and parse the card data
-        const decodedData = JSON.parse(atob(cardData));
-        
-        // Create the card HTML
-        sharedCard.innerHTML = `
-            <div class="card-background-layer"></div>
-            
-            <div class="player-ovr-container">
-                ${decodedData.ovr}
-            </div>
-
-            <div class="player-flag-container">
-                <img src="https://placehold.co/60x40/0033a0/ffffff?text=${decodedData.flag}" alt="${decodedData.flag} Flag" title="${decodedData.flag}">
-            </div>
-
-            <div class="team-logo-container">
-                ${decodedData.teamLogo ? `<img src="${decodedData.teamLogo}" alt="Team Logo">` : ''}
-            </div>
-
-            <div class="player-avatar-container">
-                ${decodedData.avatar ? `<img src="${decodedData.avatar}" alt="Player Avatar">` : ''}
-            </div>
-
-            <div class="player-name-container">
-                ${decodedData.playerName}
-            </div>
-
-            <div class="team-name-container">
-                ${decodedData.teamName}
-            </div>
-
-            <div class="stats-block">
-                <div class="stats-column">
-                    <div class="stat-item">
-                        <span class="stat-label">ATK</span>
-                        <span class="stat-value">${decodedData.atk}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">DEF</span>
-                        <span class="stat-value">${decodedData.def}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">CNS</span>
-                        <span class="stat-value">${decodedData.cns}</span>
-                    </div>
-                </div>
-                <div class="stats-column">
-                    <div class="stat-item">
-                        <span class="stat-label">EXP</span>
-                        <span class="stat-value">${decodedData.exp}</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">PRF</span>
-                        <span class="stat-value">${decodedData.prf}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="game-logo-container">
-                <img src="sklogo.png" alt="Smash Karts Logo" title="Smash Karts">
-            </div>
-        `;
-    } catch (error) {
-        console.error('Error loading shared card:', error);
-        sharedCard.innerHTML = `
-            <div style="text-align: center; padding: 20px; color: #fff;">
-                <h2>Error Loading Card</h2>
-                <p>There was an error loading the player card. Please try again later.</p>
-            </div>
-        `;
+        cardData = JSON.parse(atob(cardDataParam));
+    } catch (e) {
+        cardDataContainer.innerHTML = '<div style="color:red;text-align:center;padding:30px;">Could not load card data. The link may be corrupted.</div>';
+        return;
     }
+
+    // Set OVR
+    document.getElementById('player-ovr').textContent = cardData.ovr || '';
+    // Set flag
+    const flagImg = document.querySelector('.player-flag-container img');
+    if (flagImg && cardData.flag) {
+        // You may want to map flag codes to URLs if you use real flags
+        flagImg.src = cardData.flag.startsWith('http') ? cardData.flag : `https://placehold.co/60x40/0033a0/ffffff?text=${cardData.flag}`;
+        flagImg.alt = cardData.flag + ' Flag';
+        flagImg.title = cardData.flag;
+    }
+    // Set team logo
+    const teamLogoContainer = document.querySelector('.team-logo-container');
+    teamLogoContainer.innerHTML = '';
+    if (cardData.teamLogo) {
+        const teamLogoImg = document.createElement('img');
+        teamLogoImg.src = cardData.teamLogo;
+        teamLogoImg.alt = 'Team Logo';
+        teamLogoContainer.appendChild(teamLogoImg);
+    }
+    // Set avatar
+    const avatarContainer = document.querySelector('.player-avatar-container');
+    avatarContainer.innerHTML = '';
+    if (cardData.avatar) {
+        const avatarImg = document.createElement('img');
+        avatarImg.src = cardData.avatar;
+        avatarImg.alt = 'Player Avatar';
+        avatarImg.style.width = '100%';
+        avatarImg.style.height = '100%';
+        avatarImg.style.borderRadius = '50%';
+        avatarContainer.appendChild(avatarImg);
+    }
+    // Set player name
+    document.getElementById('player-name-text').textContent = cardData.playerName || '';
+    // Set team name
+    document.getElementById('team-name-text').textContent = cardData.teamName || '';
+    // Set stats
+    document.getElementById('stat-ofs').textContent = cardData.atk || '';
+    document.getElementById('stat-def').textContent = cardData.def || '';
+    document.getElementById('stat-cns').textContent = cardData.cns || '';
+    document.getElementById('stat-exp').textContent = cardData.exp || '';
+    document.getElementById('stat-prf').textContent = cardData.prf || '';
 }); 

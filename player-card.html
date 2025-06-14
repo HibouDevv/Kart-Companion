@@ -548,16 +548,16 @@
             right: 0;
             bottom: 0;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            z-index: 2000;
             justify-content: center;
             align-items: center;
         }
 
         .modal-overlay.active {
-            display: flex;
+            display: flex !important;
         }
 
-        .modal {
+        .share-modal {
             background: white;
             padding: 20px;
             border-radius: var(--border-radius);
@@ -565,6 +565,7 @@
             width: 90%;
             max-width: 500px;
             position: relative;
+            z-index: 2001;
         }
 
         .modal-header {
@@ -593,7 +594,7 @@
             color: var(--primary-blue-dark);
         }
 
-        .modal-content {
+        .share-modal-content {
             margin-bottom: 20px;
         }
 
@@ -797,12 +798,12 @@
 
     <!-- Share Modal -->
     <div class="modal-overlay" id="shareModal">
-        <div class="modal">
+        <div class="share-modal">
             <div class="modal-header">
                 <h2 class="modal-title">Share Player Card</h2>
                 <button class="close-modal" id="closeShareModal">&times;</button>
             </div>
-            <div class="modal-content">
+            <div class="share-modal-content">
                 <p>Share this link to let others view your player card:</p>
                 <div class="link-container">
                     <input type="text" class="link-input" id="shareLink" readonly>
