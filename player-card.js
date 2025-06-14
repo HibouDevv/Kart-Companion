@@ -682,21 +682,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 };
             } catch (error) {
-                console.error('[SKMT][PLAYER_CARD] Error generating short link:', error);
-                // Fallback to original URL if shortening fails
-                shareLinkInput.value = fullUrl;
-                
-                // Handle copy button click for original URL
-                copyLinkBtn.onclick = () => {
-                    navigator.clipboard.writeText(fullUrl).then(() => {
-                        copyLinkBtn.textContent = 'Copied!';
-                        copyLinkBtn.classList.add('copied');
-                        setTimeout(() => {
-                            copyLinkBtn.textContent = 'Copy Link';
-                            copyLinkBtn.classList.remove('copied');
-                        }, 2000);
-                    });
-                };
+                shareLinkInput.value = 'Failed to generate short link.';
+                copyLinkBtn.disabled = true;
+                copyLinkBtn.textContent = 'Unavailable';
+                copyLinkBtn.classList.remove('copied');
             }
             
             // Handle close button click
@@ -728,14 +717,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
             });
             const data = await response.json();
+            console.log('[SKMT][PLAYER_CARD] TinyURL API response:', data);
             if (data.data && data.data.tiny_url) {
                 return data.data.tiny_url;
             } else {
-                throw new Error('TinyURL API error');
+                throw new Error('TinyURL API error: ' + JSON.stringify(data));
             }
         } catch (error) {
             console.error('[SKMT][PLAYER_CARD] TinyURL API error:', error);
-            return url; // fallback to original URL
+            throw error; // propagate error to show error in modal
         }
     }
 });
