@@ -36,10 +36,10 @@
     chrome.storage.local.get(["skidBlurred"],(a=>{if(a.skidBlurred){e.classList.add("skid-blurred");const a=t.querySelector("i");a.classList.remove("fa-eye"),a.classList.add("fa-eye-slash")}})),
     t.addEventListener("click",(()=>{e.classList.toggle("skid-blurred");const a=t.querySelector("i");e.classList.contains("skid-blurred")?(a.classList.remove("fa-eye"),a.classList.add("fa-eye-slash"),chrome.storage.local.set({skidBlurred:!0})):(a.classList.remove("fa-eye-slash"),a.classList.add("fa-eye"),chrome.storage.local.set({skidBlurred:!1}))})),
     a.addEventListener("click",(()=>{const t=e.textContent;t&&"-"!==t&&navigator.clipboard.writeText(t).then((()=>{const e=a.getAttribute("title");a.setAttribute("title","Copied!");const t=a.querySelector("i");t.classList.remove("fa-copy"),t.classList.add("fa-check"),setTimeout((()=>{a.setAttribute("title",e),t.classList.remove("fa-check"),t.classList.add("fa-copy")}),2e3)}))})),
-    document.getElementById("normalModeBtn").addEventListener("click",(()=>{h="normal",S(),k(),document.getElementById("resetStatsBtn").style.display = "none"})),
-    document.getElementById("specialModeBtn").addEventListener("click",(()=>{h="special",S(),k(),document.getElementById("resetStatsBtn").style.display = "none"})),
-    document.getElementById("customModeBtn").addEventListener("click",(()=>{h="custom",S(),k(),document.getElementById("resetStatsBtn").style.display = "none"})),
-    document.getElementById("allStatsBtn").addEventListener("click",(()=>{h="all",S(),k(),document.getElementById("resetStatsBtn").style.display = "block"})),
+    document.getElementById("normalModeBtn").addEventListener("click",(()=>{h="normal",S(),k(),document.getElementById("resetStatsBtn").style.display = "none", chrome.storage.local.set({currentMode: h})})),
+    document.getElementById("specialModeBtn").addEventListener("click",(()=>{h="special",S(),k(),document.getElementById("resetStatsBtn").style.display = "none", chrome.storage.local.set({currentMode: h})})),
+    document.getElementById("customModeBtn").addEventListener("click",(()=>{h="custom",S(),k(),document.getElementById("resetStatsBtn").style.display = "none", chrome.storage.local.set({currentMode: h})})),
+    document.getElementById("allStatsBtn").addEventListener("click",(()=>{h="all",S(),k(),document.getElementById("resetStatsBtn").style.display = "block", chrome.storage.local.set({currentMode: h})})),
     p&&p.addEventListener("click",(()=>{const e=p.dataset.targetUrl;e&&chrome.tabs.create({url:e})})),
     document.querySelectorAll(".stats-details").forEach((e=>{e.addEventListener("toggle",(()=>{document.querySelectorAll(".stats-details").forEach((e=>{const t=e.querySelector(".stats-section-label").id;g[t]=e.hasAttribute("open")})),chrome.storage.local.set({openSections:g})}))})),
     document.getElementById("exportStatsBtn").addEventListener("click",I),
@@ -68,7 +68,73 @@
     })),
     S(),
     k(),
-    chrome.storage.local.get(["openSections"],(e=>{e.openSections&&(g=e.openSections,Object.entries(g).forEach((([e,t])=>{const a=document.querySelector(`.stats-details:has(#${e})`);a&&(t?a.setAttribute("open",""):a.removeAttribute("open"))})))}));
+    // Load saved UI state
+    chrome.storage.local.get(["openSections", "currentMode", "currentSection"], (e => {
+        // Restore open/closed sections
+        if (e.openSections) {
+            g = e.openSections;
+            Object.entries(g).forEach((([e,t]) => {
+                const a = document.querySelector(`.stats-details:has(#${e})`);
+                a && (t ? a.setAttribute("open","") : a.removeAttribute("open"))
+            }));
+        }
+        
+        // Restore mode
+        if (e.currentMode) {
+            h = e.currentMode;
+            S();
+        }
+        
+        // Restore main section (Stats/HUD)
+        if (e.currentSection) {
+            const statsSection = document.getElementById("statsSection");
+            const hudSection = document.getElementById("hudSection");
+            const statsBtn = document.getElementById("statsBtn");
+            const hudBtn = document.getElementById("hudBtn");
+            
+            if (e.currentSection === "hud") {
+                statsSection.style.display = "none";
+                hudSection.style.display = "block";
+                statsBtn.classList.remove("selected");
+                hudBtn.classList.add("selected");
+            } else {
+                statsSection.style.display = "block";
+                hudSection.style.display = "none";
+                statsBtn.classList.add("selected");
+                hudBtn.classList.remove("selected");
+            }
+        }
+    }));
+    
+    // Add click handlers for main section buttons
+    document.getElementById("statsBtn").addEventListener("click", () => {
+        const statsSection = document.getElementById("statsSection");
+        const hudSection = document.getElementById("hudSection");
+        const statsBtn = document.getElementById("statsBtn");
+        const hudBtn = document.getElementById("hudBtn");
+        
+        statsSection.style.display = "block";
+        hudSection.style.display = "none";
+        statsBtn.classList.add("selected");
+        hudBtn.classList.remove("selected");
+        
+        chrome.storage.local.set({currentSection: "stats"});
+    });
+    
+    document.getElementById("hudBtn").addEventListener("click", () => {
+        const statsSection = document.getElementById("statsSection");
+        const hudSection = document.getElementById("hudSection");
+        const statsBtn = document.getElementById("statsBtn");
+        const hudBtn = document.getElementById("hudBtn");
+        
+        statsSection.style.display = "none";
+        hudSection.style.display = "block";
+        statsBtn.classList.remove("selected");
+        hudBtn.classList.add("selected");
+        
+        chrome.storage.local.set({currentSection: "hud"});
+    });
+    
     const s=document.getElementById("moreDetailsBtn");
     s&&s.addEventListener("click",(()=>{chrome.tabs.create({url:"match-history.html"})})),
     chrome.storage.local.get(["pendingMatches"],(e=>{const t=e.pendingMatches||[];t.length>0&&(console.log(`[SKMT] Processing ${t.length} pending matches`),t.forEach((e=>{chrome.runtime.sendMessage({type:"matchComplete",data:e}).catch((()=>{console.log("[SKMT] Popup: Failed to process pending match")}))})),chrome.storage.local.set({pendingMatches:[]}))}))})),
