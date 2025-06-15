@@ -85,9 +85,115 @@
             padding: 10px; /* Adjust padding for consistency */
             font-size: 1em; /* Adjust font size */
         }
+
+        /* Welcome Screen Styles */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .welcome-content {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
+
+        .welcome-content h2 {
+            color: #3498db;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif;
+        }
+
+        .welcome-content p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .skid-info {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin: 10px 0 20px;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .skid-info span:first-child {
+            font-weight: 600;
+        }
+
+        .skid-note {
+            font-size: 13px;
+            color: #666;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #2196F3;
+        }
+
+        .skid-note a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .skid-note a:hover {
+            text-decoration: underline;
+        }
+
+        .welcome-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .welcome-buttons .blue-button {
+            margin-bottom: 0;
+        }
+
+        .import-note {
+            font-size: 13px;
+            color: #666;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #2196F3;
+        }
     </style>
 </head>
 <body>
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="welcome-screen" style="display: none;">
+        <div class="welcome-content">
+            <h2>Welcome to Kart Companion!</h2>
+            <div class="skid-info">
+                <span>SKID: </span>
+                <span id="welcomeSkidValue">Default</span>
+            </div>
+            <p>If you have an exported stat file you want to import for your account before starting, please import them already (Your stats will be overwritten once you start and then decide to import)</p>
+            <p class="skid-note">Note: To update your SKID, you need to <a href="https://smashkarts.io" target="_blank">login to your account in smashkarts.io</a>. If it still shows DEFAULT, refresh smashkarts.io.</p>
+            <p class="import-note">Note: You can still import/export your stats later, just scroll down in this popup to see actions.</p>
+            <div class="welcome-buttons">
+                <button id="importStatsWelcomeBtn" class="blue-button">Import Stats</button>
+                <button id="noStatsBtn" class="blue-button">I don't have a stat file</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <div style="text-align: center; margin-bottom: 1px;">
@@ -95,7 +201,7 @@
             </div>
             <!-- Version Text -->
             <div style="text-align: center; font-size: 14px; font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; margin-top: 5px; margin-bottom: 5px; color: #333;">
-                v1.0.0
+                v1.0.1
             </div>
             <div class="skid-display">
                 SKID: <span id="skidValue">-</span>
