@@ -194,6 +194,16 @@
         </div>
     </div>
 
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="notification-modal" style="display: none;">
+        <div class="notification-content">
+            <button class="notification-close">&times;</button>
+            <p class="notification-message">Don't forget to save and export your stats for assurance/backup 😉!</p>
+            <button id="notificationExportBtn" class="action-btn">Export Stats</button>
+            <div class="notification-timer"></div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
             <div style="text-align: center; margin-bottom: 1px;">
@@ -349,6 +359,9 @@
                     <button id="exportStatsBtn" class="action-btn">Export Stats</button>
                     <input type="file" id="importStatsInput" accept=".skmt" style="display: none;">
                     <button id="importStatsBtn" class="action-btn">Import Stats</button>
+                </div>
+                <div class="stats-actions" style="margin-top: 10px;">
+                    <button id="notificationSettingsBtn" class="action-btn">Export Notification Settings</button>
                 </div>
                 <button id="visualizeStatsBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">Go To Web Page</button>
                 <button id="faqBtn" class="action-btn" style="width: 100%; margin-bottom: 10px; background-color: #4CAF50;">FAQ</button>
