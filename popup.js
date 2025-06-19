@@ -7,7 +7,7 @@
     };
     
     // Reset settings for each HUD type
-    const hudTypes = ["deaths", "killstreak", "kdr", "matchcode"];
+    const hudTypes = ["deaths", "killstreak", "kdr", "matchcode", "kills"];
     const settingsToReset = {};
     
     hudTypes.forEach(type => {
@@ -140,10 +140,19 @@
             }))
         }
     })),
-    S(),
-    k(),
+    // --- MINIFIED/OBFUSCATED CODE FIX ---
+    // Remove these lines:
+    // S(),
+    // k(),
+    // ...
     // Load saved UI state
     chrome.storage.local.get(["openSections", "currentMode", "currentSection"], (e => {
+        // Restore mode
+        if (e.currentMode) {
+            h = e.currentMode;
+        }
+        S();
+        k();
         // Restore open/closed sections
         if (e.openSections) {
             g = e.openSections;
@@ -152,20 +161,12 @@
                 a && (t ? a.setAttribute("open","") : a.removeAttribute("open"))
             }));
         }
-        
-        // Restore mode
-        if (e.currentMode) {
-            h = e.currentMode;
-            S();
-        }
-        
         // Restore main section (Stats/HUD)
         if (e.currentSection) {
             const statsSection = document.getElementById("statsSection");
             const hudSection = document.getElementById("hudSection");
             const statsBtn = document.getElementById("statsBtn");
             const hudBtn = document.getElementById("hudBtn");
-            
             if (e.currentSection === "hud") {
                 statsSection.style.display = "none";
                 hudSection.style.display = "block";
@@ -273,3 +274,533 @@ async function shortenUrl(longUrl) {
         return longUrl; // Return original URL if shortening fails
     }
 }
+
+// Helper to get all matches for a given mode
+function getMatchesForMode(storageData, skid, mode) {
+    const key = mode === 'all' ? null : `matchHistory_${skid}_${mode}`;
+    if (mode === 'all') {
+        let allMatches = [];
+        ['normal', 'special', 'custom'].forEach(m => {
+            const arr = storageData[`matchHistory_${skid}_${m}`] || [];
+            allMatches = allMatches.concat(arr);
+        });
+        return allMatches;
+    } else {
+        return storageData[key] || [];
+    }
+}
+
+// Helper to get unique maps for a given mode
+function getUniqueMapsForMode(storageData, skid, mode) {
+    const matches = getMatchesForMode(storageData, skid, mode);
+    const mapSet = new Set();
+    matches.forEach(match => {
+        if (match.map) mapSet.add(match.map);
+    });
+    return Array.from(mapSet).sort();
+}
+
+// Update the map filter dropdown based on the current mode
+function updateMapFilterDropdown(storageData, skid, mode, currentValue) {
+    const mapFilter = document.getElementById('mapFilter');
+    const maps = getUniqueMapsForMode(storageData, skid, mode);
+    const prevValue = currentValue || mapFilter.value || 'all';
+    mapFilter.innerHTML = '';
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All Maps';
+    mapFilter.appendChild(allOption);
+    maps.forEach(map => {
+        const opt = document.createElement('option');
+        opt.value = map;
+        opt.textContent = map;
+        mapFilter.appendChild(opt);
+    });
+    // Restore previous value if possible
+    if ([...mapFilter.options].some(opt => opt.value === prevValue)) {
+        mapFilter.value = prevValue;
+    } else {
+        mapFilter.value = 'all';
+    }
+}
+
+// Stats Rendering Logic (Unminified and Clear)
+function renderStatsAndMatches(matches, storageData, skid, mode) {
+    // Aggregate stats
+    let kills = 0, deaths = 0, timePlayed = 0, matchesCompleted = 0;
+    let gamesJoined = 0, gamesStarted = 0, gamesQuit = 0;
+    let highestKills = 0, highestDeaths = 0, highestKDR = 0, highestKillStreak = 0, longestTime = 0;
+    let streaks = { smashStreak: 0, smashtacularStreak: 0, smashosaurusStreak: 0, smashlvaniaStreak: 0, monsterSmashStreak: 0, potatoStreak: 0, smashSmashStreak: 0, potoatachioStreak: 0 };
+    let quickStreaks = { doubleSmash: 0, multiSmash: 0, multiMegaSmash: 0, multiMegaUltraSmash: 0, gooseySmash: 0, crazyMultiMegaUltraSmash: 0 };
+    let mapCounts = new Map();
+
+    // Favorite matches
+    const favoriteMatches = storageData[`favoriteMatches_${skid}`] || {};
+
+    // Count maps and aggregate stats
+    matches.forEach(match => {
+        kills += match.kills || 0;
+        deaths += match.deaths || 0;
+        timePlayed += match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
+        if (!match.quit) matchesCompleted++;
+        if (match.joined) gamesJoined++;
+        if (match.started) gamesStarted++;
+        if (match.quit) gamesQuit++;
+        if (match.kills > highestKills) highestKills = match.kills;
+        if (match.deaths > highestDeaths) highestDeaths = match.deaths;
+        const kdr = match.deaths > 0 ? match.kills / match.deaths : (match.kills > 0 ? match.kills : 0);
+        if (kdr > highestKDR) highestKDR = kdr;
+        const matchTime = match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
+        if (matchTime > longestTime) longestTime = matchTime;
+        // Map counts
+        if (match.map) {
+            mapCounts.set(match.map, (mapCounts.get(match.map) || 0) + 1);
+        }
+        // Streaks (Without Dying)
+        if (match.killTimestamps && match.killTimestamps.length > 0) {
+            let streak = 0, maxStreak = 0, streakFlags = {};
+            const events = [];
+            match.killTimestamps.forEach(t => events.push({ type: 'kill', time: t }));
+            (match.deathTimestamps || []).forEach(t => events.push({ type: 'death', time: t }));
+            events.sort((a, b) => a.time - b.time);
+            events.forEach(e => {
+                if (e.type === 'death') {
+                    streak = 0;
+                    streakFlags = {};
+                } else {
+                    streak++;
+                    if (streak > maxStreak) maxStreak = streak;
+                    if (streak >= 3 && !streakFlags[3]) { streaks.smashStreak++; streakFlags[3] = true; }
+                    if (streak >= 5 && !streakFlags[5]) { streaks.smashtacularStreak++; streakFlags[5] = true; }
+                    if (streak >= 7 && !streakFlags[7]) { streaks.smashosaurusStreak++; streakFlags[7] = true; }
+                    if (streak >= 10 && !streakFlags[10]) { streaks.smashlvaniaStreak++; streakFlags[10] = true; }
+                    if (streak >= 15 && !streakFlags[15]) { streaks.monsterSmashStreak++; streakFlags[15] = true; }
+                    if (streak >= 20 && !streakFlags[20]) { streaks.potatoStreak++; streakFlags[20] = true; }
+                    if (streak >= 25 && !streakFlags[25]) { streaks.smashSmashStreak++; streakFlags[25] = true; }
+                    if (streak >= 30 && !streakFlags[30]) { streaks.potoatachioStreak++; streakFlags[30] = true; }
+                }
+            });
+            if (maxStreak > highestKillStreak) highestKillStreak = maxStreak;
+        }
+        // Quick Kills Streaks
+        if (match.killTimestamps && match.killTimestamps.length > 1) {
+            let quick = 1, last = match.killTimestamps[0];
+            for (let i = 1; i < match.killTimestamps.length; i++) {
+                if (match.killTimestamps[i] - last <= 4000) {
+                    quick++;
+                    if (quick === 2) quickStreaks.doubleSmash++;
+                    if (quick === 3) quickStreaks.multiSmash++;
+                    if (quick === 4) quickStreaks.multiMegaSmash++;
+                    if (quick === 5) quickStreaks.multiMegaUltraSmash++;
+                    if (quick === 6) quickStreaks.gooseySmash++;
+                    if (quick === 7) quickStreaks.crazyMultiMegaUltraSmash++;
+                } else {
+                    quick = 1;
+                }
+                last = match.killTimestamps[i];
+            }
+        }
+    });
+    // Update UI
+    document.getElementById('kills').textContent = kills;
+    document.getElementById('deaths').textContent = deaths;
+    document.getElementById('kdr').textContent = deaths > 0 ? (kills / deaths).toFixed(2) : (kills > 0 ? kills.toFixed(2) : '0.00');
+    document.getElementById('totalTimeSpent').textContent = formatDuration(timePlayed);
+    document.getElementById('matchesCompleted').textContent = matchesCompleted;
+    document.getElementById('gamesJoined').textContent = gamesJoined;
+    document.getElementById('gamesStarted').textContent = gamesStarted;
+    document.getElementById('gamesQuit').textContent = gamesQuit;
+    document.getElementById('totalMatches').textContent = matchesCompleted + gamesQuit;
+    document.getElementById('matchesCompletedRate').textContent = (matchesCompleted + gamesQuit > 0 ? (matchesCompleted / (matchesCompleted + gamesQuit) * 100).toFixed(2) : '0.00') + '%';
+    document.getElementById('matchesQuitRate').textContent = (matchesCompleted + gamesQuit > 0 ? (gamesQuit / (matchesCompleted + gamesQuit) * 100).toFixed(2) : '0.00') + '%';
+    document.getElementById('avgKills').textContent = completedMatches.length > 0 ? (kills / completedMatches.length).toFixed(2) : '0.00';
+    document.getElementById('avgDeaths').textContent = completedMatches.length > 0 ? (deaths / completedMatches.length).toFixed(2) : '0.00';
+    document.getElementById('avgTimeSpent').textContent = completedMatches.length > 0 ? formatDuration(timePlayed / completedMatches.length) : '0s';
+    document.getElementById('highestKillsRecord').textContent = highestKills;
+    document.getElementById('highestDeathsRecord').textContent = highestDeaths;
+    document.getElementById('highestKillStreakRecord').textContent = highestKillStreak;
+    document.getElementById('highestKDRRecord').textContent = highestKDR.toFixed(2);
+    document.getElementById('longestTimePlayedRecord').textContent = formatDuration(longestTime);
+    document.getElementById('smashStreak').textContent = streaks.smashStreak;
+    document.getElementById('smashtacularStreak').textContent = streaks.smashtacularStreak;
+    document.getElementById('smashosaurusStreak').textContent = streaks.smashosaurusStreak;
+    document.getElementById('smashlvaniaStreak').textContent = streaks.smashlvaniaStreak;
+    document.getElementById('monsterSmashStreak').textContent = streaks.monsterSmashStreak;
+    document.getElementById('potatoStreak').textContent = streaks.potatoStreak;
+    document.getElementById('smashSmashStreak').textContent = streaks.smashSmashStreak;
+    document.getElementById('potoatachioStreak').textContent = streaks.potoatachioStreak;
+    document.getElementById('doubleSmash').textContent = quickStreaks.doubleSmash;
+    document.getElementById('multiSmash').textContent = quickStreaks.multiSmash;
+    document.getElementById('multiMegaSmash').textContent = quickStreaks.multiMegaSmash;
+    document.getElementById('multiMegaUltraSmash').textContent = quickStreaks.multiMegaUltraSmash;
+    document.getElementById('gooseySmash').textContent = quickStreaks.gooseySmash;
+    document.getElementById('crazyMultiMegaUltraSmash').textContent = quickStreaks.crazyMultiMegaUltraSmash;
+    const mapsList = document.getElementById('mapsList');
+    mapsList.innerHTML = '';
+    const sortedMaps = Array.from(mapCounts.entries()).sort((a, b) => b[1] - a[1]);
+    if (sortedMaps.length === 0) {
+        const noMaps = document.createElement('div');
+        noMaps.className = 'no-maps';
+        noMaps.textContent = 'No maps played yet in this mode';
+        mapsList.appendChild(noMaps);
+    } else {
+        sortedMaps.forEach(([map, count]) => {
+            const div = document.createElement('div');
+            div.className = 'stat-card';
+            div.innerHTML = `<span class="stat-label">${map}</span><span class="stat-value">${count}</span>`;
+            mapsList.appendChild(div);
+        });
+    }
+    const matchesList = document.getElementById('matches-list');
+    matchesList.innerHTML = '';
+    const sortedMatches = matches.slice().sort((a, b) => (b.matchStartTime || 0) - (a.matchStartTime || 0));
+    sortedMatches.forEach((match, idx) => {
+        const card = document.createElement('div');
+        card.className = 'match-card';
+        const content = document.createElement('div');
+        content.className = 'match-card-content';
+        // Meta
+        const meta = document.createElement('div');
+        meta.className = 'match-meta';
+        meta.textContent = `#${sortedMatches.length - idx} | ${formatDate(match.matchStartTime)} - ${formatDate(match.matchEndTime)}`;
+        content.appendChild(meta);
+        // Map
+        if (match.map) {
+            const mapDiv = document.createElement('div');
+            mapDiv.className = 'match-map';
+            mapDiv.textContent = match.map;
+            content.appendChild(mapDiv);
+        }
+        // Stats
+        const statsDiv = document.createElement('div');
+        statsDiv.className = 'match-stats';
+        statsDiv.innerHTML = `<span>Kills:</span><b>${match.kills}</b><span>Deaths:</span><b>${match.deaths}</b><span>KDR:</span><b>${match.deaths > 0 ? (match.kills / match.deaths).toFixed(2) : (match.kills > 0 ? match.kills.toFixed(2) : '0.00')}</b>`;
+        const matchTime = match.duration || (match.matchEndTime && match.matchStartTime ? match.matchEndTime - match.matchStartTime : 0);
+        statsDiv.innerHTML += `<span>Duration:</span><b>${formatDuration(matchTime)}</b>`;
+        content.appendChild(statsDiv);
+        // Flags
+        const flagsDiv = document.createElement('div');
+        flagsDiv.className = 'match-flags';
+        let flags = [];
+        if (match.joined) flags.push('Joined');
+        if (match.started) flags.push('Started');
+        if (match.quit) flags.push('Quit'); else flags.push('Completed');
+        if (match.isSpecialMode) flags.push('Special Mode');
+        if (match.isCustomMode) flags.push('Custom Match');
+        if (match.mode) flags.push(`${match.mode.charAt(0).toUpperCase() + match.mode.slice(1)} Mode`);
+        if (flags.length > 0) flagsDiv.textContent = flags.join(' | ');
+        content.appendChild(flagsDiv);
+        // Favorite/star button
+        const starBtn = document.createElement('button');
+        starBtn.className = 'star-btn';
+        starBtn.title = 'Favorite this match';
+        starBtn.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 12.59,7.36 18.51,8.09 14,12.26 15.18,18.09 10,15.27 4.82,18.09 6,12.26 1.49,8.09 7.41,7.36" stroke="#FFD700" stroke-width="1.5" fill="${favoriteMatches[match.matchStartTime] ? '#FFD700' : 'white'}"/></svg>`;
+        starBtn.style.background = 'none';
+        starBtn.style.border = 'none';
+        starBtn.style.cursor = 'pointer';
+        starBtn.style.marginRight = '4px';
+        starBtn.onclick = async () => {
+            const isFav = !favoriteMatches[match.matchStartTime];
+            favoriteMatches[match.matchStartTime] = isFav;
+            starBtn.querySelector('polygon').setAttribute('fill', isFav ? '#FFD700' : 'white');
+            await new Promise(res => chrome.storage.local.set({ [`favoriteMatches_${skid}`]: favoriteMatches }, res));
+        };
+        content.appendChild(starBtn);
+        card.appendChild(content);
+        matchesList.appendChild(card);
+    });
+}
+
+// Utility functions
+function formatDuration(ms) {
+    if (!ms || ms <= 0) return '0s';
+    const t = Math.floor(ms / 1000);
+    const h = Math.floor(t / 3600);
+    const m = Math.floor((t % 3600) / 60);
+    const s = t % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+}
+function formatDate(ts) {
+    if (!ts) return '-';
+    const d = new Date(ts);
+    return d.toLocaleString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', year: '2-digit', month: '2-digit', day: '2-digit' });
+}
+
+// Main stats loading function (refactored for clarity)
+function loadStatsAndUI() {
+    chrome.storage.local.get(['currentSkid'], (skidResult) => {
+        const skid = skidResult.currentSkid || 'Default';
+        document.getElementById('skidValue').textContent = skid;
+        const modes = ['normal', 'special', 'custom'];
+        const keys = ['currentSkid', `favoriteMatches_${skid}`];
+        if (window.currentMode === 'all') {
+            modes.forEach(mode => {
+                keys.push(`matchHistory_${skid}_${mode}`);
+                keys.push(`gamesJoined_${skid}_${mode}`);
+                keys.push(`gamesStarted_${skid}_${mode}`);
+                keys.push(`gamesQuit_${skid}_${mode}`);
+                keys.push(`matchesCompleted_${skid}_${mode}`);
+            });
+        } else {
+            keys.push(`matchHistory_${skid}_${window.currentMode}`);
+            keys.push(`gamesJoined_${skid}_${window.currentMode}`);
+            keys.push(`gamesStarted_${skid}_${window.currentMode}`);
+            keys.push(`gamesQuit_${skid}_${window.currentMode}`);
+            keys.push(`matchesCompleted_${skid}_${window.currentMode}`);
+        }
+        chrome.storage.local.get(keys, (storageData) => {
+            // Update map filter dropdown
+            updateMapFilterDropdown(storageData, skid, window.currentMode, window.currentMapFilterValue);
+            // Get selected map
+            const mapFilter = document.getElementById('mapFilter');
+            const selectedMap = mapFilter.value || 'all';
+            window.currentMapFilterValue = selectedMap;
+            // Get matches for current mode
+            let matches = getMatchesForMode(storageData, skid, window.currentMode);
+            // Filter by map if not 'all'
+            if (selectedMap !== 'all') {
+                matches = matches.filter(match => match.map === selectedMap);
+            }
+            // Render all stats and match history
+            renderStatsAndMatches(matches, storageData, skid, window.currentMode);
+        });
+    });
+}
+
+// Mode and Map Filter Event Listeners
+window.currentMode = 'normal';
+window.currentMapFilterValue = 'all';
+
+document.getElementById('normalModeBtn').addEventListener('click', () => {
+    window.currentMode = 'normal';
+    loadStatsAndUI();
+});
+document.getElementById('specialModeBtn').addEventListener('click', () => {
+    window.currentMode = 'special';
+    loadStatsAndUI();
+});
+document.getElementById('customModeBtn').addEventListener('click', () => {
+    window.currentMode = 'custom';
+    loadStatsAndUI();
+});
+document.getElementById('allStatsBtn').addEventListener('click', () => {
+    window.currentMode = 'all';
+    loadStatsAndUI();
+});
+document.getElementById('mapFilter').addEventListener('change', (e) => {
+    window.currentMapFilterValue = e.target.value;
+    loadStatsAndUI();
+});
+
+// Initial load
+loadStatsAndUI();
+
+// Add Kills HUD toggle and settings logic
+const killsHudToggle = document.getElementById("toggleKillsHud");
+const killsHudSettingsBtn = document.getElementById("killsHudSettings");
+
+// Initialize toggle state from storage
+chrome.storage.local.get(["killsHudEnabled"], (data) => {
+    killsHudToggle.checked = data.killsHudEnabled !== false;
+});
+
+// Toggle event
+killsHudToggle.addEventListener("change", () => {
+    chrome.storage.local.set({ killsHudEnabled: killsHudToggle.checked });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: "toggle-kills-hud",
+                enabled: killsHudToggle.checked
+            });
+        }
+    });
+});
+
+// Settings button event
+killsHudSettingsBtn.addEventListener("click", () => {
+    window.x = "kills";
+    window.w && window.w();
+});
+
+// Update customization modal logic to support Kills HUD
+const originalW = window.w;
+window.w = function() {
+    const e = document.getElementById("hudSettingsModal");
+    const t = document.getElementById("hudSettingsTitle");
+    let a = "";
+    switch (window.x) {
+        case "deaths": a = "Deaths"; break;
+        case "killstreak": a = "Kill Streak"; break;
+        case "kdr": a = "KDR"; break;
+        case "matchcode": a = "Custom Match Code"; break;
+        case "kills": a = "Kills"; break;
+        default: a = "HUD";
+    }
+    t.textContent = `${a} HUD Settings`;
+    const s = `${window.x}HudSettings`;
+    chrome.storage.local.get([s], (data) => {
+        const settings = data[s] || { fontSize: 32, fontColor: "#ffffff", fontFamily: "Arial, sans-serif", backgroundColor: "rgba(0, 0, 0, 0.5)" };
+        document.getElementById("hudFontSize").value = settings.fontSize;
+        document.getElementById("fontSizeValue").textContent = `${settings.fontSize}px`;
+        document.getElementById("hudFontColor").value = settings.fontColor;
+        document.getElementById("hudFontFamily").value = settings.fontFamily;
+        document.getElementById("hudBackgroundColor").value = settings.backgroundColor ? (function(bg) {
+            const t = bg.substring(bg.indexOf("(") + 1, bg.indexOf(")")).split(",");
+            return `#${((1 << 24) + (parseInt(t[0].trim()) << 16) + (parseInt(t[1].trim()) << 8) + parseInt(t[2].trim())).toString(16).slice(1).toUpperCase()}`;
+        })(settings.backgroundColor) : "#000000";
+    });
+    e.style.display = "flex";
+};
+
+// Update customization save logic to support Kills HUD
+const originalP = window.P;
+window.P = function() {
+    const settings = {
+        fontSize: document.getElementById("hudFontSize").value,
+        fontColor: document.getElementById("hudFontColor").value,
+        fontFamily: document.getElementById("hudFontFamily").value,
+        backgroundColor: (function(hex, alpha) {
+            const a = parseInt(hex.slice(1), 16);
+            return `rgba(${a >> 16 & 255}, ${a >> 8 & 255}, ${255 & a}, ${alpha})`;
+        })(document.getElementById("hudBackgroundColor").value, 0.5)
+    };
+    const t = `${window.x}HudSettings`;
+    chrome.storage.local.set({ [t]: settings });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        let type;
+        switch (window.x) {
+            case "deaths": type = "update-deaths-hud-style"; break;
+            case "killstreak": type = "update-killstreak-hud-style"; break;
+            case "kdr": type = "update-kdr-hud-style"; break;
+            case "matchcode": type = "update-matchcode-hud-style"; break;
+            case "kills": type = "update-kills-hud-style"; break;
+        }
+        if (type && tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { type, settings });
+        }
+    });
+};
+
+// Always call the current window.P on customization input changes
+const fontSizeInput = document.getElementById("hudFontSize");
+const fontColorInput = document.getElementById("hudFontColor");
+const fontFamilyInput = document.getElementById("hudFontFamily");
+const bgColorInput = document.getElementById("hudBackgroundColor");
+
+fontSizeInput.addEventListener("input", (e) => {
+    document.getElementById("fontSizeValue").textContent = `${e.target.value}px`;
+    window.P && window.P();
+});
+fontColorInput.addEventListener("change", () => { window.P && window.P(); });
+fontFamilyInput.addEventListener("change", () => { window.P && window.P(); });
+bgColorInput.addEventListener("input", () => { window.P && window.P(); });
+
+// On first load, set matchCodeHudEnabled and killsHudEnabled to false by default if not already set
+chrome.storage.local.get(["matchCodeHudEnabled", "killsHudEnabled"], (data) => {
+    const updates = {};
+    if (typeof data.matchCodeHudEnabled === "undefined") updates.matchCodeHudEnabled = false;
+    if (typeof data.killsHudEnabled === "undefined") updates.killsHudEnabled = false;
+    if (Object.keys(updates).length > 0) {
+        chrome.storage.local.set(updates);
+    }
+});
+
+// Add at the top:
+const VIRTUAL_LIST_ITEM_HEIGHT = 60; // px, adjust as needed
+const VISIBLE_COUNT = 10; // Number of match cards visible at once
+let virtualScrollMatches = [];
+let virtualScrollContainer = null;
+let virtualScrollList = null;
+
+function setupVirtualScroll(matches) {
+    virtualScrollMatches = matches;
+    if (!virtualScrollContainer) {
+        virtualScrollContainer = document.getElementById('matches-list');
+        virtualScrollList = document.createElement('div');
+        virtualScrollList.style.position = 'relative';
+        virtualScrollContainer.innerHTML = '';
+        virtualScrollContainer.appendChild(virtualScrollList);
+        virtualScrollContainer.style.overflowY = 'auto';
+        virtualScrollContainer.style.maxHeight = (VISIBLE_COUNT * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+        virtualScrollContainer.addEventListener('scroll', debounce(renderVirtualScroll, 50));
+    }
+    renderVirtualScroll();
+}
+
+function renderVirtualScroll() {
+    if (!virtualScrollContainer || !virtualScrollList) return;
+    const scrollTop = virtualScrollContainer.scrollTop;
+    const startIdx = Math.floor(scrollTop / VIRTUAL_LIST_ITEM_HEIGHT);
+    const endIdx = Math.min(startIdx + VISIBLE_COUNT + 2, virtualScrollMatches.length);
+    virtualScrollList.style.height = (virtualScrollMatches.length * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+    virtualScrollList.innerHTML = '';
+    for (let i = startIdx; i < endIdx; i++) {
+        const match = virtualScrollMatches[i];
+        if (!match) continue;
+        const node = document.createElement('div');
+        node.className = 'match-card';
+        node.style.position = 'absolute';
+        node.style.top = (i * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+        node.style.left = 0;
+        node.style.right = 0;
+        node.style.height = VIRTUAL_LIST_ITEM_HEIGHT + 'px';
+        node.textContent = `#${virtualScrollMatches.length - i} | ${match.map || ''} | Kills: ${match.kills} | Deaths: ${match.deaths}`;
+        // Add more match info as needed, or reuse your existing card rendering logic
+        virtualScrollList.appendChild(node);
+    }
+}
+
+function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// Use requestIdleCallback for non-critical UI updates
+function idleUpdate(fn) {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(fn);
+    } else {
+        setTimeout(fn, 100);
+    }
+}
+
+// Replace match list rendering in renderStatsAndMatches:
+// ... existing code ...
+// Instead of rendering all matches at once:
+// document.getElementById("matches-list").innerHTML = "";
+// ...
+// render all match cards
+// ...
+// Replace with:
+setupVirtualScroll(matches);
+// ... existing code ...
+// Debounce input handlers for filters/search
+const mapFilter = document.getElementById('mapFilter');
+if (mapFilter) {
+    mapFilter.addEventListener('change', debounce(() => {
+        // ... existing filter logic ...
+        idleUpdate(() => k());
+    }, 150));
+}
+// ... existing code ...
+
+// --- UNMINIFIED CODE FIX ---
+// Replace:
+// window.currentMode = 'normal';
+// window.currentMapFilterValue = 'all';
+// ...
+// // Initial load
+// loadStatsAndUI();
+// With:
+window.currentMapFilterValue = 'all';
+chrome.storage.local.get(['currentMode'], (result) => {
+    window.currentMode = result.currentMode || 'normal';
+    loadStatsAndUI();
+});
+// ... existing code ...

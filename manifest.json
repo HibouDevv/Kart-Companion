@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Kart Companion for Smash Karts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Track Smash Karts gameplay: stats, match history, and performance analytics. Includes kill/death, match history, and HUD.",
   "permissions": [
     "storage"
@@ -23,7 +23,7 @@
   "content_scripts": [
     {
       "matches": ["*://*.smashkarts.io/*"],
-      "js": ["content.js"],
+      "js": ["content-optimized.js"],
       "all_frames": true
     }
   ],
@@ -37,7 +37,9 @@
         "visualizers.js",
         "match_info.html",
         "match_info.js",
-        "injected.js",
+        "injected-optimized.js",
+        "content-optimized.js",
+        "stats-numbers-optimized.js",
         "icons/*"
       ],
       "matches": ["<all_urls>"]
