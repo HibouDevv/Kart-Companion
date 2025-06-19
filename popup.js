@@ -7,7 +7,7 @@
     };
     
     // Reset settings for each HUD type
-    const hudTypes = ["deaths", "killstreak", "kdr", "matchcode"];
+    const hudTypes = ["deaths", "killstreak", "kdr", "matchcode", "kills"];
     const settingsToReset = {};
     
     hudTypes.forEach(type => {
@@ -595,3 +595,114 @@ document.getElementById('mapFilter').addEventListener('change', (e) => {
 
 // Initial load
 loadStatsAndUI();
+
+// Add Kills HUD toggle and settings logic
+const killsHudToggle = document.getElementById("toggleKillsHud");
+const killsHudSettingsBtn = document.getElementById("killsHudSettings");
+
+// Initialize toggle state from storage
+chrome.storage.local.get(["killsHudEnabled"], (data) => {
+    killsHudToggle.checked = data.killsHudEnabled !== false;
+});
+
+// Toggle event
+killsHudToggle.addEventListener("change", () => {
+    chrome.storage.local.set({ killsHudEnabled: killsHudToggle.checked });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+                type: "toggle-kills-hud",
+                enabled: killsHudToggle.checked
+            });
+        }
+    });
+});
+
+// Settings button event
+killsHudSettingsBtn.addEventListener("click", () => {
+    window.x = "kills";
+    window.w && window.w();
+});
+
+// Update customization modal logic to support Kills HUD
+const originalW = window.w;
+window.w = function() {
+    const e = document.getElementById("hudSettingsModal");
+    const t = document.getElementById("hudSettingsTitle");
+    let a = "";
+    switch (window.x) {
+        case "deaths": a = "Deaths"; break;
+        case "killstreak": a = "Kill Streak"; break;
+        case "kdr": a = "KDR"; break;
+        case "matchcode": a = "Custom Match Code"; break;
+        case "kills": a = "Kills"; break;
+        default: a = "HUD";
+    }
+    t.textContent = `${a} HUD Settings`;
+    const s = `${window.x}HudSettings`;
+    chrome.storage.local.get([s], (data) => {
+        const settings = data[s] || { fontSize: 32, fontColor: "#ffffff", fontFamily: "Arial, sans-serif", backgroundColor: "rgba(0, 0, 0, 0.5)" };
+        document.getElementById("hudFontSize").value = settings.fontSize;
+        document.getElementById("fontSizeValue").textContent = `${settings.fontSize}px`;
+        document.getElementById("hudFontColor").value = settings.fontColor;
+        document.getElementById("hudFontFamily").value = settings.fontFamily;
+        document.getElementById("hudBackgroundColor").value = settings.backgroundColor ? (function(bg) {
+            const t = bg.substring(bg.indexOf("(") + 1, bg.indexOf(")")).split(",");
+            return `#${((1 << 24) + (parseInt(t[0].trim()) << 16) + (parseInt(t[1].trim()) << 8) + parseInt(t[2].trim())).toString(16).slice(1).toUpperCase()}`;
+        })(settings.backgroundColor) : "#000000";
+    });
+    e.style.display = "flex";
+};
+
+// Update customization save logic to support Kills HUD
+const originalP = window.P;
+window.P = function() {
+    const settings = {
+        fontSize: document.getElementById("hudFontSize").value,
+        fontColor: document.getElementById("hudFontColor").value,
+        fontFamily: document.getElementById("hudFontFamily").value,
+        backgroundColor: (function(hex, alpha) {
+            const a = parseInt(hex.slice(1), 16);
+            return `rgba(${a >> 16 & 255}, ${a >> 8 & 255}, ${255 & a}, ${alpha})`;
+        })(document.getElementById("hudBackgroundColor").value, 0.5)
+    };
+    const t = `${window.x}HudSettings`;
+    chrome.storage.local.set({ [t]: settings });
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        let type;
+        switch (window.x) {
+            case "deaths": type = "update-deaths-hud-style"; break;
+            case "killstreak": type = "update-killstreak-hud-style"; break;
+            case "kdr": type = "update-kdr-hud-style"; break;
+            case "matchcode": type = "update-matchcode-hud-style"; break;
+            case "kills": type = "update-kills-hud-style"; break;
+        }
+        if (type && tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, { type, settings });
+        }
+    });
+};
+
+// Always call the current window.P on customization input changes
+const fontSizeInput = document.getElementById("hudFontSize");
+const fontColorInput = document.getElementById("hudFontColor");
+const fontFamilyInput = document.getElementById("hudFontFamily");
+const bgColorInput = document.getElementById("hudBackgroundColor");
+
+fontSizeInput.addEventListener("input", (e) => {
+    document.getElementById("fontSizeValue").textContent = `${e.target.value}px`;
+    window.P && window.P();
+});
+fontColorInput.addEventListener("change", () => { window.P && window.P(); });
+fontFamilyInput.addEventListener("change", () => { window.P && window.P(); });
+bgColorInput.addEventListener("input", () => { window.P && window.P(); });
+
+// On first load, set matchCodeHudEnabled and killsHudEnabled to false by default if not already set
+chrome.storage.local.get(["matchCodeHudEnabled", "killsHudEnabled"], (data) => {
+    const updates = {};
+    if (typeof data.matchCodeHudEnabled === "undefined") updates.matchCodeHudEnabled = false;
+    if (typeof data.killsHudEnabled === "undefined") updates.killsHudEnabled = false;
+    if (Object.keys(updates).length > 0) {
+        chrome.storage.local.set(updates);
+    }
+});

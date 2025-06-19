@@ -533,6 +533,8 @@
     const killStreakHudElement = createHudElement("kill-streak-hud-overlay", "Kill Streak: 0", { top: 160, left: 300 });
     const kdrHudElement = createHudElement("kdr-hud-overlay", "KDR: 0.00", { top: 220, left: 300 });
     const matchCodeHudElement = createHudElement("match-code-hud-overlay", "Code: ", { top: 280, left: 300 });
+    // Kills HUD
+    const killsHudElement = createHudElement("kills-hud-overlay", "Kills: 0", { top: 340, left: 300 });
 
     // Performance optimization: Efficient drag handling
     function createDragHandler(element, positionKey) {
@@ -599,9 +601,10 @@
     const killStreakPosition = createDragHandler(killStreakHudElement, "killStreakHudPosition");
     const kdrPosition = createDragHandler(kdrHudElement, "kdrHudPosition");
     const matchCodePosition = createDragHandler(matchCodeHudElement, "matchCodeHudPosition");
+    const killsPosition = createDragHandler(killsHudElement, "killsHudPosition");
 
     // Performance optimization: Batch DOM operations
-    [deathsHudElement, killStreakHudElement, kdrHudElement, matchCodeHudElement].forEach(element => {
+    [deathsHudElement, killStreakHudElement, kdrHudElement, matchCodeHudElement, killsHudElement].forEach(element => {
         document.body.appendChild(element);
         console.log("[SKMT] HUD element appended:", element.id, element.style.display);
     });
@@ -609,9 +612,9 @@
     // Performance optimization: Load settings in batch
     queueStorageOperation({
         type: 'get',
-        keys: ['hudPosition', 'killStreakHudPosition', 'kdrHudPosition', 'matchCodeHudPosition', 
-               'deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled',
-               'deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings'],
+        keys: ['hudPosition', 'killStreakHudPosition', 'kdrHudPosition', 'matchCodeHudPosition', 'killsHudPosition',
+               'deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled', 'killsHudEnabled',
+               'deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings', 'killsHudSettings'],
         callback: (data) => {
             console.log("[SKMT] Storage callback received data:", data);
             
@@ -628,6 +631,9 @@
             if (data.matchCodeHudPosition) {
                 matchCodeHudElement.style.transform = `translate3d(${data.matchCodeHudPosition.x}px, ${data.matchCodeHudPosition.y}px, 0)`;
             }
+            if (data.killsHudPosition) {
+                killsHudElement.style.transform = `translate3d(${data.killsHudPosition.x}px, ${data.killsHudPosition.y}px, 0)`;
+            }
 
             // Apply visibility - only hide if explicitly disabled
             if (data.deathsHudEnabled === false) {
@@ -641,6 +647,9 @@
             }
             if (data.matchCodeHudEnabled === false) {
                 matchCodeHudElement.style.display = "none";
+            }
+            if (data.killsHudEnabled === false) {
+                killsHudElement.style.display = "none";
             }
 
             // Apply styles
@@ -675,16 +684,22 @@
                 key: 'matchCodeHudSettings',
                 value: { fontSize: 24, fontColor: "#ffffff", fontFamily: "Arial, sans-serif" }
             });
+            applySettings(killsHudElement, data.killsHudSettings, {
+                key: 'killsHudSettings',
+                value: { fontSize: 24, fontColor: "#ffffff", fontFamily: "Arial, sans-serif" }
+            });
 
             console.log("[SKMT] HUD states:", {
                 deathsHud: deathsHudElement.style.display,
                 killStreakHud: killStreakHudElement.style.display,
                 kdrHud: kdrHudElement.style.display,
                 matchCodeHud: matchCodeHudElement.style.display,
+                killsHud: killsHudElement.style.display,
                 deathsHudEnabled: data.deathsHudEnabled,
                 killStreakHudEnabled: data.killStreakHudEnabled,
                 kdrHudEnabled: data.kdrHudEnabled,
-                matchCodeHudEnabled: data.matchCodeHudEnabled
+                matchCodeHudEnabled: data.matchCodeHudEnabled,
+                killsHudEnabled: data.killsHudEnabled
             });
         }
     });
@@ -707,6 +722,10 @@
             case "toggle-matchcode-hud":
                 matchCodeHudElement.style.display = message.enabled ? "block" : "none";
                 console.log("[SKMT] Match Code HUD toggled:", message.enabled);
+                break;
+            case "toggle-kills-hud":
+                killsHudElement.style.display = message.enabled ? "block" : "none";
+                console.log("[SKMT] Kills HUD toggled:", message.enabled);
                 break;
             case "update-deaths-hud-style":
                 applyHudStyle(deathsHudElement, message.settings);
@@ -734,6 +753,13 @@
                 queueStorageOperation({
                     type: 'set',
                     data: { matchCodeHudSettings: message.settings }
+                });
+                break;
+            case "update-kills-hud-style":
+                applyHudStyle(killsHudElement, message.settings);
+                queueStorageOperation({
+                    type: 'set',
+                    data: { killsHudSettings: message.settings }
                 });
                 break;
         }
@@ -775,10 +801,16 @@
                     matchCodeHudElement.textContent = event.data.code ? `Code: ${event.data.code}` : "Code: ";
                 }
                 break;
+            case "SKMT_KILLS_UPDATE":
+                if (killsHudElement) {
+                    killsHudElement.textContent = `Kills: ${event.data.kills}`;
+                }
+                break;
             case "SKMT_MATCH_COMPLETE":
                 if (deathsHudElement) deathsHudElement.textContent = "Deaths: 0";
                 if (killStreakHudElement) killStreakHudElement.textContent = "Kill Streak: 0";
                 if (kdrHudElement) kdrHudElement.textContent = "KDR: 0.00";
+                if (killsHudElement) killsHudElement.textContent = "Kills: 0";
                 break;
         }
     });
@@ -794,6 +826,7 @@
             resetPosition(killStreakHudElement, 0, 0);
             resetPosition(kdrHudElement, 0, 0);
             resetPosition(matchCodeHudElement, 0, 0);
+            resetPosition(killsHudElement, 0, 0);
             
             queueStorageOperation({
                 type: 'set',
@@ -801,7 +834,8 @@
                     hudPosition: null,
                     killStreakHudPosition: null,
                     kdrHudPosition: null,
-                    matchCodeHudPosition: null
+                    matchCodeHudPosition: null,
+                    killsHudPosition: null
                 }
             });
         }
@@ -821,5 +855,30 @@
             clearTimeout(mutationTimeout);
         }
     });
+
+    // --- Kills HUD logic ---
+    let killsHudKills = 0;
+    function handleKillsUpdate(data) {
+        killsHudKills = data.kills;
+        if (killsHudElement) {
+            killsHudElement.textContent = `Kills: ${killsHudKills}`;
+        }
+    }
+    // Hook into player kill event
+    const originalHandlePlayerKill = handlePlayerKill;
+    handlePlayerKill = function(data) {
+        if (data.killerId === matchData.playerStats.skid) {
+            killsHudKills++;
+            window.postMessage({ type: "SKMT_KILLS_UPDATE", kills: killsHudKills }, "*");
+        }
+        originalHandlePlayerKill.apply(this, arguments);
+    };
+    // Reset on game end/quit
+    const originalHandleGameEnd = handleGameEnd;
+    handleGameEnd = function() {
+        killsHudKills = 0;
+        window.postMessage({ type: "SKMT_KILLS_UPDATE", kills: 0 }, "*");
+        originalHandleGameEnd.apply(this, arguments);
+    };
 
 })();
