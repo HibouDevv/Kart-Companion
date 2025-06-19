@@ -425,7 +425,13 @@
                             
                             if (matchData.joined) gamesJoined++;
                             if (matchData.started) gamesStarted++;
-                            matchesCompleted++;
+                            // Only increment matchesCompleted if match duration is 20 seconds or longer
+                            const matchDuration = matchData.matchEndTime - matchData.matchStartTime;
+                            if (matchDuration >= 20000) {
+                                matchesCompleted++;
+                            } else {
+                                console.log("[SKMT] Not incrementing matchesCompleted - time spent less than 20 seconds:", matchDuration);
+                            }
                             
                             updates[getKey("matchHistory")] = matchHistory;
                             updates[getKey("gamesJoined")] = gamesJoined;
@@ -536,6 +542,11 @@
         const startDrag = (e) => {
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            // Get current transform values (if any)
+            const transform = element.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/);
+            startX = transform ? parseFloat(transform[1]) : 0;
+            startY = transform ? parseFloat(transform[2]) : 0;
             
             offsetX = clientX - startX;
             offsetY = clientY - startY;
