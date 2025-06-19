@@ -140,10 +140,19 @@
             }))
         }
     })),
-    S(),
-    k(),
+    // --- MINIFIED/OBFUSCATED CODE FIX ---
+    // Remove these lines:
+    // S(),
+    // k(),
+    // ...
     // Load saved UI state
     chrome.storage.local.get(["openSections", "currentMode", "currentSection"], (e => {
+        // Restore mode
+        if (e.currentMode) {
+            h = e.currentMode;
+        }
+        S();
+        k();
         // Restore open/closed sections
         if (e.openSections) {
             g = e.openSections;
@@ -152,20 +161,12 @@
                 a && (t ? a.setAttribute("open","") : a.removeAttribute("open"))
             }));
         }
-        
-        // Restore mode
-        if (e.currentMode) {
-            h = e.currentMode;
-            S();
-        }
-        
         // Restore main section (Stats/HUD)
         if (e.currentSection) {
             const statsSection = document.getElementById("statsSection");
             const hudSection = document.getElementById("hudSection");
             const statsBtn = document.getElementById("statsBtn");
             const hudBtn = document.getElementById("hudBtn");
-            
             if (e.currentSection === "hud") {
                 statsSection.style.display = "none";
                 hudSection.style.display = "block";
@@ -706,3 +707,100 @@ chrome.storage.local.get(["matchCodeHudEnabled", "killsHudEnabled"], (data) => {
         chrome.storage.local.set(updates);
     }
 });
+
+// Add at the top:
+const VIRTUAL_LIST_ITEM_HEIGHT = 60; // px, adjust as needed
+const VISIBLE_COUNT = 10; // Number of match cards visible at once
+let virtualScrollMatches = [];
+let virtualScrollContainer = null;
+let virtualScrollList = null;
+
+function setupVirtualScroll(matches) {
+    virtualScrollMatches = matches;
+    if (!virtualScrollContainer) {
+        virtualScrollContainer = document.getElementById('matches-list');
+        virtualScrollList = document.createElement('div');
+        virtualScrollList.style.position = 'relative';
+        virtualScrollContainer.innerHTML = '';
+        virtualScrollContainer.appendChild(virtualScrollList);
+        virtualScrollContainer.style.overflowY = 'auto';
+        virtualScrollContainer.style.maxHeight = (VISIBLE_COUNT * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+        virtualScrollContainer.addEventListener('scroll', debounce(renderVirtualScroll, 50));
+    }
+    renderVirtualScroll();
+}
+
+function renderVirtualScroll() {
+    if (!virtualScrollContainer || !virtualScrollList) return;
+    const scrollTop = virtualScrollContainer.scrollTop;
+    const startIdx = Math.floor(scrollTop / VIRTUAL_LIST_ITEM_HEIGHT);
+    const endIdx = Math.min(startIdx + VISIBLE_COUNT + 2, virtualScrollMatches.length);
+    virtualScrollList.style.height = (virtualScrollMatches.length * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+    virtualScrollList.innerHTML = '';
+    for (let i = startIdx; i < endIdx; i++) {
+        const match = virtualScrollMatches[i];
+        if (!match) continue;
+        const node = document.createElement('div');
+        node.className = 'match-card';
+        node.style.position = 'absolute';
+        node.style.top = (i * VIRTUAL_LIST_ITEM_HEIGHT) + 'px';
+        node.style.left = 0;
+        node.style.right = 0;
+        node.style.height = VIRTUAL_LIST_ITEM_HEIGHT + 'px';
+        node.textContent = `#${virtualScrollMatches.length - i} | ${match.map || ''} | Kills: ${match.kills} | Deaths: ${match.deaths}`;
+        // Add more match info as needed, or reuse your existing card rendering logic
+        virtualScrollList.appendChild(node);
+    }
+}
+
+function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// Use requestIdleCallback for non-critical UI updates
+function idleUpdate(fn) {
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(fn);
+    } else {
+        setTimeout(fn, 100);
+    }
+}
+
+// Replace match list rendering in renderStatsAndMatches:
+// ... existing code ...
+// Instead of rendering all matches at once:
+// document.getElementById("matches-list").innerHTML = "";
+// ...
+// render all match cards
+// ...
+// Replace with:
+setupVirtualScroll(matches);
+// ... existing code ...
+// Debounce input handlers for filters/search
+const mapFilter = document.getElementById('mapFilter');
+if (mapFilter) {
+    mapFilter.addEventListener('change', debounce(() => {
+        // ... existing filter logic ...
+        idleUpdate(() => k());
+    }, 150));
+}
+// ... existing code ...
+
+// --- UNMINIFIED CODE FIX ---
+// Replace:
+// window.currentMode = 'normal';
+// window.currentMapFilterValue = 'all';
+// ...
+// // Initial load
+// loadStatsAndUI();
+// With:
+window.currentMapFilterValue = 'all';
+chrome.storage.local.get(['currentMode'], (result) => {
+    window.currentMode = result.currentMode || 'normal';
+    loadStatsAndUI();
+});
+// ... existing code ...

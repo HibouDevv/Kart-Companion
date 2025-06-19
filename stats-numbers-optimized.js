@@ -7,6 +7,16 @@ const STATS_CACHE_DURATION = 10000; // 10 seconds instead of 5
 let statsUpdateTimeout = null;
 const STATS_UPDATE_DELAY = 0; // No delay - immediate display
 
+let statsWorker = null;
+if (window.Worker) {
+    try {
+        statsWorker = new Worker('webapp/src/utils/statsWorker.js');
+    } catch (e) {
+        console.warn('Stats Worker could not be loaded:', e);
+        statsWorker = null;
+    }
+}
+
 async function getStats() {
     // Performance optimization: Return cached stats if recent
     const now = Date.now();
@@ -84,83 +94,115 @@ async function getStats() {
                     return timeA - timeB;
                 });
 
-                // Performance optimization: Process matches in chunks to avoid blocking
-                const processMatchesInChunks = (matches, chunkSize = 50) => {
-                    let currentIndex = 0;
-                    
-                    const processChunk = () => {
-                        const endIndex = Math.min(currentIndex + chunkSize, matches.length);
-                        
-                        for (let i = currentIndex; i < endIndex; i++) {
-                            const match = matches[i];
-                            console.log(`[SKMT][STATS-NUMBERS][getStats] Processing match ${i}:`, JSON.stringify(match, null, 2));
-                            
-                            // Basic stats
-                            combinedData.totalKills += match.kills || 0;
-                            combinedData.totalDeaths += match.deaths || 0;
-                            // Convert duration from milliseconds to seconds
-                            const durationInSeconds = Math.floor((match.duration || 0) / 1000);
-                            combinedData.totalTimePlayed += durationInSeconds;
-
-                            // Track map frequency
-                            const mapName = match.map || 'Unknown Map';
-                            combinedData.mapFrequencies[mapName] = (combinedData.mapFrequencies[mapName] || 0) + 1;
-
-                            // Update records
-                            if (match.kills > combinedData.highestKills) {
-                                combinedData.highestKills = match.kills;
-                            }
-                            if (match.deaths > combinedData.highestDeaths) {
-                                combinedData.highestDeaths = match.deaths;
-                            }
-
-                            // Calculate KDR for the match
-                            const matchKDR = match.deaths > 0 ? match.kills / match.deaths : match.kills;
-                            if (matchKDR > combinedData.highestKDR) {
-                                combinedData.highestKDR = matchKDR;
-                            }
-
-                            // Use duration for longest time (in seconds)
-                            if (durationInSeconds > combinedData.longestTimePlayed) {
-                                combinedData.longestTimePlayed = durationInSeconds;
-                            }
-
-                            // Performance optimization: Optimized streak calculations
-                            if (match.killTimestamps && match.killTimestamps.length > 0) {
-                                calculateStreaksOptimized(match, combinedData);
-                            }
-                        }
-                        
-                        currentIndex = endIndex;
-                        
-                        if (currentIndex < matches.length) {
-                            // Process next chunk asynchronously
-                            setTimeout(processChunk, 0);
-                        } else {
-                            // All chunks processed, resolve with final data
-                            const finalStats = {
-                                matchHistory: matchHistory,
-                                gamesJoined: gamesJoined,
-                                gamesStarted: gamesStarted,
-                                gamesQuit: gamesQuit,
-                                matchesCompleted: matchesCompleted,
-                                currentSkid: currentSkid,
-                                ...combinedData
-                            };
-                            
-                            // Cache the results
-                            statsCache = finalStats;
-                            lastStatsUpdate = Date.now();
-                            
-                            resolve(finalStats);
-                        }
+                // Use Web Worker if available
+                if (statsWorker) {
+                    statsWorker.onmessage = function(e) {
+                        const result = e.data;
+                        // Compose final stats object
+                        const finalStats = {
+                            matchHistory: matchHistory,
+                            gamesJoined: data[`gamesJoined_${currentSkid}_normal`] + data[`gamesJoined_${currentSkid}_special`] + data[`gamesJoined_${currentSkid}_custom`],
+                            gamesStarted: data[`gamesStarted_${currentSkid}_normal`] + data[`gamesStarted_${currentSkid}_special`] + data[`gamesStarted_${currentSkid}_custom`],
+                            gamesQuit: data[`gamesQuit_${currentSkid}_normal`] + data[`gamesQuit_${currentSkid}_special`] + data[`gamesQuit_${currentSkid}_custom`],
+                            matchesCompleted: data[`matchesCompleted_${currentSkid}_normal`] + data[`matchesCompleted_${currentSkid}_special`] + data[`matchesCompleted_${currentSkid}_custom`],
+                            currentSkid: currentSkid,
+                            totalKills: result.kills,
+                            totalDeaths: result.deaths,
+                            totalTimePlayed: Math.floor(result.timePlayed / 1000),
+                            highestKills: result.highestKills,
+                            highestDeaths: result.highestDeaths,
+                            highestKDR: result.highestKDR,
+                            highestKillStreak: result.highestKillStreak,
+                            longestTimePlayed: Math.floor(result.longestTime / 1000),
+                            ...result.streaks,
+                            ...result.quickStreaks,
+                            mapFrequencies: result.mapCounts
+                        };
+                        statsCache = finalStats;
+                        lastStatsUpdate = Date.now();
+                        resolve(finalStats);
                     };
-                    
-                    processChunk();
-                };
+                    statsWorker.postMessage({ matches: matchHistory });
+                } else {
+                    // Fallback: use main thread calculation (existing logic)
+                    // Performance optimization: Process matches in chunks to avoid blocking
+                    const processMatchesInChunks = (matches, chunkSize = 50) => {
+                        let currentIndex = 0;
+                        
+                        const processChunk = () => {
+                            const endIndex = Math.min(currentIndex + chunkSize, matches.length);
+                            
+                            for (let i = currentIndex; i < endIndex; i++) {
+                                const match = matches[i];
+                                console.log(`[SKMT][STATS-NUMBERS][getStats] Processing match ${i}:`, JSON.stringify(match, null, 2));
+                                
+                                // Basic stats
+                                combinedData.totalKills += match.kills || 0;
+                                combinedData.totalDeaths += match.deaths || 0;
+                                // Convert duration from milliseconds to seconds
+                                const durationInSeconds = Math.floor((match.duration || 0) / 1000);
+                                combinedData.totalTimePlayed += durationInSeconds;
 
-                // Start processing matches
-                processMatchesInChunks(matchHistory);
+                                // Track map frequency
+                                const mapName = match.map || 'Unknown Map';
+                                combinedData.mapFrequencies[mapName] = (combinedData.mapFrequencies[mapName] || 0) + 1;
+
+                                // Update records
+                                if (match.kills > combinedData.highestKills) {
+                                    combinedData.highestKills = match.kills;
+                                }
+                                if (match.deaths > combinedData.highestDeaths) {
+                                    combinedData.highestDeaths = match.deaths;
+                                }
+
+                                // Calculate KDR for the match
+                                const matchKDR = match.deaths > 0 ? match.kills / match.deaths : match.kills;
+                                if (matchKDR > combinedData.highestKDR) {
+                                    combinedData.highestKDR = matchKDR;
+                                }
+
+                                // Use duration for longest time (in seconds)
+                                if (durationInSeconds > combinedData.longestTimePlayed) {
+                                    combinedData.longestTimePlayed = durationInSeconds;
+                                }
+
+                                // Performance optimization: Optimized streak calculations
+                                if (match.killTimestamps && match.killTimestamps.length > 0) {
+                                    calculateStreaksOptimized(match, combinedData);
+                                }
+                            }
+                            
+                            currentIndex = endIndex;
+                            
+                            if (currentIndex < matches.length) {
+                                // Process next chunk asynchronously
+                                setTimeout(processChunk, 0);
+                            } else {
+                                // All chunks processed, resolve with final data
+                                const finalStats = {
+                                    matchHistory: matchHistory,
+                                    gamesJoined: gamesJoined,
+                                    gamesStarted: gamesStarted,
+                                    gamesQuit: gamesQuit,
+                                    matchesCompleted: matchesCompleted,
+                                    currentSkid: currentSkid,
+                                    ...combinedData
+                                };
+                                
+                                // Cache the results
+                                statsCache = finalStats;
+                                lastStatsUpdate = Date.now();
+                                
+                                resolve(finalStats);
+                            }
+                        };
+                        
+                        processChunk();
+                    };
+
+                    // Start processing matches
+                    processMatchesInChunks(matchHistory);
+                }
             });
         });
     });

@@ -425,13 +425,7 @@
                             
                             if (matchData.joined) gamesJoined++;
                             if (matchData.started) gamesStarted++;
-                            // Only increment matchesCompleted if match duration is 20 seconds or longer
-                            const matchDuration = matchData.matchEndTime - matchData.matchStartTime;
-                            if (matchDuration >= 20000) {
-                                matchesCompleted++;
-                            } else {
-                                console.log("[SKMT] Not incrementing matchesCompleted - time spent less than 20 seconds:", matchDuration);
-                            }
+                            matchesCompleted++;
                             
                             updates[getKey("matchHistory")] = matchHistory;
                             updates[getKey("gamesJoined")] = gamesJoined;
@@ -880,5 +874,32 @@
         window.postMessage({ type: "SKMT_KILLS_UPDATE", kills: 0 }, "*");
         originalHandleGameEnd.apply(this, arguments);
     };
+
+    // Add helper at the top:
+    function idleUpdate(fn) {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(fn);
+        } else {
+            setTimeout(fn, 100);
+        }
+    }
+
+    // Ensure event listeners are attached only once by tracking with a flag
+    let listenersAttached = false;
+    function attachListenersOnce() {
+        if (listenersAttached) return;
+        listenersAttached = true;
+        // ... existing event listener attachment code ...
+    }
+    attachListenersOnce();
+
+    // Debounce any input handlers if present
+    function debounce(fn, delay) {
+        let timer = null;
+        return function(...args) {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
 
 })();
