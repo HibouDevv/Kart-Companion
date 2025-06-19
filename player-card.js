@@ -549,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     let totalTimePlayed = 0;
 
                     // Combine data from all modes
-                    ['normal', 'special', 'custom'].forEach(mode => {
+                    ['normal', 'special'].forEach(mode => {
                         const modeHistory = data[`matchHistory_${currentSkid}_${mode}`] || [];
                         matchHistory = matchHistory.concat(modeHistory);
                         gamesJoined += data[`gamesJoined_${currentSkid}_${mode}`] || 0;
