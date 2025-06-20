@@ -69,6 +69,8 @@
         storageQueue = [];
         storageTimeout = null;
 
+        // console.log("[SKMT] Processing storage queue:", operations); // Commented out
+
         // Batch storage operations
         const batchOperations = operations.reduce((acc, op) => {
             if (op.type === 'get') {
@@ -79,9 +81,12 @@
             return acc;
         }, { gets: [], sets: {} });
 
+        // console.log("[SKMT] Batch operations:", batchOperations); // Commented out
+
         // Execute batch operations
         if (batchOperations.gets.length > 0) {
             chrome.storage.local.get(batchOperations.gets, (data) => {
+                // console.log("[SKMT] Storage get result:", data); // Commented out
                 operations.forEach(op => {
                     if (op.type === 'get' && op.callback) {
                         op.callback(data);
@@ -91,7 +96,10 @@
         }
 
         if (Object.keys(batchOperations.sets).length > 0) {
-            chrome.storage.local.set(batchOperations.sets);
+            // console.log("[SKMT] Setting storage:", batchOperations.sets); // Commented out
+            chrome.storage.local.set(batchOperations.sets, () => {
+                // console.log("[SKMT] Storage set completed"); // Commented out
+            });
         }
     }
 
@@ -104,10 +112,10 @@
         window.WebSocket = function(url, protocols) {
             const ws = new originalWebSocket(url, protocols);
             
-            console.log("[SKMT] WebSocket connected");
+            // console.log("[SKMT] WebSocket connected"); // Commented out
             
             ws.addEventListener("open", function() {
-                console.log("[SKMT] WebSocket ready");
+                // console.log("[SKMT] WebSocket ready"); // Commented out
             });
 
             ws.addEventListener("message", function(event) {
@@ -171,17 +179,17 @@
                     }
                 } catch (error) {
                     if (typeof event.data === 'string') {
-                        console.error("[SKMT] WebSocket error:", error.message);
+                        // console.error("[SKMT] WebSocket error:", error.message); // Commented out
                     }
                 }
             });
 
             ws.addEventListener("error", function(error) {
-                console.error("[SKMT] WebSocket error:", error.message);
+                // console.error("[SKMT] WebSocket error:", error.message); // Commented out
             });
 
             ws.addEventListener("close", function() {
-                console.log("[SKMT] WebSocket closed");
+                // console.log("[SKMT] WebSocket closed"); // Commented out
             });
 
             return ws;
@@ -190,7 +198,7 @@
 
     // Performance optimization: Separated event handlers for better performance
     function handleGameStart(data) {
-        console.log("[SKMT] Game starting");
+        // console.log("[SKMT] Game starting"); // Commented out
         logs = [];
         matchData = {
             startTime: Date.now(),
@@ -216,7 +224,7 @@
     }
 
     function handleGameEnd() {
-        console.log("[SKMT] Game ending");
+        // console.log("[SKMT] Game ending"); // Commented out
         matchData.endTime = Date.now();
         matchData.playerStats.timeSpent = matchData.endTime - matchData.playerStats.timeJoined;
         
@@ -230,10 +238,10 @@
             chrome.runtime.sendMessage({ type: "matchComplete", data: matchResult })
                 .catch(error => {
                     if (retryCount < 3) {
-                        console.log(`[SKMT] Retrying match data send (attempt ${retryCount + 1})`);
+                        // console.log(`[SKMT] Retrying match data send (attempt ${retryCount + 1})`); // Commented out
                         setTimeout(() => sendMatchData(retryCount + 1), 1000);
                     } else {
-                        console.log("[SKMT] Content: Message port closed after retries, storing match data locally");
+                        // console.log("[SKMT] Content: Message port closed after retries, storing match data locally"); // Commented out
                         queueStorageOperation({
                             type: 'get',
                             keys: ['pendingMatches'],
@@ -307,7 +315,7 @@
         }, MUTATION_DEBOUNCE_DELAY);
     }).observe(document.body, { childList: true, subtree: true });
 
-    console.log("[SKMT] Content script loaded");
+    // console.log("[SKMT] Content script loaded"); // Commented out
 
     // Performance optimization: Lazy load injected script
     function loadInjectedScript() {
@@ -368,14 +376,14 @@
                 type: 'set',
                 data: { currentSkid: skid }
             });
-            console.log("[SKMT] SKID saved:", skid);
+            // console.log("[SKMT] SKID saved:", skid); // Commented out
             chrome.runtime.sendMessage(data);
         }
     }
 
     function handleMatchComplete(data) {
         const matchData = data.data;
-        console.log("[SKMT] Saving match data:", { kills: matchData.kills, deaths: matchData.deaths, quit: matchData.quit });
+        // console.log("[SKMT] Saving match data:", { kills: matchData.kills, deaths: matchData.deaths, quit: matchData.quit }); // Commented out
         
         queueStorageOperation({
             type: 'get',
@@ -386,12 +394,12 @@
                 
                 if (matchData.isCustomMode) {
                     mode = "custom";
-                    console.log("[SKMT] Recording quit in custom mode");
+                    // console.log("[SKMT] Recording quit in custom mode"); // Commented out
                 } else if (matchData.isSpecialMode) {
                     mode = "special";
-                    console.log("[SKMT] Recording quit in special mode");
+                    // console.log("[SKMT] Recording quit in special mode"); // Commented out
                 } else {
-                    console.log("[SKMT] Recording quit in normal mode");
+                    // console.log("[SKMT] Recording quit in normal mode"); // Commented out
                 }
 
                 const getKey = (prefix) => `${prefix}_${currentSkid}_${mode}`;
@@ -411,9 +419,9 @@
                                 let quitCount = storageData[getKey("gamesQuit")] || 0;
                                 quitCount++;
                                 updates[getKey("gamesQuit")] = quitCount;
-                                console.log("[SKMT] Incrementing gamesQuit for mode:", mode, "New value:", quitCount, "Time spent:", timeSpent);
+                                // console.log("[SKMT] Incrementing gamesQuit for mode:", mode, "New value:", quitCount, "Time spent:", timeSpent); // Commented out
                             } else {
-                                console.log("[SKMT] Not incrementing gamesQuit - time spent less than 10 seconds:", timeSpent);
+                                // console.log("[SKMT] Not incrementing gamesQuit - time spent less than 10 seconds:", timeSpent); // Commented out
                             }
                         } else {
                             let matchHistory = storageData[getKey("matchHistory")] || [];
@@ -453,14 +461,14 @@
                             data: { ...matchData, mode: mode, quit: matchData.quit }
                         }, () => {
                             if (chrome.runtime.lastError) {
-                                console.error("[SKMT] Error sending message to popup:", chrome.runtime.lastError);
+                                // console.error("[SKMT] Error sending message to popup:", chrome.runtime.lastError); // Commented out
                             } else {
-                                console.log("[SKMT] Successfully sent match data to popup:", {
-                                    mode: mode,
-                                    quit: matchData.quit,
-                                    isSpecialMode: matchData.isSpecialMode,
-                                    isCustomMode: matchData.isCustomMode
-                                });
+                                // console.log("[SKMT] Successfully sent match data to popup:", {
+                                //     mode: mode,
+                                //     quit: matchData.quit,
+                                //     isSpecialMode: matchData.isSpecialMode,
+                                //     isCustomMode: matchData.isCustomMode
+                                // }); // Commented out
                             }
                         });
                     }
@@ -470,19 +478,19 @@
     }
 
     function handleDeathsUpdate(data) {
-        console.log("[SKMT] Received deaths update:", data.deaths);
+        // console.log("[SKMT] Received deaths update:", data.deaths); // Commented out
         if (deathsHudElement) {
             deathsHudElement.textContent = `Deaths: ${data.deaths}`;
         }
-        console.log("[SKMT] HUD: Deaths display updated to", data.deaths);
+        // console.log("[SKMT] HUD: Deaths display updated to", data.deaths); // Commented out
     }
 
     function handleKillStreakUpdate(data) {
-        console.log("[SKMT] Received kill streak update:", data.killStreak);
+        // console.log("[SKMT] Received kill streak update:", data.killStreak); // Commented out
         if (killStreakHudElement) {
             killStreakHudElement.textContent = `Kill Streak: ${data.killStreak}`;
         }
-        console.log("[SKMT] HUD: Kill streak display updated to", data.killStreak);
+        // console.log("[SKMT] HUD: Kill streak display updated to", data.killStreak); // Commented out
     }
 
     // Performance optimization: Use event delegation for message handling
@@ -533,60 +541,61 @@
     // Performance optimization: Efficient drag handling
     function createDragHandler(element, positionKey) {
         let isDragging = false;
-        let startX, startY, offsetX, offsetY;
+        let startX, startY, initialX, initialY;
         
         const startDrag = (e) => {
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
+            if (e.target !== element) return;
+            e.preventDefault();
+            e.stopPropagation();
             // Get current transform values (if any)
             const transform = element.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/);
             startX = transform ? parseFloat(transform[1]) : 0;
             startY = transform ? parseFloat(transform[2]) : 0;
-            
-            offsetX = clientX - startX;
-            offsetY = clientY - startY;
-            
-            if (e.target === element) {
+            initialX = e.clientX;
+            initialY = e.clientY;
                 isDragging = true;
-                e.preventDefault();
-            }
-        };
-
-        const endDrag = (e) => {
-            if (isDragging) {
-                startX = offsetX;
-                startY = offsetY;
-                isDragging = false;
-                
-                queueStorageOperation({
-                    type: 'set',
-                    data: { [positionKey]: { x: startX, y: startY } }
-                });
-            }
+            // Prevent text selection
+            document.body.style.userSelect = 'none';
+            window.addEventListener('pointermove', drag);
+            window.addEventListener('pointerup', endDrag);
         };
 
         const drag = (e) => {
             if (!isDragging) return;
-            
-            e.preventDefault();
+                e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            startX = clientX - offsetX;
-            startY = clientY - offsetY;
-            
-            element.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
+            const deltaX = clientX - initialX;
+            const deltaY = clientY - initialY;
+            element.style.transform = `translate3d(${startX + deltaX}px, ${startY + deltaY}px, 0)`;
         };
 
-        // Performance optimization: Use passive listeners where possible
-        element.addEventListener("touchstart", startDrag, { passive: false });
-        element.addEventListener("touchend", endDrag, { passive: true });
-        element.addEventListener("touchmove", drag, { passive: false });
-        element.addEventListener("mousedown", startDrag, { passive: false });
-        element.addEventListener("mouseup", endDrag, { passive: true });
-        element.addEventListener("mousemove", drag, { passive: false });
+        const endDrag = (e) => {
+            if (!isDragging) return;
+                isDragging = false;
+            // Remove listeners
+            window.removeEventListener('pointermove', drag);
+            window.removeEventListener('pointerup', endDrag);
+            // Restore text selection
+            document.body.style.userSelect = '';
+            
+            // Calculate final position based on drag delta
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const deltaX = clientX - initialX;
+            const deltaY = clientY - initialY;
+            const finalX = startX + deltaX;
+            const finalY = startY + deltaY;
+            
+            console.log(`[SKMT] Saving position for ${positionKey}: x=${finalX}, y=${finalY}`);
+                queueStorageOperation({
+                    type: 'set',
+                data: { [positionKey]: { x: finalX, y: finalY } }
+                });
+        };
 
+        element.addEventListener('pointerdown', startDrag);
+        // No need for pointermove/pointerup here; they're attached dynamically during drag
         return { startX, startY };
     }
 
@@ -600,7 +609,7 @@
     // Performance optimization: Batch DOM operations
     [deathsHudElement, killStreakHudElement, kdrHudElement, matchCodeHudElement, killsHudElement].forEach(element => {
         document.body.appendChild(element);
-        console.log("[SKMT] HUD element appended:", element.id, element.style.display);
+        // console.log("[SKMT] HUD element appended:", element.id, element.style.display); // Commented out
     });
 
     // Performance optimization: Load settings in batch
@@ -610,22 +619,27 @@
                'deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled', 'killsHudEnabled',
                'deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings', 'killsHudSettings'],
         callback: (data) => {
-            console.log("[SKMT] Storage callback received data:", data);
+            // console.log("[SKMT] Storage callback received data:", data); // Commented out
             
             // Apply positions
             if (data.hudPosition) {
+                // console.log("[SKMT] Applying deaths HUD position:", data.hudPosition.x, data.hudPosition.y); // Commented out
                 deathsHudElement.style.transform = `translate3d(${data.hudPosition.x}px, ${data.hudPosition.y}px, 0)`;
             }
             if (data.killStreakHudPosition) {
+                // console.log("[SKMT] Applying kill streak HUD position:", data.killStreakHudPosition.x, data.killStreakHudPosition.y); // Commented out
                 killStreakHudElement.style.transform = `translate3d(${data.killStreakHudPosition.x}px, ${data.killStreakHudPosition.y}px, 0)`;
             }
             if (data.kdrHudPosition) {
+                // console.log("[SKMT] Applying KDR HUD position:", data.kdrHudPosition.x, data.kdrHudPosition.y); // Commented out
                 kdrHudElement.style.transform = `translate3d(${data.kdrHudPosition.x}px, ${data.kdrHudPosition.y}px, 0)`;
             }
             if (data.matchCodeHudPosition) {
+                // console.log("[SKMT] Applying match code HUD position:", data.matchCodeHudPosition.x, data.matchCodeHudPosition.y); // Commented out
                 matchCodeHudElement.style.transform = `translate3d(${data.matchCodeHudPosition.x}px, ${data.matchCodeHudPosition.y}px, 0)`;
             }
             if (data.killsHudPosition) {
+                // console.log("[SKMT] Applying kills HUD position:", data.killsHudPosition.x, data.killsHudPosition.y); // Commented out
                 killsHudElement.style.transform = `translate3d(${data.killsHudPosition.x}px, ${data.killsHudPosition.y}px, 0)`;
             }
 
@@ -683,18 +697,7 @@
                 value: { fontSize: 24, fontColor: "#ffffff", fontFamily: "Arial, sans-serif" }
             });
 
-            console.log("[SKMT] HUD states:", {
-                deathsHud: deathsHudElement.style.display,
-                killStreakHud: killStreakHudElement.style.display,
-                kdrHud: kdrHudElement.style.display,
-                matchCodeHud: matchCodeHudElement.style.display,
-                killsHud: killsHudElement.style.display,
-                deathsHudEnabled: data.deathsHudEnabled,
-                killStreakHudEnabled: data.killStreakHudEnabled,
-                kdrHudEnabled: data.kdrHudEnabled,
-                matchCodeHudEnabled: data.matchCodeHudEnabled,
-                killsHudEnabled: data.killsHudEnabled
-            });
+            // console.log("[SKMT] HUD states:", { ... }); // Commented out
         }
     });
 
@@ -703,23 +706,23 @@
         switch (message.type) {
             case "toggle-deaths-hud":
                 deathsHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Deaths HUD toggled:", message.enabled);
+                // console.log("[SKMT] Deaths HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-killstreak-hud":
                 killStreakHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Kill Streak HUD toggled:", message.enabled);
+                // console.log("[SKMT] Kill Streak HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-kdr-hud":
                 kdrHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] KDR HUD toggled:", message.enabled);
+                // console.log("[SKMT] KDR HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-matchcode-hud":
                 matchCodeHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Match Code HUD toggled:", message.enabled);
+                // console.log("[SKMT] Match Code HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-kills-hud":
                 killsHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Kills HUD toggled:", message.enabled);
+                // console.log("[SKMT] Kills HUD toggled:", message.enabled); // Commented out
                 break;
             case "update-deaths-hud-style":
                 applyHudStyle(deathsHudElement, message.settings);
@@ -756,6 +759,30 @@
                     data: { killsHudSettings: message.settings }
                 });
                 break;
+        }
+        
+        // Handle resetHudPositions action
+        if (message.action === "resetHudPositions") {
+            const resetPosition = (element, x, y) => {
+                element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            };
+            
+            resetPosition(deathsHudElement, 0, 0);
+            resetPosition(killStreakHudElement, 0, 0);
+            resetPosition(kdrHudElement, 0, 0);
+            resetPosition(matchCodeHudElement, 0, 0);
+            resetPosition(killsHudElement, 0, 0);
+            
+            queueStorageOperation({
+                type: 'set',
+                data: { 
+                    hudPosition: null,
+                    killStreakHudPosition: null,
+                    kdrHudPosition: null,
+                    matchCodeHudPosition: null,
+                    killsHudPosition: null
+                }
+            });
         }
     });
 
@@ -806,32 +833,6 @@
                 if (kdrHudElement) kdrHudElement.textContent = "KDR: 0.00";
                 if (killsHudElement) killsHudElement.textContent = "Kills: 0";
                 break;
-        }
-    });
-
-    // Performance optimization: Efficient reset handler
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === "resetHudPositions") {
-            const resetPosition = (element, x, y) => {
-                element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-            };
-            
-            resetPosition(deathsHudElement, 0, 0);
-            resetPosition(killStreakHudElement, 0, 0);
-            resetPosition(kdrHudElement, 0, 0);
-            resetPosition(matchCodeHudElement, 0, 0);
-            resetPosition(killsHudElement, 0, 0);
-            
-            queueStorageOperation({
-                type: 'set',
-                data: { 
-                    hudPosition: null,
-                    killStreakHudPosition: null,
-                    kdrHudPosition: null,
-                    matchCodeHudPosition: null,
-                    killsHudPosition: null
-                }
-            });
         }
     });
 

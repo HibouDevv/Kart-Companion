@@ -1,4 +1,4 @@
-console.log("[SKMT] Injected script running");
+// console.log("[SKMT] Injected script running"); // Commented out to reduce debug logs
 
 // Performance optimization: Debounced message posting for non-critical messages
 let messageQueue = [];
@@ -121,7 +121,7 @@ const STRING_CHECKS = {
 function setSkid(skid) {
     if (skid && typeof skid === 'string' && skid.length > 5) {
         window.kartStats.skid = skid;
-        originalLog("[SKMT] SKID set:", skid);
+        // originalLog("[SKMT] SKID set:", skid); // Commented out
         postMessageImmediate({type: "SKMT_SKID_UPDATED", skid: skid});
     }
 }
@@ -165,7 +165,7 @@ function interceptConsole(type, originalFn) {
                 if (window.kartStats.matchCode) {
                     window.kartStats.matchCode = null;
                     postMessageImmediate({type: "SKMT_MATCH_CODE_UPDATE", code: ""});
-                    originalLog("[SKMT] Match code cleared on exit");
+                    // originalLog("[SKMT] Match code cleared on exit"); // Commented out
                 }
             }
             
@@ -181,7 +181,7 @@ function interceptConsole(type, originalFn) {
                 lowerMessage.includes(STRING_CHECKS.bytebrew + ' play_special_mode_arena')) {
                 window.kartStats.isSpecialMode = true;
                 window.kartStats.isCustomMode = false;
-                originalLog("[SKMT] Mode: Special mode detected");
+                // originalLog("[SKMT] Mode: Special mode detected"); // Commented out
             }
             
             if (lowerMessage.includes(STRING_CHECKS.bytebrew + ' create_game_rules') ||
@@ -192,13 +192,13 @@ function interceptConsole(type, originalFn) {
                 lowerMessage.includes(STRING_CHECKS.bytebrew + ' join_or_create_private_arena')) {
                 window.kartStats.isCustomMode = true;
                 window.kartStats.isSpecialMode = false;
-                originalLog("[SKMT] Mode: Custom mode detected");
+                // originalLog("[SKMT] Mode: Custom mode detected"); // Commented out
             }
             
             if (lowerMessage.includes(STRING_CHECKS.bytebrew + ' play_3min_mode')) {
                 window.kartStats.isSpecialMode = false;
                 window.kartStats.isCustomMode = false;
-                originalLog("[SKMT] Mode: Normal mode detected");
+                // originalLog("[SKMT] Mode: Normal mode detected"); // Commented out
             }
             
             if (lowerMessage.includes(STRING_CHECKS.vehicleSetup)) {
@@ -207,7 +207,7 @@ function interceptConsole(type, originalFn) {
                     const playerName = match[1].trim();
                     if (window.kartStats.matchActive) {
                         currentMatchPlayers.add(playerName);
-                        originalLog("[SKMT] Player detected:", playerName);
+                        // originalLog("[SKMT] Player detected:", playerName); // Commented out
                     }
                 }
             }
@@ -229,7 +229,7 @@ function interceptConsole(type, originalFn) {
                 window.kartStats.matchActive = true;
                 window.kartStats.matchStartTime = Date.now();
                 currentMatchPlayers.clear();
-                originalLog("[SKMT] Joined match");
+                // originalLog("[SKMT] Joined match"); // Commented out
                 postMessageImmediate({type: "SKMT_STATUS_UPDATE", status: "joined"});
             }
             
@@ -237,13 +237,13 @@ function interceptConsole(type, originalFn) {
                 lowerMessage.includes(STRING_CHECKS.bytebrew + ' joined_room')) {
                 collectingPlayers = true;
                 detectedPlayersSet.clear();
-                originalLog("[SKMT] Player collection started");
+                // originalLog("[SKMT] Player collection started"); // Commented out
             }
             
             if (lowerMessage.includes(STRING_CHECKS.bytebrew + ' game_end') ||
                 lowerMessage.includes(STRING_CHECKS.bytebrew + ' confirmexitgame')) {
                 collectingPlayers = false;
-                originalLog("[SKMT] Player collection ended. Final players:", Array.from(detectedPlayersSet));
+                // originalLog("[SKMT] Player collection ended. Final players:", Array.from(detectedPlayersSet)); // Commented out
             }
             
             if (collectingPlayers && lowerMessage.includes(STRING_CHECKS.vehicleSetup)) {
@@ -251,7 +251,7 @@ function interceptConsole(type, originalFn) {
                 if (match && match[1]) {
                     const playerName = match[1].trim();
                     detectedPlayersSet.add(playerName);
-                    originalLog("[SKMT] Player detected (real-time):", playerName);
+                    // originalLog("[SKMT] Player detected (real-time):", playerName); // Commented out
                 }
             }
             
@@ -261,7 +261,7 @@ function interceptConsole(type, originalFn) {
                     let mapName = match[1];
                     mapName = MAP_REPLACEMENTS[mapName] || mapName;
                     window.kartStats.currentMap = mapName;
-                    originalLog("[SKMT] Map detected:", mapName);
+                    // originalLog("[SKMT] Map detected:", mapName); // Commented out
                 }
             }
             
@@ -348,9 +348,10 @@ function interceptConsole(type, originalFn) {
             if (window.kartStats.matchActive) {
                 if (lowerMessage.includes(STRING_CHECKS.destroyedHuman)) {
                     window.kartStats.kills++;
+                    postMessageImmediate({type: "SKMT_KILLS_UPDATE", kills: window.kartStats.kills});
                     window.kartStats.killTimestamps.push(Date.now());
                     window.kartStats.killStreak++;
-                    originalLog("[SKMT] HUD: Kill streak updated to", window.kartStats.killStreak);
+                    // originalLog("[SKMT] HUD: Kill streak updated to", window.kartStats.killStreak); // Commented out
                     postMessageImmediate({type: "SKMT_KILLSTREAK_UPDATE", killStreak: window.kartStats.killStreak});
                     
                     const kdr = window.kartStats.deaths > 0 ? window.kartStats.kills / window.kartStats.deaths : window.kartStats.kills;
@@ -361,7 +362,7 @@ function interceptConsole(type, originalFn) {
                     window.kartStats.deaths++;
                     window.kartStats.deathTimestamps.push(Date.now());
                     window.kartStats.killStreak = 0;
-                    originalLog("[SKMT] HUD: Deaths updated to", window.kartStats.deaths);
+                    // originalLog("[SKMT] HUD: Deaths updated to", window.kartStats.deaths); // Commented out
                     postMessageImmediate({type: "SKMT_DEATHS_UPDATE", deaths: window.kartStats.deaths});
                     postMessageImmediate({type: "SKMT_KILLSTREAK_UPDATE", killStreak: 0});
                     
@@ -375,7 +376,7 @@ function interceptConsole(type, originalFn) {
                 if (match && match[1]) {
                     window.kartStats.matchCode = match[1].trim();
                     postMessageImmediate({type: "SKMT_MATCH_CODE_UPDATE", code: window.kartStats.matchCode});
-                    originalLog("[SKMT] Match code detected:", window.kartStats.matchCode);
+                    // originalLog("[SKMT] Match code detected:", window.kartStats.matchCode); // Commented out
                 }
             }
             
@@ -422,7 +423,7 @@ window.addEventListener("message", function(event) {
             clearTimeout(eventTimeout);
         }
         eventTimeout = setTimeout(() => {
-            console.log("[SKMT][INJECTED] Received message:", event.data);
+            // console.log("[SKMT][INJECTED] Received message:", event.data); // Commented out
         }, 16); // ~60fps throttling
     }
 });

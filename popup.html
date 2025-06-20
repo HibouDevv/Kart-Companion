@@ -194,6 +194,18 @@
         </div>
     </div>
 
+    <!-- Welcome HUD Modal -->
+    <div id="welcomeHudModal" class="welcome-screen" style="display: none;">
+        <div class="welcome-content">
+            <h2>Do you want to customize the HUD overlays now?</h2>
+            <img src="welcomeHUD.png" alt="Customize HUDs" style="max-width: 100%; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div class="welcome-buttons">
+                <button id="customizeHudsBtn" class="blue-button">Yes, take me there!</button>
+                <button id="maybeLaterBtn" class="blue-button">Maybe later</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Modal -->
     <div id="notificationModal" class="notification-modal" style="display: none;">
         <div class="notification-content">
@@ -211,7 +223,7 @@
             </div>
             <!-- Version Text -->
             <div style="text-align: center; font-size: 14px; font-family: 'Quicksand', 'Segoe UI', Arial, sans-serif; margin-top: 5px; margin-bottom: 5px; color: #333;">
-                v1.0.2
+                v1.0.3
             </div>
             <div class="skid-display">
                 SKID: <span id="skidValue">-</span>
