@@ -69,7 +69,7 @@
         storageQueue = [];
         storageTimeout = null;
 
-        console.log("[SKMT] Processing storage queue:", operations);
+        // console.log("[SKMT] Processing storage queue:", operations); // Commented out
 
         // Batch storage operations
         const batchOperations = operations.reduce((acc, op) => {
@@ -81,12 +81,12 @@
             return acc;
         }, { gets: [], sets: {} });
 
-        console.log("[SKMT] Batch operations:", batchOperations);
+        // console.log("[SKMT] Batch operations:", batchOperations); // Commented out
 
         // Execute batch operations
         if (batchOperations.gets.length > 0) {
             chrome.storage.local.get(batchOperations.gets, (data) => {
-                console.log("[SKMT] Storage get result:", data);
+                // console.log("[SKMT] Storage get result:", data); // Commented out
                 operations.forEach(op => {
                     if (op.type === 'get' && op.callback) {
                         op.callback(data);
@@ -96,9 +96,9 @@
         }
 
         if (Object.keys(batchOperations.sets).length > 0) {
-            console.log("[SKMT] Setting storage:", batchOperations.sets);
+            // console.log("[SKMT] Setting storage:", batchOperations.sets); // Commented out
             chrome.storage.local.set(batchOperations.sets, () => {
-                console.log("[SKMT] Storage set completed");
+                // console.log("[SKMT] Storage set completed"); // Commented out
             });
         }
     }
@@ -112,10 +112,10 @@
         window.WebSocket = function(url, protocols) {
             const ws = new originalWebSocket(url, protocols);
             
-            console.log("[SKMT] WebSocket connected");
+            // console.log("[SKMT] WebSocket connected"); // Commented out
             
             ws.addEventListener("open", function() {
-                console.log("[SKMT] WebSocket ready");
+                // console.log("[SKMT] WebSocket ready"); // Commented out
             });
 
             ws.addEventListener("message", function(event) {
@@ -179,17 +179,17 @@
                     }
                 } catch (error) {
                     if (typeof event.data === 'string') {
-                        console.error("[SKMT] WebSocket error:", error.message);
+                        // console.error("[SKMT] WebSocket error:", error.message); // Commented out
                     }
                 }
             });
 
             ws.addEventListener("error", function(error) {
-                console.error("[SKMT] WebSocket error:", error.message);
+                // console.error("[SKMT] WebSocket error:", error.message); // Commented out
             });
 
             ws.addEventListener("close", function() {
-                console.log("[SKMT] WebSocket closed");
+                // console.log("[SKMT] WebSocket closed"); // Commented out
             });
 
             return ws;
@@ -198,7 +198,7 @@
 
     // Performance optimization: Separated event handlers for better performance
     function handleGameStart(data) {
-        console.log("[SKMT] Game starting");
+        // console.log("[SKMT] Game starting"); // Commented out
         logs = [];
         matchData = {
             startTime: Date.now(),
@@ -224,7 +224,7 @@
     }
 
     function handleGameEnd() {
-        console.log("[SKMT] Game ending");
+        // console.log("[SKMT] Game ending"); // Commented out
         matchData.endTime = Date.now();
         matchData.playerStats.timeSpent = matchData.endTime - matchData.playerStats.timeJoined;
         
@@ -238,10 +238,10 @@
             chrome.runtime.sendMessage({ type: "matchComplete", data: matchResult })
                 .catch(error => {
                     if (retryCount < 3) {
-                        console.log(`[SKMT] Retrying match data send (attempt ${retryCount + 1})`);
+                        // console.log(`[SKMT] Retrying match data send (attempt ${retryCount + 1})`); // Commented out
                         setTimeout(() => sendMatchData(retryCount + 1), 1000);
                     } else {
-                        console.log("[SKMT] Content: Message port closed after retries, storing match data locally");
+                        // console.log("[SKMT] Content: Message port closed after retries, storing match data locally"); // Commented out
                         queueStorageOperation({
                             type: 'get',
                             keys: ['pendingMatches'],
@@ -315,7 +315,7 @@
         }, MUTATION_DEBOUNCE_DELAY);
     }).observe(document.body, { childList: true, subtree: true });
 
-    console.log("[SKMT] Content script loaded");
+    // console.log("[SKMT] Content script loaded"); // Commented out
 
     // Performance optimization: Lazy load injected script
     function loadInjectedScript() {
@@ -376,14 +376,14 @@
                 type: 'set',
                 data: { currentSkid: skid }
             });
-            console.log("[SKMT] SKID saved:", skid);
+            // console.log("[SKMT] SKID saved:", skid); // Commented out
             chrome.runtime.sendMessage(data);
         }
     }
 
     function handleMatchComplete(data) {
         const matchData = data.data;
-        console.log("[SKMT] Saving match data:", { kills: matchData.kills, deaths: matchData.deaths, quit: matchData.quit });
+        // console.log("[SKMT] Saving match data:", { kills: matchData.kills, deaths: matchData.deaths, quit: matchData.quit }); // Commented out
         
         queueStorageOperation({
             type: 'get',
@@ -394,12 +394,12 @@
                 
                 if (matchData.isCustomMode) {
                     mode = "custom";
-                    console.log("[SKMT] Recording quit in custom mode");
+                    // console.log("[SKMT] Recording quit in custom mode"); // Commented out
                 } else if (matchData.isSpecialMode) {
                     mode = "special";
-                    console.log("[SKMT] Recording quit in special mode");
+                    // console.log("[SKMT] Recording quit in special mode"); // Commented out
                 } else {
-                    console.log("[SKMT] Recording quit in normal mode");
+                    // console.log("[SKMT] Recording quit in normal mode"); // Commented out
                 }
 
                 const getKey = (prefix) => `${prefix}_${currentSkid}_${mode}`;
@@ -419,9 +419,9 @@
                                 let quitCount = storageData[getKey("gamesQuit")] || 0;
                                 quitCount++;
                                 updates[getKey("gamesQuit")] = quitCount;
-                                console.log("[SKMT] Incrementing gamesQuit for mode:", mode, "New value:", quitCount, "Time spent:", timeSpent);
+                                // console.log("[SKMT] Incrementing gamesQuit for mode:", mode, "New value:", quitCount, "Time spent:", timeSpent); // Commented out
                             } else {
-                                console.log("[SKMT] Not incrementing gamesQuit - time spent less than 10 seconds:", timeSpent);
+                                // console.log("[SKMT] Not incrementing gamesQuit - time spent less than 10 seconds:", timeSpent); // Commented out
                             }
                         } else {
                             let matchHistory = storageData[getKey("matchHistory")] || [];
@@ -461,14 +461,14 @@
                             data: { ...matchData, mode: mode, quit: matchData.quit }
                         }, () => {
                             if (chrome.runtime.lastError) {
-                                console.error("[SKMT] Error sending message to popup:", chrome.runtime.lastError);
+                                // console.error("[SKMT] Error sending message to popup:", chrome.runtime.lastError); // Commented out
                             } else {
-                                console.log("[SKMT] Successfully sent match data to popup:", {
-                                    mode: mode,
-                                    quit: matchData.quit,
-                                    isSpecialMode: matchData.isSpecialMode,
-                                    isCustomMode: matchData.isCustomMode
-                                });
+                                // console.log("[SKMT] Successfully sent match data to popup:", {
+                                //     mode: mode,
+                                //     quit: matchData.quit,
+                                //     isSpecialMode: matchData.isSpecialMode,
+                                //     isCustomMode: matchData.isCustomMode
+                                // }); // Commented out
                             }
                         });
                     }
@@ -478,19 +478,19 @@
     }
 
     function handleDeathsUpdate(data) {
-        console.log("[SKMT] Received deaths update:", data.deaths);
+        // console.log("[SKMT] Received deaths update:", data.deaths); // Commented out
         if (deathsHudElement) {
             deathsHudElement.textContent = `Deaths: ${data.deaths}`;
         }
-        console.log("[SKMT] HUD: Deaths display updated to", data.deaths);
+        // console.log("[SKMT] HUD: Deaths display updated to", data.deaths); // Commented out
     }
 
     function handleKillStreakUpdate(data) {
-        console.log("[SKMT] Received kill streak update:", data.killStreak);
+        // console.log("[SKMT] Received kill streak update:", data.killStreak); // Commented out
         if (killStreakHudElement) {
             killStreakHudElement.textContent = `Kill Streak: ${data.killStreak}`;
         }
-        console.log("[SKMT] HUD: Kill streak display updated to", data.killStreak);
+        // console.log("[SKMT] HUD: Kill streak display updated to", data.killStreak); // Commented out
     }
 
     // Performance optimization: Use event delegation for message handling
@@ -609,7 +609,7 @@
     // Performance optimization: Batch DOM operations
     [deathsHudElement, killStreakHudElement, kdrHudElement, matchCodeHudElement, killsHudElement].forEach(element => {
         document.body.appendChild(element);
-        console.log("[SKMT] HUD element appended:", element.id, element.style.display);
+        // console.log("[SKMT] HUD element appended:", element.id, element.style.display); // Commented out
     });
 
     // Performance optimization: Load settings in batch
@@ -619,27 +619,27 @@
                'deathsHudEnabled', 'killStreakHudEnabled', 'kdrHudEnabled', 'matchCodeHudEnabled', 'killsHudEnabled',
                'deathsHudSettings', 'killStreakHudSettings', 'kdrHudSettings', 'matchCodeHudSettings', 'killsHudSettings'],
         callback: (data) => {
-            console.log("[SKMT] Storage callback received data:", data);
+            // console.log("[SKMT] Storage callback received data:", data); // Commented out
             
             // Apply positions
             if (data.hudPosition) {
-                console.log("[SKMT] Applying deaths HUD position:", data.hudPosition.x, data.hudPosition.y);
+                // console.log("[SKMT] Applying deaths HUD position:", data.hudPosition.x, data.hudPosition.y); // Commented out
                 deathsHudElement.style.transform = `translate3d(${data.hudPosition.x}px, ${data.hudPosition.y}px, 0)`;
             }
             if (data.killStreakHudPosition) {
-                console.log("[SKMT] Applying kill streak HUD position:", data.killStreakHudPosition.x, data.killStreakHudPosition.y);
+                // console.log("[SKMT] Applying kill streak HUD position:", data.killStreakHudPosition.x, data.killStreakHudPosition.y); // Commented out
                 killStreakHudElement.style.transform = `translate3d(${data.killStreakHudPosition.x}px, ${data.killStreakHudPosition.y}px, 0)`;
             }
             if (data.kdrHudPosition) {
-                console.log("[SKMT] Applying KDR HUD position:", data.kdrHudPosition.x, data.kdrHudPosition.y);
+                // console.log("[SKMT] Applying KDR HUD position:", data.kdrHudPosition.x, data.kdrHudPosition.y); // Commented out
                 kdrHudElement.style.transform = `translate3d(${data.kdrHudPosition.x}px, ${data.kdrHudPosition.y}px, 0)`;
             }
             if (data.matchCodeHudPosition) {
-                console.log("[SKMT] Applying match code HUD position:", data.matchCodeHudPosition.x, data.matchCodeHudPosition.y);
+                // console.log("[SKMT] Applying match code HUD position:", data.matchCodeHudPosition.x, data.matchCodeHudPosition.y); // Commented out
                 matchCodeHudElement.style.transform = `translate3d(${data.matchCodeHudPosition.x}px, ${data.matchCodeHudPosition.y}px, 0)`;
             }
             if (data.killsHudPosition) {
-                console.log("[SKMT] Applying kills HUD position:", data.killsHudPosition.x, data.killsHudPosition.y);
+                // console.log("[SKMT] Applying kills HUD position:", data.killsHudPosition.x, data.killsHudPosition.y); // Commented out
                 killsHudElement.style.transform = `translate3d(${data.killsHudPosition.x}px, ${data.killsHudPosition.y}px, 0)`;
             }
 
@@ -697,18 +697,7 @@
                 value: { fontSize: 24, fontColor: "#ffffff", fontFamily: "Arial, sans-serif" }
             });
 
-            console.log("[SKMT] HUD states:", {
-                deathsHud: deathsHudElement.style.display,
-                killStreakHud: killStreakHudElement.style.display,
-                kdrHud: kdrHudElement.style.display,
-                matchCodeHud: matchCodeHudElement.style.display,
-                killsHud: killsHudElement.style.display,
-                deathsHudEnabled: data.deathsHudEnabled,
-                killStreakHudEnabled: data.killStreakHudEnabled,
-                kdrHudEnabled: data.kdrHudEnabled,
-                matchCodeHudEnabled: data.matchCodeHudEnabled,
-                killsHudEnabled: data.killsHudEnabled
-            });
+            // console.log("[SKMT] HUD states:", { ... }); // Commented out
         }
     });
 
@@ -717,23 +706,23 @@
         switch (message.type) {
             case "toggle-deaths-hud":
                 deathsHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Deaths HUD toggled:", message.enabled);
+                // console.log("[SKMT] Deaths HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-killstreak-hud":
                 killStreakHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Kill Streak HUD toggled:", message.enabled);
+                // console.log("[SKMT] Kill Streak HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-kdr-hud":
                 kdrHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] KDR HUD toggled:", message.enabled);
+                // console.log("[SKMT] KDR HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-matchcode-hud":
                 matchCodeHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Match Code HUD toggled:", message.enabled);
+                // console.log("[SKMT] Match Code HUD toggled:", message.enabled); // Commented out
                 break;
             case "toggle-kills-hud":
                 killsHudElement.style.display = message.enabled ? "block" : "none";
-                console.log("[SKMT] Kills HUD toggled:", message.enabled);
+                // console.log("[SKMT] Kills HUD toggled:", message.enabled); // Commented out
                 break;
             case "update-deaths-hud-style":
                 applyHudStyle(deathsHudElement, message.settings);
