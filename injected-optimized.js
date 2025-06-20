@@ -408,7 +408,8 @@ function resetStats() {
     window.kartStats.awaitingStartType = true;
     window.kartStats.players = [];
     window.kartStats.matchCode = null;
-    
+    window.kartStats.isSpecialMode = false;
+    window.kartStats.isCustomMode = false;
     if (window.kartStats._gameEndTimeout) {
         clearTimeout(window.kartStats._gameEndTimeout);
         window.kartStats._gameEndTimeout = null;
