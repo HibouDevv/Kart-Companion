@@ -348,6 +348,7 @@ function interceptConsole(type, originalFn) {
             if (window.kartStats.matchActive) {
                 if (lowerMessage.includes(STRING_CHECKS.destroyedHuman)) {
                     window.kartStats.kills++;
+                    postMessageImmediate({type: "SKMT_KILLS_UPDATE", kills: window.kartStats.kills});
                     window.kartStats.killTimestamps.push(Date.now());
                     window.kartStats.killStreak++;
                     originalLog("[SKMT] HUD: Kill streak updated to", window.kartStats.killStreak);
