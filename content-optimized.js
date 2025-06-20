@@ -69,6 +69,8 @@
         storageQueue = [];
         storageTimeout = null;
 
+        console.log("[SKMT] Processing storage queue:", operations);
+
         // Batch storage operations
         const batchOperations = operations.reduce((acc, op) => {
             if (op.type === 'get') {
@@ -79,9 +81,12 @@
             return acc;
         }, { gets: [], sets: {} });
 
+        console.log("[SKMT] Batch operations:", batchOperations);
+
         // Execute batch operations
         if (batchOperations.gets.length > 0) {
             chrome.storage.local.get(batchOperations.gets, (data) => {
+                console.log("[SKMT] Storage get result:", data);
                 operations.forEach(op => {
                     if (op.type === 'get' && op.callback) {
                         op.callback(data);
@@ -91,7 +96,10 @@
         }
 
         if (Object.keys(batchOperations.sets).length > 0) {
-            chrome.storage.local.set(batchOperations.sets);
+            console.log("[SKMT] Setting storage:", batchOperations.sets);
+            chrome.storage.local.set(batchOperations.sets, () => {
+                console.log("[SKMT] Storage set completed");
+            });
         }
     }
 
@@ -533,60 +541,61 @@
     // Performance optimization: Efficient drag handling
     function createDragHandler(element, positionKey) {
         let isDragging = false;
-        let startX, startY, offsetX, offsetY;
+        let startX, startY, initialX, initialY;
         
         const startDrag = (e) => {
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
+            if (e.target !== element) return;
+            e.preventDefault();
+            e.stopPropagation();
             // Get current transform values (if any)
             const transform = element.style.transform.match(/translate3d\(([-\d.]+)px, ([-\d.]+)px, 0\)/);
             startX = transform ? parseFloat(transform[1]) : 0;
             startY = transform ? parseFloat(transform[2]) : 0;
-            
-            offsetX = clientX - startX;
-            offsetY = clientY - startY;
-            
-            if (e.target === element) {
+            initialX = e.clientX;
+            initialY = e.clientY;
                 isDragging = true;
-                e.preventDefault();
-            }
-        };
-
-        const endDrag = (e) => {
-            if (isDragging) {
-                startX = offsetX;
-                startY = offsetY;
-                isDragging = false;
-                
-                queueStorageOperation({
-                    type: 'set',
-                    data: { [positionKey]: { x: startX, y: startY } }
-                });
-            }
+            // Prevent text selection
+            document.body.style.userSelect = 'none';
+            window.addEventListener('pointermove', drag);
+            window.addEventListener('pointerup', endDrag);
         };
 
         const drag = (e) => {
             if (!isDragging) return;
-            
-            e.preventDefault();
+                e.preventDefault();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            startX = clientX - offsetX;
-            startY = clientY - offsetY;
-            
-            element.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
+            const deltaX = clientX - initialX;
+            const deltaY = clientY - initialY;
+            element.style.transform = `translate3d(${startX + deltaX}px, ${startY + deltaY}px, 0)`;
         };
 
-        // Performance optimization: Use passive listeners where possible
-        element.addEventListener("touchstart", startDrag, { passive: false });
-        element.addEventListener("touchend", endDrag, { passive: true });
-        element.addEventListener("touchmove", drag, { passive: false });
-        element.addEventListener("mousedown", startDrag, { passive: false });
-        element.addEventListener("mouseup", endDrag, { passive: true });
-        element.addEventListener("mousemove", drag, { passive: false });
+        const endDrag = (e) => {
+            if (!isDragging) return;
+                isDragging = false;
+            // Remove listeners
+            window.removeEventListener('pointermove', drag);
+            window.removeEventListener('pointerup', endDrag);
+            // Restore text selection
+            document.body.style.userSelect = '';
+            
+            // Calculate final position based on drag delta
+            const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+            const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+            const deltaX = clientX - initialX;
+            const deltaY = clientY - initialY;
+            const finalX = startX + deltaX;
+            const finalY = startY + deltaY;
+            
+            console.log(`[SKMT] Saving position for ${positionKey}: x=${finalX}, y=${finalY}`);
+                queueStorageOperation({
+                    type: 'set',
+                data: { [positionKey]: { x: finalX, y: finalY } }
+                });
+        };
 
+        element.addEventListener('pointerdown', startDrag);
+        // No need for pointermove/pointerup here; they're attached dynamically during drag
         return { startX, startY };
     }
 
@@ -614,18 +623,23 @@
             
             // Apply positions
             if (data.hudPosition) {
+                console.log("[SKMT] Applying deaths HUD position:", data.hudPosition.x, data.hudPosition.y);
                 deathsHudElement.style.transform = `translate3d(${data.hudPosition.x}px, ${data.hudPosition.y}px, 0)`;
             }
             if (data.killStreakHudPosition) {
+                console.log("[SKMT] Applying kill streak HUD position:", data.killStreakHudPosition.x, data.killStreakHudPosition.y);
                 killStreakHudElement.style.transform = `translate3d(${data.killStreakHudPosition.x}px, ${data.killStreakHudPosition.y}px, 0)`;
             }
             if (data.kdrHudPosition) {
+                console.log("[SKMT] Applying KDR HUD position:", data.kdrHudPosition.x, data.kdrHudPosition.y);
                 kdrHudElement.style.transform = `translate3d(${data.kdrHudPosition.x}px, ${data.kdrHudPosition.y}px, 0)`;
             }
             if (data.matchCodeHudPosition) {
+                console.log("[SKMT] Applying match code HUD position:", data.matchCodeHudPosition.x, data.matchCodeHudPosition.y);
                 matchCodeHudElement.style.transform = `translate3d(${data.matchCodeHudPosition.x}px, ${data.matchCodeHudPosition.y}px, 0)`;
             }
             if (data.killsHudPosition) {
+                console.log("[SKMT] Applying kills HUD position:", data.killsHudPosition.x, data.killsHudPosition.y);
                 killsHudElement.style.transform = `translate3d(${data.killsHudPosition.x}px, ${data.killsHudPosition.y}px, 0)`;
             }
 
@@ -757,6 +771,30 @@
                 });
                 break;
         }
+        
+        // Handle resetHudPositions action
+        if (message.action === "resetHudPositions") {
+            const resetPosition = (element, x, y) => {
+                element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+            };
+            
+            resetPosition(deathsHudElement, 0, 0);
+            resetPosition(killStreakHudElement, 0, 0);
+            resetPosition(kdrHudElement, 0, 0);
+            resetPosition(matchCodeHudElement, 0, 0);
+            resetPosition(killsHudElement, 0, 0);
+            
+            queueStorageOperation({
+                type: 'set',
+                data: { 
+                    hudPosition: null,
+                    killStreakHudPosition: null,
+                    kdrHudPosition: null,
+                    matchCodeHudPosition: null,
+                    killsHudPosition: null
+                }
+            });
+        }
     });
 
     function applyHudStyle(element, settings) {
@@ -806,32 +844,6 @@
                 if (kdrHudElement) kdrHudElement.textContent = "KDR: 0.00";
                 if (killsHudElement) killsHudElement.textContent = "Kills: 0";
                 break;
-        }
-    });
-
-    // Performance optimization: Efficient reset handler
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === "resetHudPositions") {
-            const resetPosition = (element, x, y) => {
-                element.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-            };
-            
-            resetPosition(deathsHudElement, 0, 0);
-            resetPosition(killStreakHudElement, 0, 0);
-            resetPosition(kdrHudElement, 0, 0);
-            resetPosition(matchCodeHudElement, 0, 0);
-            resetPosition(killsHudElement, 0, 0);
-            
-            queueStorageOperation({
-                type: 'set',
-                data: { 
-                    hudPosition: null,
-                    killStreakHudPosition: null,
-                    kdrHudPosition: null,
-                    matchCodeHudPosition: null,
-                    killsHudPosition: null
-                }
-            });
         }
     });
 

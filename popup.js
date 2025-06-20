@@ -78,8 +78,9 @@
     // Show notification when popup opens
     showNotificationRandomly();
 
+
     // Check if it's first time opening the extension
-    chrome.storage.local.get(['hasSeenWelcome', 'currentSkid'], function(result) {
+    chrome.storage.local.get(['hasSeenWelcome', 'hasSeenWelcomeHUD', 'currentSkid'], function(result) {
         if (!result.hasSeenWelcome) {
             // Show welcome screen
             document.getElementById('welcomeScreen').style.display = 'flex';
@@ -96,8 +97,16 @@
             
             document.getElementById('noStatsBtn').addEventListener('click', function() {
                 document.getElementById('welcomeScreen').style.display = 'none';
-                chrome.storage.local.set({ hasSeenWelcome: true });
+                chrome.storage.local.set({ hasSeenWelcome: true }, function() {
+                    // After welcome, check for HUD modal
+                    if (!result.hasSeenWelcomeHUD) {
+                        document.getElementById('welcomeHudModal').style.display = 'flex';
+                    }
+                });
             });
+        } else if (!result.hasSeenWelcomeHUD) {
+            // If welcome already seen but not HUD modal, show HUD modal
+            document.getElementById('welcomeHudModal').style.display = 'flex';
         }
     });
 
@@ -118,7 +127,12 @@
     document.querySelectorAll(".stats-details").forEach((e=>{e.addEventListener("toggle",(()=>{document.querySelectorAll(".stats-details").forEach((e=>{const t=e.querySelector(".stats-section-label").id;g[t]=e.hasAttribute("open")})),chrome.storage.local.set({openSections:g})}))})),
     document.getElementById("exportStatsBtn").addEventListener("click",I),
     document.getElementById("importStatsBtn").addEventListener("click",(()=>{document.getElementById("importStatsInput").click()})),
-    document.getElementById("importStatsInput").addEventListener("change",(e=>{e.target.files.length>0&&(async function(e){try{const t=new FileReader;t.onload=async function(e){try{const t=(new TextDecoder).decode(e.target.result),a=await async function(e){try{await B();const t=e.match(/^SKMT_ENCRYPTED_v(\d+\.\d+)_(.+)$/);if(!t)throw new Error("Invalid encrypted data format");if(t[1]!==T)throw new Error("Incompatible encryption version");const a=t[2],s=new Uint8Array(atob(a).split("").map((e=>e.charCodeAt(0)))),n=s.slice(0,12),o=s.slice(12),l=await crypto.subtle.decrypt({name:"AES-GCM",iv:n},b,o),c=new TextDecoder;return JSON.parse(c.decode(l))}catch(e){throw console.error("Decryption error:",e),new Error("Failed to decrypt data")}}(t);if(a.skid!==m)throw new Error("Stats file SKID does not match current SKID");const s=31536e6;if(Date.now()-a.timestamp>s)throw new Error("Stats file is too old");if(!confirm("Are you sure you want to import these stats? This will overwrite your current stats."))return;if(await new Promise((e=>{chrome.storage.local.set(a.data,e)})),a.data.uiState){const e=a.data.uiState;e.currentMode&&(h=e.currentMode,document.querySelectorAll(".mode-btn").forEach((e=>{e.classList.toggle("active",e.dataset.mode===h)}))),e.openSections&&await new Promise((t=>{chrome.storage.local.set({openSections:e.openSections},t)}))}k(),alert("Stats imported successfully!"),document.getElementById('welcomeScreen').style.display = 'none',chrome.storage.local.set({ hasSeenWelcome: true })}catch(e){console.error("Error processing imported stats:",e),alert(e.message||"Failed to import stats. The file may be corrupted or invalid.")}},t.onerror=function(){alert("Error reading file. Please try again.")},t.readAsArrayBuffer(e)}catch(e){console.error("Error importing stats:",e),alert("Failed to import stats. Please try again.")}}(e.target.files[0]),e.target.value="")})),
+    document.getElementById("importStatsInput").addEventListener("change",(e=>{e.target.files.length>0&&(async function(e){try{const t=new FileReader;t.onload=async function(e){try{const t=(new TextDecoder).decode(e.target.result),a=await async function(e){try{await B();const t=e.match(/^SKMT_ENCRYPTED_v(\d+\.\d+)_(.+)$/);if(!t)throw new Error("Invalid encrypted data format");if(t[1]!==T)throw new Error("Incompatible encryption version");const a=t[2],s=new Uint8Array(atob(a).split("").map((e=>e.charCodeAt(0)))),n=s.slice(0,12),o=s.slice(12),l=await crypto.subtle.decrypt({name:"AES-GCM",iv:n},b,o),c=new TextDecoder;return JSON.parse(c.decode(l))}catch(e){throw console.error("Decryption error:",e),new Error("Failed to decrypt data")}}(t);if(a.skid!==m)throw new Error("Stats file SKID does not match current SKID");const s=31536e6;if(Date.now()-a.timestamp>s)throw new Error("Stats file is too old");if(!confirm("Are you sure you want to import these stats? This will overwrite your current stats."))return;if(await new Promise((e=>{chrome.storage.local.set(a.data,e)})),a.data.uiState){const e=a.data.uiState;e.currentMode&&(h=e.currentMode,document.querySelectorAll(".mode-btn").forEach((e=>{e.classList.toggle("active",e.dataset.mode===h)}))),e.openSections&&await new Promise((t=>{chrome.storage.local.set({openSections:e.openSections},t)}))}k(),alert("Stats imported successfully!"),document.getElementById('welcomeScreen').style.display = 'none',chrome.storage.local.set({ hasSeenWelcome: true }),chrome.storage.local.get(['hasSeenWelcomeHUD'], function(res) {
+        if (!res.hasSeenWelcomeHUD) {
+            document.getElementById('welcomeHudModal').style.display = 'flex';
+            chrome.storage.local.set({ hasSeenWelcomeHUD: true });
+        }
+    })}catch(e){console.error("Error processing imported stats:",e),alert(e.message||"Failed to import stats. The file may be corrupted or invalid.")}},t.onerror=function(){alert("Error reading file. Please try again.")},t.readAsArrayBuffer(e)}catch(e){console.error("Error importing stats:",e),alert("Failed to import stats. Please try again.")}}(e.target.files[0]),e.target.value="")})),
     document.getElementById("visualizeStatsBtn").addEventListener("click",(()=>{chrome.tabs.create({url:"visualizers.html"})})),
     document.getElementById("faqBtn").addEventListener("click",(()=>{chrome.tabs.create({url:"faq.html"})})),
     document.getElementById("resetStatsBtn").addEventListener("click",(function(){
@@ -401,6 +415,8 @@ function renderStatsAndMatches(matches, storageData, skid, mode) {
             }
         }
     });
+    // ... after aggregate stats and before updating UI ...
+    const completedMatches = matches.filter(match => !match.quit);
     // Update UI
     document.getElementById('kills').textContent = kills;
     document.getElementById('deaths').textContent = deaths;
@@ -778,7 +794,7 @@ function idleUpdate(fn) {
 // render all match cards
 // ...
 // Replace with:
-setupVirtualScroll(matches);
+//setupVirtualScroll(matches);
 // ... existing code ...
 // Debounce input handlers for filters/search
 const mapFilter = document.getElementById('mapFilter');
@@ -804,3 +820,45 @@ chrome.storage.local.get(['currentMode'], (result) => {
     loadStatsAndUI();
 });
 // ... existing code ...
+
+// HUD Modal button logic
+try {
+    document.getElementById('customizeHudsBtn').addEventListener('click', function() {
+        document.getElementById('statsSection').style.display = 'none';
+        document.getElementById('hudSection').style.display = 'block';
+        document.getElementById('statsBtn').classList.remove('selected');
+        document.getElementById('hudBtn').classList.add('selected');
+        chrome.storage.local.set({ currentSection: 'hud', hasSeenWelcomeHUD: true });
+        document.getElementById('welcomeHudModal').style.display = 'none';
+    });
+    document.getElementById('maybeLaterBtn').addEventListener('click', function() {
+        chrome.storage.local.set({ hasSeenWelcomeHUD: true });
+        document.getElementById('welcomeHudModal').style.display = 'none';
+    });
+} catch (e) { /* ignore if not present */ }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // ... (existing welcome modal logic)
+
+    // HUD Modal button logic (attach after welcome modal logic)
+    var customizeBtn = document.getElementById('customizeHudsBtn');
+    var maybeLaterBtn = document.getElementById('maybeLaterBtn');
+    if (customizeBtn && maybeLaterBtn) {
+        console.log('[SKMT] Attaching HUD modal button listeners');
+        customizeBtn.addEventListener('click', function() {
+            document.getElementById('statsSection').style.display = 'none';
+            document.getElementById('hudSection').style.display = 'block';
+            document.getElementById('statsBtn').classList.remove('selected');
+            document.getElementById('hudBtn').classList.add('selected');
+            chrome.storage.local.set({ currentSection: 'hud', hasSeenWelcomeHUD: true });
+            document.getElementById('welcomeHudModal').style.display = 'none';
+        });
+        maybeLaterBtn.addEventListener('click', function() {
+            chrome.storage.local.set({ hasSeenWelcomeHUD: true });
+            document.getElementById('welcomeHudModal').style.display = 'none';
+        });
+    } else {
+        console.error('[SKMT] HUD modal buttons not found in DOM');
+    }
+});
+
